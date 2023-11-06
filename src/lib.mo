@@ -1,8 +1,8 @@
+import BpTreeModule "BpTree";
+
 module {
-    /// Inline comments for documentation
+    public let BpTree = BpTreeModule;
+    public type BpTree<K, V> = BpTreeModule.BpTree<K, V>;
 
-    public func greet(name : Text) : Text {
-        return "Hello, " # name # "!";
-    };
 
-};
+}
