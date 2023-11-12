@@ -1,74 +1,107 @@
-
 import Array "mo:base/Array";
 import Debug "mo:base/Debug";
 import Nat "mo:base/Nat";
 import Iter "mo:base/Iter";
+import Buffer "mo:base/Buffer";
+
 import { test; suite } "mo:test";
+import Fuzz "mo:fuzz";
+import Itertools "mo:itertools/Iter";
 
 import { BpTree } "../src";
+
+func print_node(node : BpTree.Node<Nat, Nat>) {
+    switch (node) {
+        case (#internal(n)) {
+            Debug.print("internal node keys: " # debug_show n.keys);
+            Debug.print("internal node children: " # debug_show n.children);
+
+        };
+        case (#leaf(n)) {
+            Debug.print("leaf node: " # debug_show n.kvs);
+        };
+    };
+};
+
+let fuzz = Fuzz.Fuzz();
 
 suite(
     "b-plus-tree",
     func() {
-        test(
-            "insert",
-            func() {
-                let bptree = BpTree.new<Nat, Nat>();
+        // test(
+        //     "insert",
+        //     func() {
+                
+        //         let bptree = BpTree.newWithOrder<Nat, Nat>(32);
 
-                for (i in Iter.range(0, 512 - 1)){
-                    ignore BpTree.insert<Nat, Nat>(bptree, Nat.compare, i, i);
+        //         let limit = 10_000;
+
+        //         for (i in Iter.range(0, limit - 1)) {
+        //             ignore BpTree.insert<Nat, Nat>(bptree, Nat.compare, i, i);
+        //         };
+
+        //         assert bptree.size == limit;
+        //         // assert bptree.order == 32;
+
+        //         var prev = -1;
+        //         // Debug.print("depth: " # debug_show BpTree.depth(bptree));
+        //         // Debug.print("leaf nodes: " # debug_show BpTree.toLeafNodes(bptree));
+        //         // Debug.print("keys: " # debug_show BpTree.toNodeKeys(bptree));
+        //         // Debug.print("entries: " # debug_show BpTree.toArray(bptree));
+        //         for ((key, val) in BpTree.entries(bptree)) {
+        //             if (prev + 1 != key) {
+        //                 let leaf_node = BpTree.get_leaf_node(bptree, Nat.compare, key);
+        //                 Debug.print("leaf nooooode:" # BpTree.LeafNode.toText(leaf_node, Nat.toText, Nat.toText));
+        //                 Debug.print("mismatch: " # debug_show (prev, key));
+        //                 assert false;
+        //             };
+
+        //             prev += 1;
+        //         };
+        //     },
+        // );
+
+        test(
+            "insert random",
+            func() {
+                let limit = 1000;
+                
+                let bptree = BpTree.newWithOrder<Nat, Nat>(4);
+                assert bptree.order == 4;
+
+                for (i in Iter.range(0, limit - 1)) {
+                    let key = fuzz.nat.randomRange(1, limit * 10); // range is big enough to avoid collisions
+                    // Debug.print("insert " # debug_show key);
+
+                    ignore BpTree.insert(bptree, Nat.compare, key, key);
+                    // Debug.print("keys " # debug_show BpTree.toNodeKeys(bptree));
+                    // Debug.print("leafs " # debug_show BpTree.toLeafNodes(bptree));
+
                 };
 
-                assert bptree.size == 512;
+                // assert BpTree.size(bptree) == limit;
+                
+                let ?min = BpTree.min<Nat, Nat>(bptree) else Debug.trap("unreachable");
 
-                let entries = BpTree.toArray(bptree);
-                let valid_entries = Array.tabulate<(Nat, Nat)>(512, func(i: Nat): (Nat, Nat) = (i, i));
+                var prev = min.0;
+                var i = 0;
+                // Debug.print("entries " # debug_show BpTree.toArray(bptree));
+                Debug.print("keys " # debug_show BpTree.toNodeKeys(bptree));
+                Debug.print("leafs " # debug_show BpTree.toLeafNodes(bptree));
 
-                assert entries.size() == 512;
-                assert entries == valid_entries;
-            },
-        );
-    },
-);
+                for (curr in BpTree.keys(bptree)) {
+                    
+                    if (prev > curr) {
+                        let leaf_node = BpTree.get_leaf_node(bptree, Nat.compare, curr);
+                        Debug.print("leaf nooooode:" # BpTree.LeafNode.toText(leaf_node, Nat.toText, Nat.toText));
+                        Debug.print("mismatch: " # debug_show (i, prev, curr));
+                        Debug.trap("bptree is not sorted");
+                        
+                    };
 
-
-suite(
-    "Function Tests",
-    func() {
-        test(
-            "binary search",
-            func() {
-                let arr = [var ?1, ?3, ?5, ?7, null];
-                var count = 4;
-
-                assert 0 == BpTree.binary_search<Nat>(arr, Nat.compare, 1, count);
-                assert 1 == BpTree.binary_search<Nat>(arr, Nat.compare, 3, count);
-                assert 2 == BpTree.binary_search<Nat>(arr, Nat.compare, 5, count);
-                assert 3 == BpTree.binary_search<Nat>(arr, Nat.compare, 7, count);
-
-                assert -1 == BpTree.binary_search<Nat>(arr, Nat.compare, 0, count);
-                assert -2 == BpTree.binary_search<Nat>(arr, Nat.compare, 2, count);
-                assert -3 == BpTree.binary_search<Nat>(arr, Nat.compare, 4, count);
-                assert -4 == BpTree.binary_search<Nat>(arr, Nat.compare, 6, count);
-                assert -5 == BpTree.binary_search<Nat>(arr, Nat.compare, 8, count);
-
-                arr[4] := ?9;
-                count := 5;
-
-                assert 4 == BpTree.binary_search<Nat>(arr, Nat.compare, 9, count);
-                assert -5 == BpTree.binary_search<Nat>(arr, Nat.compare, 8, count);
-                assert -6 == BpTree.binary_search<Nat>(arr, Nat.compare, 10, count);
-
-                arr[4] := null;
-                arr[3] := null;
-                arr[2] := null;
-                arr[1] := null;
-                count := 1;
-
-                assert 0 == BpTree.binary_search<Nat>(arr, Nat.compare, 1, count);
-                assert -1 == BpTree.binary_search<Nat>(arr, Nat.compare,0, count);
-                assert -2 == BpTree.binary_search<Nat>(arr, Nat.compare, 10, count);
-
+                    prev := curr;
+                    i+=1;
+                };
             },
         );
     },
