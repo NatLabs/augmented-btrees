@@ -1,9 +1,9 @@
 module {
-    public module LeafNode {
+    public module Leaf {
 
     };
 
-    public module InternalNode {
+    public module Branch {
 
     };
 }

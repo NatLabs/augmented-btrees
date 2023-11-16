@@ -1,9 +1,12 @@
+import Prim "mo:prim";
+
 import Option "mo:base/Option";
 import Array "mo:base/Array";
 import Debug "mo:base/Debug";
 import Order "mo:base/Order";
 import Int "mo:base/Int";
 import Iter "mo:base/Iter";
+import Nat "mo:base/Nat";
 import Buffer "mo:base/Buffer";
 import Deque "mo:buffer-deque/BufferDeque";
 
@@ -20,16 +23,16 @@ module BpTree {
         var size : Nat;
     };
 
-    // type LeafNode<K, V> = {
-    //     var parent : ?InternalNode<K, V>;
+    // type Leaf<K, V> = {
+    //     var parent : ?Branch<K, V>;
     //     var index : Nat;
     //     kvs : [var ?(K, V)];
     //     var count : Nat;
-    //     var next : ?LeafNode<K, V>;
+    //     var next : ?Leaf<K, V>;
     // };
 
-    // type InternalNode<K, V> = {
-    //     var parent : ?InternalNode<K, V>;
+    // type Branch<K, V> = {
+    //     var parent : ?Branch<K, V>;
     //     var index : Nat;
     //     keys : [var ?K];
     //     children : [var ?Node<K, V>];
@@ -39,24 +42,24 @@ module BpTree {
     type SharedNodeFields<K, V> = {
         var count : Nat;
         var index : Nat;
-        var parent : ?InternalNode<K, V>;
+        var parent : ?Branch<K, V>;
     };
 
     type SharedNode<K, V> = {
         #leaf : SharedNodeFields<K, V>;
-        #internal : SharedNodeFields<K, V>;
+        #branch : SharedNodeFields<K, V>;
     };
 
-    public module LeafNode {
-        public type LeafNode<K, V> = {
-            var parent : ?InternalNode<K, V>;
+    public module Leaf {
+        public type Leaf<K, V> = {
+            var parent : ?Branch<K, V>;
             var index : Nat;
             kvs : [var ?(K, V)];
             var count : Nat;
-            var next : ?LeafNode<K, V>;
+            var next : ?Leaf<K, V>;
         };
 
-        public func new<K, V>(order : Nat, opt_kvs : ?[var ?(K, V)]) : LeafNode<K, V> {
+        public func new<K, V>(order : Nat, opt_kvs : ?[var ?(K, V)]) : Leaf<K, V> {
             {
                 var parent = null;
                 var index = 0;
@@ -66,7 +69,7 @@ module BpTree {
             };
         };
 
-        public func equal<K, V>(a : LeafNode<K, V>, b : LeafNode<K, V>, cmp : CmpFn<K>) : Bool {
+        public func equal<K, V>(a : Leaf<K, V>, b : Leaf<K, V>, cmp : CmpFn<K>) : Bool {
             for (i in Iter.range(0, a.kvs.size() - 1)) {
                 let res = switch (a.kvs[i], b.kvs[i]) {
                     case (?v1, ?v2) {
@@ -81,12 +84,10 @@ module BpTree {
             true;
         };
 
-        public func toText<K, V>(self : LeafNode<K, V>, key_to_text : (K) -> Text, val_to_text : (V) -> Text) : Text {
-            var t = "";
+        public func toText<K, V>(self : Leaf<K, V>, key_to_text : (K) -> Text, val_to_text : (V) -> Text) : Text {
+            var t = "leaf { index: " # debug_show self.index # ", count: " # debug_show self.count # ", kvs: ";
 
-            t #= "\nLeafNode: " # debug_show self.index;
-            t #= "\n\tcount: " # debug_show self.count;
-            t #= "\n\tkvs: " # debug_show Array.map(
+            t #= debug_show Array.map(
                 Array.freeze(self.kvs),
                 func(opt_kv : ?(K, V)) : Text {
                     switch (opt_kv) {
@@ -96,14 +97,16 @@ module BpTree {
                 },
             );
 
+            t #= " }";
+
             t;
         };
 
     };
 
-    public module InternalNode {
-        public type InternalNode<K, V> = {
-            var parent : ?InternalNode<K, V>;
+    public module Branch {
+        public type Branch<K, V> = {
+            var parent : ?Branch<K, V>;
             var index : Nat;
             var keys : [var ?K];
             var children : [var ?Node<K, V>];
@@ -113,9 +116,9 @@ module BpTree {
         public func new<K, V>(
             order : Nat,
             opt_children : ?[var ?Node<K, V>],
-        ) : InternalNode<K, V> {
+        ) : Branch<K, V> {
 
-            let self : InternalNode<K, V> = {
+            let self : Branch<K, V> = {
                 var parent = null;
                 var index = 0;
                 var keys = [var];
@@ -132,28 +135,25 @@ module BpTree {
                 };
             };
 
+            var count = 0;
+
             switch (children[0]) {
-                case (? #leaf(node) or ? #internal(node): ?SharedNode<K, V>) {
+                case (? #leaf(node) or ? #branch(node) : ?SharedNode<K, V>) {
                     node.parent := ?self;
                     node.index := 0;
+                    count += 1;
                 };
-                case (_) Debug.trap("InternalNode.new: should replace the opt_children input with a null value ");
+                case (_) Debug.trap("Branch.new: should replace the opt_children input with a null value ");
             };
 
-            var count = 1;
-            var avoid_tabulate_var_bug = false;
             let keys = Array.tabulateVar<?K>(
                 order - 1 : Nat,
                 func(i : Nat) : ?K {
-                    if (i == 0 and not avoid_tabulate_var_bug) {
-                        avoid_tabulate_var_bug := true;
-                        return null;
-                    };
-
+                    // Debug.print("i = " # debug_show i);
                     switch (children[i + 1]) {
                         case (? #leaf(node)) {
                             node.parent := ?self;
-                            node.index := i + 1;
+                            node.index := count;
                             count += 1;
 
                             switch (node.kvs[0]) {
@@ -161,10 +161,10 @@ module BpTree {
                                 case (_) null;
                             };
                         };
-                        case (? #internal(node)) {
-                            count += 1;
+                        case (? #branch(node)) {
                             node.parent := ?self;
-                            node.index := i + 1;
+                            node.index := count;
+                            count += 1;
                             node.keys[0];
                         };
                         case (_) null;
@@ -179,38 +179,36 @@ module BpTree {
             self;
         };
 
-        public func newWithKeys<K, V>(keys: [var ?K], children: [var ?Node<K, V>], count: Nat) : InternalNode<K, V>{
-            let self: InternalNode<K, V> =  {
+        public func newWithKeys<K, V>(keys : [var ?K], children : [var ?Node<K, V>]) : Branch<K, V> {
+            let self : Branch<K, V> = {
                 var parent = null;
                 var index = 0;
                 var keys = keys;
                 var children = children;
-                var count = count;
+                var count = 0;
             };
 
-            var i = 0;
-            for (child in children.vals()){
+            for (child in children.vals()) {
                 switch (child) {
                     case (? #leaf(node)) {
                         node.parent := ?self;
-                        node.index := i + 1;
+                        node.index := self.count;
                         self.count += 1;
-                       
+
                     };
-                    case (? #internal(node)) {
-                        self.count += 1;
+                    case (? #branch(node)) {
                         node.parent := ?self;
-                        node.index := i + 1;
+                        node.index := self.count;
+                        self.count += 1;
                     };
                     case (_) {};
                 };
-                i+= 1;
             };
 
-            self
+            self;
         };
 
-        public func equal<K, V>(a : InternalNode<K, V>, b : InternalNode<K, V>, cmp : CmpFn<K>) : Bool {
+        public func equal<K, V>(a : Branch<K, V>, b : Branch<K, V>, cmp : CmpFn<K>) : Bool {
             for (i in Iter.range(0, a.keys.size() - 2)) {
                 let res = switch (a.keys[i], b.keys[i]) {
                     case (?v1, ?v2) {
@@ -226,9 +224,9 @@ module BpTree {
             for (i in Iter.range(0, a.children.size() - 1)) {
                 let res = switch (a.children[i], b.children[i]) {
                     case (? #leaf(v1), ? #leaf(v2)) {
-                        LeafNode.equal(v1, v2, cmp);
+                        Leaf.equal(v1, v2, cmp);
                     };
-                    case (? #internal(v1), ? #internal(v2)) {
+                    case (? #branch(v1), ? #branch(v2)) {
                         equal(v1, v2, cmp);
                     };
                     case (null, null) true;
@@ -239,11 +237,9 @@ module BpTree {
             true;
         };
 
-        public func toText<K, V>(self : InternalNode<K, V>, key_to_text : (K) -> Text, val_to_text : (V) -> Text) : Text {
-            var t = "";
-            t #= "\nInternalNode: " # debug_show self.index;
-            t #= "\ncount: " # debug_show self.count;
-            t #= "\nkeys: " # debug_show Array.map(
+        public func toText<K, V>(self : Branch<K, V>, key_to_text : (K) -> Text, val_to_text : (V) -> Text) : Text {
+            var t = "branch { index: " # debug_show self.index # ", count: " # debug_show self.count # ", keys: ";
+            t #= debug_show Array.map(
                 Array.freeze(self.keys),
                 func(opt_key : ?K) : Text {
                     switch (opt_key) {
@@ -253,16 +249,18 @@ module BpTree {
                 },
             );
 
-            t #= "\nchildren: " # debug_show Array.map(
+            t #= ", children: " # debug_show Array.map(
                 Array.freeze(self.children),
                 func(opt_node : ?Node<K, V>) : Text {
                     switch (opt_node) {
-                        case (? #leaf(node)) LeafNode.toText<K, V>(node, key_to_text, val_to_text);
-                        case (? #internal(node)) InternalNode.toText(node, key_to_text, val_to_text);
+                        case (? #leaf(node)) Leaf.toText<K, V>(node, key_to_text, val_to_text);
+                        case (? #branch(node)) Branch.toText(node, key_to_text, val_to_text);
                         case (_) "null";
                     };
                 },
             );
+
+            t #= " }";
 
             t;
         };
@@ -270,11 +268,11 @@ module BpTree {
 
     module Node {
         public type Node<K, V> = {
-            #leaf : LeafNode<K, V>;
-            #internal : InternalNode<K, V>;
+            #leaf : Leaf<K, V>;
+            #branch : Branch<K, V>;
         };
 
-        public func newLeaf<K, V>(order : Nat, opt_kvs : ?[var ?(K, V)]) : LeafNode<K, V> {
+        public func newLeaf<K, V>(order : Nat, opt_kvs : ?[var ?(K, V)]) : Leaf<K, V> {
             {
                 var parent = null;
                 var index = 0;
@@ -284,11 +282,11 @@ module BpTree {
             };
         };
 
-        public func newInternal<K, V>(
+        public func newBranch<K, V>(
             order : Nat,
             opt_keys : ?[var ?K],
             opt_children : ?[var ?Node<K, V>],
-        ) : InternalNode<K, V> {
+        ) : Branch<K, V> {
             {
                 var parent = null;
                 var index = 0;
@@ -300,15 +298,15 @@ module BpTree {
     };
 
     public type Node<K, V> = Node.Node<K, V>;
-    public type LeafNode<K, V> = LeafNode.LeafNode<K, V>;
-    public type InternalNode<K, V> = InternalNode.InternalNode<K, V>;
+    public type Leaf<K, V> = Leaf.Leaf<K, V>;
+    public type Branch<K, V> = Branch.Branch<K, V>;
 
     public func new<K, V>() : BpTree<K, V> {
         BpTree.newWithOrder<K, V>(32);
     };
 
     public func newWithOrder<K, V>(order : Nat) : BpTree<K, V> {
-        assert order >= 4 and order <= 512;
+        // assert order >= 4 and order <= 512;
 
         {
             order;
@@ -327,7 +325,7 @@ module BpTree {
 
         label while_loop loop {
             switch (node) {
-                case (? #internal(n)) {
+                case (? #branch(n)) {
                     node := n.children[0];
                     depth += 1;
                 };
@@ -387,15 +385,17 @@ module BpTree {
             case (_) {
                 Debug.print("insertion = " # debug_show insertion);
                 Debug.print("arr_len = " # debug_show arr_len);
-                Debug.print("arr = " # debug_show Array.map(
-                    Array.freeze(arr),
-                    func(opt_val : ?A) : Text {
-                        switch (opt_val) {
-                            case (?val) "1";
-                            case (_) "0";
-                        };
-                    },
-                ));
+                Debug.print(
+                    "arr = " # debug_show Array.map(
+                        Array.freeze(arr),
+                        func(opt_val : ?A) : Text {
+                            switch (opt_val) {
+                                case (?val) "1";
+                                case (_) "0";
+                            };
+                        },
+                    )
+                );
                 Debug.trap("2. binary_search: accessed a null value");
             };
         };
@@ -454,15 +454,15 @@ module BpTree {
         };
     };
 
-    public func get_leaf_node<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, key : K) : LeafNode<K, V> {
+    public func get_leaf_node<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, key : K) : Leaf<K, V> {
         var curr = ?self.root;
 
         loop {
             switch (curr) {
-                case (? #internal(node)) {
+                case (? #branch(node)) {
                     let int_index = binary_search<K, K>(node.keys, cmp, key, node.count - 1);
                     let node_index = if (int_index >= 0) Int.abs(int_index) + 1 else Int.abs(int_index + 1);
-                    // Debug.print("get_leaf internal node index = " # debug_show (int_index, node_index));
+                    // Debug.print("get_leaf branch index = " # debug_show (int_index, node_index));
                     // Debug.print("count " # debug_show node.count);
                     curr := node.children[node_index];
                 };
@@ -474,13 +474,13 @@ module BpTree {
         };
     };
 
-    public func get_min_leaf_node<K, V>(self : BpTree<K, V>) : LeafNode<K, V> {
+    public func get_min_leaf_node<K, V>(self : BpTree<K, V>) : Leaf<K, V> {
         var node = ?self.root;
 
         loop {
             switch (node) {
-                case (? #internal(internal_node)) {
-                    node := internal_node.children[0];
+                case (? #branch(branch)) {
+                    node := branch.children[0];
                 };
                 case (? #leaf(leaf_node)) {
                     return leaf_node;
@@ -516,26 +516,23 @@ module BpTree {
     };
 
     public func toText<K, V>(self : BpTree<K, V>, key_to_text : (K) -> Text, val_to_text : (V) -> Text) : Text {
-        var t = "";
-
-        t #= "\nBpTree: ";
-        t #= "\n\torder: " # debug_show self.order;
-        t #= "\n\tsize: " # debug_show self.size;
-        t #= "\n\troot: ";
+        var t = "BpTree { order: " # debug_show self.order # ", size: " # debug_show self.size # ", root: ";
 
         t #= switch (self.root) {
-            case (#leaf(node)) LeafNode.toText<K, V>(node, key_to_text, val_to_text);
-            case (#internal(node)) InternalNode.toText<K, V>(node, key_to_text, val_to_text);
+            case (#leaf(node)) "leaf { " # Leaf.toText<K, V>(node, key_to_text, val_to_text) # " }";
+            case (#branch(node)) "branch {" # Branch.toText<K, V>(node, key_to_text, val_to_text) # "}";
         };
+
+        t #= "}";
 
         t;
     };
 
-    public func split_leaf<K, V>(leaf : LeafNode<K, V>, elem_index : Nat, elem : (K, V)) : LeafNode<K, V> {
+
+    public func split_leaf<K, V>(leaf : Leaf<K, V>, elem_index : Nat, elem : (K, V)) : Leaf<K, V> {
 
         let arr_len = leaf.count;
         let median = (arr_len / 2) + 1;
-        var avoid_tabulate_var_bug = false;
 
         let is_elem_added_to_right = elem_index >= median;
 
@@ -548,10 +545,6 @@ module BpTree {
         let right_kvs = Array.tabulateVar<?(K, V)>(
             leaf.kvs.size(),
             func(i : Nat) : ?(K, V) {
-                if (i == 0 and not avoid_tabulate_var_bug) {
-                    avoid_tabulate_var_bug := true;
-                    return null;
-                };
 
                 let j = i + median - offset : Nat;
 
@@ -623,11 +616,10 @@ module BpTree {
         right_node;
     };
 
-    public func split_internal_node<K, V>(node : InternalNode<K, V>, child : Node<K, V>, child_index : Nat, first_child_key : K) : InternalNode<K, V> {
+    public func split_branch<K, V>(node : Branch<K, V>, child : Node<K, V>, child_index : Nat, first_child_key : K) : Branch<K, V> {
         let arr_len = node.count;
         let median = (arr_len / 2) + 1;
 
-        var avoid_tabulate_var_bug = false;
         let is_elem_added_to_right = child_index >= median;
 
         var median_key = ?first_child_key;
@@ -635,7 +627,7 @@ module BpTree {
         var offset = if (is_elem_added_to_right) 0 else 1;
         var already_inserted = false;
 
-        let right = InternalNode.new<K, V>(node.children.size(), null);
+        let right = Branch.new<K, V>(node.children.size(), null);
 
         // for (i in Iter.range(0, node.children.size() - 1)) {
         //     let j = i + median - offset : Nat;
@@ -657,31 +649,35 @@ module BpTree {
         //         right.children[i] := extract(node.children, j);
         //     };
         // };
-        
+
         let right_keys = Array.init<?K>(node.keys.size(), null);
 
         let right_children = Array.tabulateVar<?Node<K, V>>(
             node.children.size(),
             func(i : Nat) : ?Node<K, V> {
-                if (i == 0 and not avoid_tabulate_var_bug) {
-                    avoid_tabulate_var_bug := true;
-                    return null;
-                };
 
                 let j = i + median - offset : Nat;
 
                 let child_node = if (j >= median and j == child_index and not already_inserted) {
                     offset += 1;
                     already_inserted := true;
-                    if (i > 0 ) right_keys[i - 1] := ?first_child_key;
+                    if (i > 0) right_keys[i - 1] := ?first_child_key;
                     ?child;
                 } else if (j >= arr_len) {
                     null;
                 } else {
                     if (i == 0) {
-                        Debug.print("median_key at pos " # debug_show (j - 1: Nat));
+                        // Debug.print("median_key at pos " # debug_show (j - 1 : Nat));
                         median_key := node.keys[j - 1];
-                    }else {
+                    } else {
+                        // Debug.print("right keys size " # debug_show right_keys.size());
+                        // Debug.print("right_keys at pos " # debug_show (i - 1 : Nat));
+
+                        // Debug.print("node.keys size " # debug_show node.keys.size());
+                        // Debug.print("node.keys at pos " # debug_show (j - 1 : Nat));
+
+                        // Debug.print("arr_len " # debug_show arr_len);
+
                         right_keys[i - 1] := node.keys[j - 1];
                     };
                     node.keys[j - 1] := null;
@@ -689,16 +685,25 @@ module BpTree {
                     extract(node.children, j);
                 };
 
+                switch (child_node) {
+                    case (? #branch(node) or ? #leaf(node) : ?SharedNode<K, V>) {
+                        node.index := i;
+                    };
+                    case (_) {};
+                };
+
                 child_node;
             },
         );
+
+       
 
         // Debug.print(
         //     "after rs node.children: " # debug_show Array.map(
         //         Array.freeze(node.children),
         //         func(opt_node : ?Node<K, V>) : Int {
         //             switch (opt_node) {
-        //                 case ((? #internal(node) or ? #leaf(node)) : ?SharedNode<K, V>) node.index;
+        //                 case ((? #branch(node) or ? #leaf(node)) : ?SharedNode<K, V>) node.index;
         //                 case (_) -1;
         //             };
         //         },
@@ -715,7 +720,7 @@ module BpTree {
             node.children[j] := node.children[j - 1];
 
             switch (node.children[j]) {
-                case (? #internal(node) or ? #leaf(node) : ?SharedNode<K, V>) {
+                case (? #branch(node) or ? #leaf(node) : ?SharedNode<K, V>) {
                     node.index := j;
                 };
                 case (_) {};
@@ -730,7 +735,7 @@ module BpTree {
         //         Array.freeze(node.children),
         //         func(opt_node : ?Node<K, V>) : Int {
         //             switch (opt_node) {
-        //                 case ((? #internal(node) or ? #leaf(node)) : ?SharedNode<K, V>) node.index;
+        //                 case ((? #branch(node) or ? #leaf(node)) : ?SharedNode<K, V>) node.index;
         //                 case (_) -1;
         //             };
         //         },
@@ -745,16 +750,16 @@ module BpTree {
                 node.keys[j - 1] := ?first_child_key;
             } else {
                 let key : ?K = switch (node.children[j]) {
-                    case (? #internal(node)) {
+                    case (? #branch(node)) {
                         node.keys[0];
                     };
                     case (? #leaf(node)) {
                         switch (node.kvs[0]) {
                             case (?kv) ?kv.0;
-                            case (_) Debug.trap("split_internal_node: accessed a null value");
+                            case (_) Debug.trap("split_branch: accessed a null value");
                         };
                     };
-                    case (_) Debug.trap("split_internal_node: accessed a null value");
+                    case (_) Debug.trap("split_branch: accessed a null value");
                 };
 
                 node.keys[0] := key;
@@ -765,34 +770,37 @@ module BpTree {
 
         node.count := median;
         let right_cnt = node.children.size() + 1 - median : Nat;
-        
-        let split_right_node = switch(node.children[0]){
-            case (?#leaf(_)) InternalNode.new( node.children.size(), ?right_children);
-            case (?#internal(_)) InternalNode.newWithKeys<K, V>(right_keys, right_children, right_cnt);
-            case (_) Debug.trap("split_right_node: accessed a null value");
+
+        let right_node = switch (node.children[0]) {
+            case (? #leaf(_)) Branch.new(node.children.size(), ?right_children);
+            case (? #branch(_)) {
+                Branch.newWithKeys<K, V>(right_keys, right_children);
+                // Branch.new( node.children.size(), ?right_children);
+            };
+            case (_) Debug.trap("right_node: accessed a null value");
         };
 
-        split_right_node.index := node.index + 1;
+        right_node.index := node.index + 1;
 
-        split_right_node.count := right_cnt;
-        split_right_node.parent := node.parent;
+        right_node.count := right_cnt;
+        right_node.parent := node.parent;
 
         // assert validate_indexes(node.children, node.count);
         // assert validate_array_equal_count(node.keys, node.count - 1 : Nat);
         // assert validate_array_equal_count(node.children, node.count);
 
-        // assert validate_indexes(split_right_node.children, split_right_node.count);
-        // assert validate_array_equal_count(split_right_node.keys, split_right_node.count - 1 : Nat);
-        // assert validate_array_equal_count(split_right_node.children, split_right_node.count);
+        // assert validate_indexes(right_node.children, right_node.count);
+        // assert validate_array_equal_count(right_node.keys, right_node.count - 1 : Nat);
+        // assert validate_array_equal_count(right_node.children, right_node.count);
 
         // store the first key of the right node at the end of the keys in left node
         // no need to delete as the value will get overwritten because it exceeds the count position
-        node.keys[node.keys.size() - 1] := median_key;
+        right_node.keys[right_node.keys.size() - 1] := median_key;
 
-        split_right_node;
+        right_node;
     };
 
-    func validate_array_equal_count<T>(arr : [var ?T], count : Nat) : Bool {
+    public func validate_array_equal_count<T>(arr : [var ?T], count : Nat) : Bool {
         var i = 0;
 
         for (opt_elem in arr.vals()) {
@@ -803,13 +811,13 @@ module BpTree {
         i == count;
     };
 
-    func validate_indexes<K, V>(arr : [var ?Node<K, V>], count : Nat) : Bool {
+    public func validate_indexes<K, V>(arr : [var ?Node<K, V>], count : Nat) : Bool {
 
         var i = 0;
 
         while (i < count) {
             switch (arr[i] : ?SharedNode<K, V>) {
-                case (? #internal(node) or ? #leaf(node)) {
+                case (? #branch(node) or ? #leaf(node)) {
                     if (node.index != i) return false;
                 };
                 case (_) Debug.trap("validate_indexes: accessed a null value");
@@ -818,6 +826,33 @@ module BpTree {
         };
 
         true;
+    };
+
+    public func is_sorted<T>(arr: [var ?T], cmp: CmpFn<T>): Bool {
+        var i = 0;
+
+        while (i < ((arr.size() - 1) : Nat)) {
+            let ?a = arr[i] else return true;
+            let ?b = arr[i + 1] else return true;
+
+            if (cmp(a, b) == #greater) return false;
+            i += 1;
+        };
+
+        true;
+
+    };
+
+    public func indexes<K, V>(children : [var ?Node<K, V>]) : [Int] {
+        Array.map<?Node<K, V>, Int>(
+            Array.freeze(children),
+            func(opt_node : ?Node<K, V>) : Int {
+                switch (opt_node) {
+                    case ((? #branch(node) or ? #leaf(node)) : ?SharedNode<K, V>) node.index;
+                    case (_) -1;
+                };
+            },
+        );
     };
 
     public func insert(self : BpTree<Nat, Nat>, cmp : CmpFn<Nat>, key : Nat, val : Nat) : ?Nat {
@@ -856,7 +891,7 @@ module BpTree {
         // split leaf node
         let right_leaf_node = split_leaf(leaf_node, elem_index, entry);
 
-        var opt_parent : ?InternalNode<Nat, Nat> = leaf_node.parent;
+        var opt_parent : ?Branch<Nat, Nat> = leaf_node.parent;
         var left_node : Node<Nat, Nat> = #leaf(leaf_node);
         var left_index = leaf_node.index;
 
@@ -873,6 +908,9 @@ module BpTree {
             if (parent.count < self.order) {
                 // shift elems to the right and insert the new key-value pair
                 var j = parent.count;
+                // Debug.print("parent count " # debug_show parent.count);
+                // Debug.print("parent keys before = " # debug_show Array.freeze(parent.keys));
+                // Debug.print("right index = " # debug_show right_index);
 
                 while (j >= right_index) {
                     if (j == right_index) {
@@ -884,14 +922,18 @@ module BpTree {
                     };
 
                     switch (parent.children[j]) {
-                        case ((? #internal(node) or ? #leaf(node)) : ?SharedNode<Nat, Nat>) {
+                        case ((? #branch(node) or ? #leaf(node)) : ?SharedNode<Nat, Nat>) {
+
                             node.index := j;
                         };
                         case (_) {};
                     };
-                    
+
                     j -= 1;
                 };
+
+                // Debug.print("parent keys after = " # debug_show Array.freeze(parent.keys));
+
 
                 parent.count += 1;
 
@@ -917,14 +959,17 @@ module BpTree {
                 // Debug.print("insert: parent node is full");
 
                 let median = (parent.count / 2) + 1; // include inserted key-value pair
-                let split_node = split_internal_node(parent, right_node, right_index, right_key);
+                let split_node = split_branch(parent, right_node, right_index, right_key);
+
+                // Debug.print("left keys = " # debug_show Array.freeze(parent.keys));
+                // Debug.print("right keys = " # debug_show Array.freeze(split_node.keys));
 
                 // Debug.print(
                 //     "parent.children: " # debug_show Array.map(
                 //         Array.freeze(parent.children),
                 //         func(opt_node : ?Node<Nat, Nat>) : Int {
                 //             switch (opt_node) {
-                //                 case ((? #internal(node) or ? #leaf(node)) : ?SharedNode<Nat, Nat>) node.index;
+                //                 case ((? #branch(node) or ? #leaf(node)) : ?SharedNode<Nat, Nat>) node.index;
                 //                 case (_) -1;
                 //             };
                 //         },
@@ -933,19 +978,21 @@ module BpTree {
 
                 // Debug.print("count: " # debug_show parent.count);
 
-                let ?first_key = extract(parent.keys, parent.keys.size() - 1: Nat) else Debug.trap("4. insert: accessed a null value in first key of internal node");
+                let ?first_key = extract(split_node.keys, split_node.keys.size() - 1 : Nat) else Debug.trap("4. insert: accessed a null value in first key of branch");
                 right_key := first_key;
-                Debug.print("returned right_key " # debug_show right_key);
+                // Debug.print("returned right_key " # debug_show right_key);
                 // assert validate_indexes(parent.children, parent.count);
+                // assert is_sorted<Nat>(parent.keys, cmp);
                 // assert validate_array_equal_count(parent.keys, parent.count - 1 : Nat);
                 // assert validate_array_equal_count(parent.children, parent.count);
 
                 // assert validate_indexes(split_node.children, split_node.count);
+                // assert is_sorted<Nat>(split_node.keys, cmp);
                 // assert validate_array_equal_count(split_node.keys, split_node.count - 1 : Nat);
                 // assert validate_array_equal_count(split_node.children, split_node.count);
-
-                left_node := #internal(parent);
-                right_node := #internal(split_node);
+ 
+                left_node := #branch(parent);
+                right_node := #branch(split_node);
 
                 right_index := split_node.index;
                 opt_parent := split_node.parent;
@@ -960,12 +1007,11 @@ module BpTree {
         children[0] := ?left_node;
         children[1] := ?right_node;
 
-        let root_node = InternalNode.new<Nat, Nat>(self.order, ?children);
+        let root_node = Branch.new<Nat, Nat>(self.order, ?children);
         root_node.keys[0] := ?right_key;
         assert root_node.count == 2;
 
-        self.root := #internal(root_node);
-
+        self.root := #branch(root_node);
         // assert validate_indexes(root_node.children, root_node.count);
         // assert validate_array_equal_count(root_node.keys, root_node.count - 1 : Nat);
         // assert validate_array_equal_count(root_node.children, root_node.count);
@@ -989,7 +1035,7 @@ module BpTree {
         var node = ?self.root;
         let buffer = Buffer.Buffer<(K, V)>(self.size);
 
-        var leaf_node : ?LeafNode<K, V> = ?get_min_leaf_node(self);
+        var leaf_node : ?Leaf<K, V> = ?get_min_leaf_node(self);
 
         label _loop loop {
             switch (leaf_node) {
@@ -1032,29 +1078,29 @@ module BpTree {
         };
     };
 
-    public func keys<K, V>(self: BpTree<K, V>): Iter<K> {
+    public func keys<K, V>(self : BpTree<K, V>) : Iter<K> {
         Iter.map(
             entries(self),
             func(kv : (K, V)) : K {
                 kv.0;
             },
-        )
+        );
     };
 
-    public func vals<K, V>(self: BpTree<K, V>): Iter<V> {
+    public func vals<K, V>(self : BpTree<K, V>) : Iter<V> {
         Iter.map(
             entries(self),
             func(kv : (K, V)) : V {
                 kv.1;
             },
-        )
+        );
     };
 
     public func toLeafNodes<K, V>(self : BpTree<K, V>) : [[?(K, V)]] {
         var node = ?self.root;
         let buffer = Buffer.Buffer<[?(K, V)]>(self.size);
 
-        var leaf_node : ?LeafNode<K, V> = ?get_min_leaf_node(self);
+        var leaf_node : ?Leaf<K, V> = ?get_min_leaf_node(self);
 
         label _loop loop {
             switch (leaf_node) {
@@ -1077,18 +1123,18 @@ module BpTree {
         Buffer.toArray(buffer);
     };
 
-    public func toNodeKeys<K, V>(self : BpTree<K, V>) : [[[?K]]] {
+    public func toNodeKeys<K, V>(self : BpTree<K, V>) : [[(Nat, [?K])]] {
         var nodes = Deque.fromArray<?Node<K, V>>([?self.root]);
-        let buffer = Buffer.Buffer<[[?K]]>(self.size / 2);
+        let buffer = Buffer.Buffer<[(Nat, [?K])]>(self.size / 2);
 
         while (nodes.size() > 0) {
-            let row = Buffer.Buffer<[?K]>(nodes.size());
+            let row = Buffer.Buffer<(Nat, [?K])>(nodes.size());
 
             for (_ in Iter.range(1, nodes.size())) {
                 let ?node = nodes.popFront() else Debug.trap("toNodeKeys: accessed a null value");
 
                 switch (node) {
-                    case (? #internal(node)) {
+                    case (? #branch(node)) {
                         let node_buffer = Buffer.Buffer<?K>(node.keys.size());
                         for (key in node.keys.vals()) {
                             node_buffer.add(key);
@@ -1098,13 +1144,13 @@ module BpTree {
                             nodes.addBack(child);
                         };
 
-                        row.add(Buffer.toArray(node_buffer));
+                        row.add((node.index, Buffer.toArray(node_buffer)));
                     };
                     case (_) {};
                 };
             };
 
-            buffer.add(Buffer.toArray<[?K]>(row));
+            buffer.add(Buffer.toArray(row));
         };
 
         Buffer.toArray(buffer);

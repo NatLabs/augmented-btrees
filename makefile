@@ -1,6 +1,6 @@
 .PHONY: test compile-tests docs no-warn
 
-MocvVersion = 0.10.1
+MocvVersion = 0.10.2
 MocvPath = $(shell mocv bin $$MocvVersion)
 
 # runs all tests using the moc interpreter (not all features in motoko are supported)
