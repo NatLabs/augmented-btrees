@@ -8,7 +8,7 @@ import Int "mo:base/Int";
 import Iter "mo:base/Iter";
 import Nat "mo:base/Nat";
 import Buffer "mo:base/Buffer";
-import Deque "mo:buffer-deque/BufferDeque";
+import BufferDeque "mo:buffer-deque/BufferDeque";
 
 import Utils "Utils";
 
@@ -85,7 +85,6 @@ module BpTree {
 
             t;
         };
-
     };
 
     public module Branch {
@@ -890,11 +889,7 @@ module BpTree {
             let ?parent = opt_parent else Debug.trap("3. insert: accessed a null parent value");
 
             if (parent.count < self.order) {
-                // shift elems to the right and insert the new key-value pair
                 var j = parent.count;
-                // Debug.print("parent count " # debug_show parent.count);
-                // Debug.print("parent keys before = " # debug_show Array.freeze(parent.keys));
-                // Debug.print("right index = " # debug_show right_index);
 
                 while (j >= right_index) {
                     if (j == right_index) {
@@ -916,65 +911,19 @@ module BpTree {
                     j -= 1;
                 };
 
-                // Debug.print("parent keys after = " # debug_show Array.freeze(parent.keys));
-
-
                 parent.count += 1;
-
-                // Debug.print("parent.keys: " # debug_show Array.map(
-                //     Array.freeze(parent.keys),
-                //     func (opt_key : ?Nat) : Text {
-                //         switch(opt_key) {
-                //             case (?key) "1";
-                //             case (_) "0";
-                //         };
-                //     }
-                // ));
-
-                // assert validate_indexes(parent.children, parent.count);
-                // assert validate_array_equal_count(parent.keys, parent.count - 1 : Nat);
-                // assert validate_array_equal_count(parent.children, parent.count);
 
                 self.size += 1;
                 return prev_value;
 
             } else {
-                // Debug.print("size of b-plus-tree = " # debug_show self.size);
-                // Debug.print("insert: parent node is full");
-
+                
                 let median = (parent.count / 2) + 1; // include inserted key-value pair
                 let split_node = split_branch(parent, right_node, right_index, right_key);
 
-                // Debug.print("left keys = " # debug_show Array.freeze(parent.keys));
-                // Debug.print("right keys = " # debug_show Array.freeze(split_node.keys));
-
-                // Debug.print(
-                //     "parent.children: " # debug_show Array.map(
-                //         Array.freeze(parent.children),
-                //         func(opt_node : ?Node<Nat, Nat>) : Int {
-                //             switch (opt_node) {
-                //                 case ((? #branch(node) or ? #leaf(node)) : ?SharedNode<Nat, Nat>) node.index;
-                //                 case (_) -1;
-                //             };
-                //         },
-                //     )
-                // );
-
-                // Debug.print("count: " # debug_show parent.count);
-
                 let ?first_key = extract(split_node.keys, split_node.keys.size() - 1 : Nat) else Debug.trap("4. insert: accessed a null value in first key of branch");
                 right_key := first_key;
-                // Debug.print("returned right_key " # debug_show right_key);
-                // assert validate_indexes(parent.children, parent.count);
-                // assert is_sorted<Nat>(parent.keys, cmp);
-                // assert validate_array_equal_count(parent.keys, parent.count - 1 : Nat);
-                // assert validate_array_equal_count(parent.children, parent.count);
-
-                // assert validate_indexes(split_node.children, split_node.count);
-                // assert is_sorted<Nat>(split_node.keys, cmp);
-                // assert validate_array_equal_count(split_node.keys, split_node.count - 1 : Nat);
-                // assert validate_array_equal_count(split_node.children, split_node.count);
- 
+               
                 left_node := #branch(parent);
                 right_node := #branch(split_node);
 
@@ -983,10 +932,7 @@ module BpTree {
             };
         };
 
-        // create new root node
-        // let keys = Array.init<?Nat>(self.order - 1, null);
-        // keys[0] := ?right_key;
-
+        
         let children = Array.init<?Node<Nat, Nat>>(self.order, null);
         children[0] := ?left_node;
         children[1] := ?right_node;
@@ -996,14 +942,40 @@ module BpTree {
         assert root_node.count == 2;
 
         self.root := #branch(root_node);
-        // assert validate_indexes(root_node.children, root_node.count);
-        // assert validate_array_equal_count(root_node.keys, root_node.count - 1 : Nat);
-        // assert validate_array_equal_count(root_node.children, root_node.count);
-
+       
         self.size += 1;
         prev_value;
 
     };
+
+    // public func combine_branches(){
+
+    // }
+    // public func combine_leaves()
+
+    // public func remove(self: BpTree<Nat, Nat>, cmp: CmpFn<Nat>, key: Nat) : ?Nat {
+    //     let leaf_node = get_leaf_node<Nat, Nat>(self, cmp, key);
+
+    //     let int_elem_index = binary_search<(Nat, Nat), Nat>(leaf_node.kvs, adapt_cmp(cmp), key, leaf_node.count);
+    //     let elem_index = if (int_elem_index >= 0) Int.abs(int_elem_index) else return null;
+
+    //     let ?entry : ?(Nat, Nat) = leaf_node.kvs[elem_index] else Debug.trap("1. remove: accessed a null value");
+    //     var deleted = entry.1;
+
+    //     var j = elem_index;
+
+    //     while (j < (leaf_node.count - 1 : Nat)) {
+    //         leaf_node.kvs[j] := leaf_node.kvs[j + 1];
+    //         j += 1;
+    //     };
+
+
+    //     if (elem_index <= 1){
+
+    //     };
+
+    //     ?deleted;
+    // };
 
     public func min<K, V>(self : BpTree<K, V>) : ?(K, V) {
         let leaf_node = get_min_leaf_node(self) else return null;
@@ -1108,7 +1080,7 @@ module BpTree {
     };
 
     public func toNodeKeys<K, V>(self : BpTree<K, V>) : [[(Nat, [?K])]] {
-        var nodes = Deque.fromArray<?Node<K, V>>([?self.root]);
+        var nodes = BufferDeque.fromArray<?Node<K, V>>([?self.root]);
         let buffer = Buffer.Buffer<[(Nat, [?K])]>(self.size / 2);
 
         while (nodes.size() > 0) {
