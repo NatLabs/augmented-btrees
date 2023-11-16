@@ -23,22 +23,6 @@ module BpTree {
         var size : Nat;
     };
 
-    // type Leaf<K, V> = {
-    //     var parent : ?Branch<K, V>;
-    //     var index : Nat;
-    //     kvs : [var ?(K, V)];
-    //     var count : Nat;
-    //     var next : ?Leaf<K, V>;
-    // };
-
-    // type Branch<K, V> = {
-    //     var parent : ?Branch<K, V>;
-    //     var index : Nat;
-    //     keys : [var ?K];
-    //     children : [var ?Node<K, V>];
-    //     var count : Nat;
-    // };
-
     type SharedNodeFields<K, V> = {
         var count : Nat;
         var index : Nat;

@@ -59,7 +59,6 @@ suite(
 
                 let zipped = Itertools.zip(keys_iter, data_iter);
 
-
                 for ((i, (a, b)) in Itertools.enumerate(zipped)) {
                     if (a != b) {
                         let leaf_node = BpTree.get_leaf_node(bptree, Nat.compare, a);
