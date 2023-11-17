@@ -30,11 +30,13 @@ let fuzz = Fuzz.Fuzz();
 suite(
     "b-plus-tree",
     func() {
+
         test(
             "insert",
             func() {
                 
                 let bptree = BpTree.newWithOrder<Nat, Nat>(32);
+                assert bptree.order == 32;
 
                 let limit = 10_000;
 
@@ -70,35 +72,32 @@ suite(
             },
         );
 
+        let limit = 10_000;
+        let data = Buffer.Buffer<Nat>(limit);
+
+        let random = Buffer.Buffer<Nat>(limit);
+        let unique_iter = Itertools.unique<Nat>(data.vals(), Nat32.fromNat, Nat.equal);
+
+        for (n in unique_iter) {
+            random.add(n);
+        };
+
         test(
             "insert random",
             func() {
-                let limit = 1_000;
-                
-                let bptree = BpTree.newWithOrder<Nat, Nat>(4);
+                let bptree = BpTree.newWithOrder<Nat, Nat>(4);                
                 assert bptree.order == 4;
 
-                 let data = Buffer.Buffer<Nat>(limit);
-
-                for (i in Iter.range(0, limit - 1)) {
-                    ignore BpTree.insert(bptree, Nat.compare, i, i);
-                    data.add(i);
+                for (v in random.vals()){
+                    ignore BpTree.insert(bptree, Nat.compare, v, v);
                 };
 
-                let unique = Buffer.Buffer<Nat>(limit);
-                let unique_iter = Itertools.unique<Nat>(data.vals(), Nat32.fromNat, Nat.equal);
-
-                for (n in unique_iter) {
-                    unique.add(n);
-                };
-
-                assert BpTree.size(bptree) == unique.size();
+                assert BpTree.size(bptree) == random.size();
 
                 let keys_iter = BpTree.keys(bptree);
-                let data_iter = unique.vals();
+                let data_iter = random.vals();
 
                 let zipped = Itertools.zip(keys_iter, data_iter);
-
 
                 for ((i, (a, b)) in Itertools.enumerate(zipped)) {
                     if (a != b) {
@@ -108,6 +107,22 @@ suite(
                         assert false;
                     };
                 };
+            },
+        );
+
+        test(
+            "delete",
+            func() {
+                let iter : Iter.Iter<(Nat, Nat)> = Iter.map<Nat, (Nat, Nat)>(random.vals(), func (n: Nat): (Nat, Nat) = (n, n));
+                let bptree = BpTree.fromEntries(iter, Nat.compare);                
+
+                assert BpTree.size(bptree) == random.size();
+                
+                for (n in random.vals()){
+                    assert ?n == BpTree.remove(bptree, Nat.compare, n);
+                };
+                
+                assert BpTree.size(bptree) == 0;
             },
         );
     },
