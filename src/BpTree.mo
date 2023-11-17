@@ -1106,11 +1106,12 @@ module BpTree {
         let min_count = left.kvs.size() / 2;
 
         // merge right into left
-        var i = left.count : Nat;
+        var i = 0;
+        var j = 0;
 
         for (_ in Iter.range(0, right.count - 1)){
-            let val = ArrayMut.remove(right.kvs, 0, right.count);
-            ArrayMut.insert(left.kvs, i, val, left.count);
+            let val = right.kvs[i];
+            ArrayMut.insert(left.kvs, left.count + i, val, left.count);
 
             i += 1;
         };
@@ -1134,6 +1135,9 @@ module BpTree {
 
     public func merge_branch_nodes(left: Branch<Nat, Nat>, right: Branch<Nat, Nat>){
         let min_count = left.keys.size() / 2;
+        Debug.print("min_count = " # debug_show min_count);
+        Debug.print("left = " # debug_show Array.freeze(left.children));
+        Debug.print("right = " # debug_show Array.freeze(right.children));
 
         if (left.count + right.count > min_count) Debug.trap("merge_branch_nodes: not enough space to merge");
 
@@ -1207,7 +1211,7 @@ module BpTree {
         
         while (parent.count < min_count) {
             redistribute_branch_keys(branch_node);
-
+            Debug.print("redistributed branch keys");
             if (parent.count >= min_count) return ?deleted;
 
             let ?#branch(adj_branch_node) = if (branch_node.index == 0) {
@@ -1220,7 +1224,7 @@ module BpTree {
 
             let left_node = if (adj_branch_node.index < branch_node.index) adj_branch_node else branch_node;
             let right_node = if (adj_branch_node.index < branch_node.index) branch_node else adj_branch_node;
-
+            Debug.print("merged branch nodes");
             merge_branch_nodes(left_node, right_node);
 
             branch_node := parent;
@@ -1242,7 +1246,7 @@ module BpTree {
     };
 
     public func fromEntries(entries: Iter<(Nat, Nat)>, cmp: CmpFn<Nat> ) : BpTree<Nat, Nat> {
-        let bptree = BpTree.new<Nat, Nat>();
+        let bptree = BpTree.newWithOrder<Nat, Nat>(4);
 
         for (entry in entries) {
             let (k, v) = entry;

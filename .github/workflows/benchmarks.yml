@@ -55,8 +55,10 @@ jobs:
       - name: Benchmarks
         id: benchmarks
         run: |
-          output=$(mops bench)
-          echo "::set-output name=benchmarks::$output"
+          mops bench 2>&1 | tee benchmark_results.txt
+          echo "BENCHMARK_OUTPUT<<EOF" >> $GITHUB_ENV
+          cat benchmark_output.txt >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
 
       - name: Comment PR
         if: github.event_name == 'pull_request'
@@ -64,5 +66,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          msg: "Benchmark Results:\n```\n${{ steps.benchmarks.outputs.benchmarks }}\n```"
+          msg: "Benchmark Results:\n```\n${{ env.BENCHMARK_OUTPUT }}\n```"
           check_for_duplicate_msg: false
