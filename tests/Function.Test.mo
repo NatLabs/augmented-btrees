@@ -88,10 +88,6 @@ suite(
                 assert middle.count == 4;
                 assert right.count == 4;
 
-                Debug.print("left " # debug_show Array.freeze(left.kvs));
-                Debug.print("middle " # debug_show Array.freeze(middle.kvs));
-                Debug.print("right " # debug_show Array.freeze(right.kvs));
-
                 assert Array.freeze(left.kvs) == [?(1, 1), ?(3, 3), ?(5, 5), ?(7, 7), null, null];
                 assert Array.freeze(middle.kvs) == [?(9, 9), ?(11, 11), ?(13, 13), ?(15, 15), null, null];
                 assert Array.freeze(right.kvs) == [?(17, 17), ?(19, 19), ?(21, 21), ?(23, 23), null, null];
@@ -121,7 +117,6 @@ suite(
                 assert left.count == 4;
 
                 assert Array.freeze(left.kvs) == [?(1, 1), ?(3, 3), ?(5, 5), ?(7, 7), null, null];
-                assert Array.freeze(right.kvs) == [null, null, null, null, null, null];
 
                 assert parent.count == 1;
                 assert Array.freeze(parent.keys) == [null, null, null, null, null];

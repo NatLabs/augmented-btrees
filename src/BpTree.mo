@@ -55,6 +55,13 @@ module BpTree {
             };
         };
 
+        public func remove<K, V>(leaf: Leaf<K, V>, index : Nat) : ?(K, V) {
+            let removed = ArrayMut.remove(leaf.kvs, index, leaf.count);
+
+            // leaf.count -= 1;
+            removed;
+        };
+
         public func equal<K, V>(a : Leaf<K, V>, b : Leaf<K, V>, cmp : CmpFn<K>) : Bool {
             for (i in Iter.range(0, a.kvs.size() - 1)) {
                 let res = switch (a.kvs[i], b.kvs[i]) {
@@ -134,7 +141,6 @@ module BpTree {
             let keys = Array.tabulateVar<?K>(
                 order - 1 : Nat,
                 func(i : Nat) : ?K {
-                    // Debug.print("i = " # debug_show i);
                     switch (children[i + 1]) {
                         case (? #leaf(node)) {
                             node.parent := ?self;
@@ -179,7 +185,6 @@ module BpTree {
                         node.parent := ?self;
                         node.index := self.count;
                         self.count += 1;
-
                     };
                     case (? #branch(node)) {
                         node.parent := ?self;
@@ -191,6 +196,55 @@ module BpTree {
             };
 
             self;
+        };
+
+        public func remove<K, V>(self : Branch<K, V>, index : Nat) : ?Node<K, V> {
+            let removed = self.children[index];
+
+            var i = index;
+            while (i < (self.count - 1 : Nat)) {
+                self.children[i] := self.children[i + 1];
+
+                switch (self.children[i]) {
+                    case (? #leaf(node) or ? #branch(node) : ?SharedNode<K, V>) {
+                        node.index := i;
+                    };
+                    case (_) Debug.trap("Branch.remove: accessed a null value");
+                };
+                i+=1;
+            };
+
+            self.children[self.count - 1] := null;
+
+            removed;
+        };
+
+        public func insert<K, V>(branch: Branch<K, V>, i: Nat, child: Node<K, V>){
+
+            var j = i;
+
+            while (j < branch.count) {
+                branch.children[j + 1] := branch.children[j];
+
+                switch(branch.children[j + 1]) {
+                    case (? #branch(node) or ? #leaf(node) : ?SharedNode<K, V>) {
+                        node.parent := ?branch;
+                        node.index := j + 1;
+                    };
+                    case (_) {};
+                };
+                j += 1;
+            };
+
+            branch.children[i] := ?child;
+
+            switch (child) {
+                case (#branch(node) or #leaf(node) : SharedNode<K, V>) {
+                    node.parent := ?branch;
+                    node.index := i;
+                };
+            };
+
         };
 
         public func equal<K, V>(a : Branch<K, V>, b : Branch<K, V>, cmp : CmpFn<K>) : Bool {
@@ -447,8 +501,6 @@ module BpTree {
                 case (? #branch(node)) {
                     let int_index = binary_search<K, K>(node.keys, cmp, key, node.count - 1);
                     let node_index = if (int_index >= 0) Int.abs(int_index) + 1 else Int.abs(int_index + 1);
-                    // Debug.print("get_leaf branch index = " # debug_show (int_index, node_index));
-                    // Debug.print("count " # debug_show node.count);
                     curr := node.children[node_index];
                 };
                 case (? #leaf(leaf_node)) {
@@ -567,36 +619,6 @@ module BpTree {
         right_node.next := leaf.next;
         leaf.next := ?right_node;
 
-        // if (not validate_array_equal_count(leaf.kvs, leaf.count)) {
-        //     Debug.print("leaf.count = " # debug_show leaf.count);
-        //     Debug.trap(
-        //         "leaf.kvs = " # debug_show Array.map(
-        //             Array.freeze(leaf.kvs),
-        //             func(opt_kv : ?(K, V)) : Text {
-        //                 switch (opt_kv) {
-        //                     case (?kv) "1";
-        //                     case (_) "0";
-        //                 };
-        //             },
-        //         )
-        //     );
-        // };
-
-        // if (not validate_array_equal_count(right_node.kvs, right_node.count)) {
-        //     Debug.print("right_node.count = " # debug_show right_node.count);
-        //     Debug.trap(
-        //         "right_node.kvs = " # debug_show Array.map(
-        //             Array.freeze(right_node.kvs),
-        //             func(opt_kv : ?(K, V)) : Text {
-        //                 switch (opt_kv) {
-        //                     case (?kv) "1";
-        //                     case (_) "0";
-        //                 };
-        //             },
-        //         )
-        //     );
-        // };
-
         right_node;
     };
 
@@ -612,27 +634,6 @@ module BpTree {
         var already_inserted = false;
 
         let right = Branch.new<K, V>(node.children.size(), null);
-
-        // for (i in Iter.range(0, node.children.size() - 1)) {
-        //     let j = i + median - offset : Nat;
-
-        //     if (j >= median and j == child_index and not already_inserted) {
-        //         offset += 1;
-        //         already_inserted := true;
-        //         right.children[i] := ?child;
-        //     } else if (j >= arr_len) {
-        //         right.children[i] := null;
-        //     } else {
-
-        //         if (i == 0) {
-        //             Debug.print("median_key at pos " # debug_show (j - 1: Nat));
-        //             median_key := node.keys[j - 1];
-        //         }else {
-        //             right.keys[i - 1] := node.keys[j - 1];
-        //         };
-        //         right.children[i] := extract(node.children, j);
-        //     };
-        // };
 
         let right_keys = Array.init<?K>(node.keys.size(), null);
 
@@ -651,17 +652,8 @@ module BpTree {
                     null;
                 } else {
                     if (i == 0) {
-                        // Debug.print("median_key at pos " # debug_show (j - 1 : Nat));
                         median_key := node.keys[j - 1];
                     } else {
-                        // Debug.print("right keys size " # debug_show right_keys.size());
-                        // Debug.print("right_keys at pos " # debug_show (i - 1 : Nat));
-
-                        // Debug.print("node.keys size " # debug_show node.keys.size());
-                        // Debug.print("node.keys at pos " # debug_show (j - 1 : Nat));
-
-                        // Debug.print("arr_len " # debug_show arr_len);
-
                         right_keys[i - 1] := node.keys[j - 1];
                     };
                     node.keys[j - 1] := null;
@@ -679,20 +671,6 @@ module BpTree {
                 child_node;
             },
         );
-
-       
-
-        // Debug.print(
-        //     "after rs node.children: " # debug_show Array.map(
-        //         Array.freeze(node.children),
-        //         func(opt_node : ?Node<K, V>) : Int {
-        //             switch (opt_node) {
-        //                 case ((? #branch(node) or ? #leaf(node)) : ?SharedNode<K, V>) node.index;
-        //                 case (_) -1;
-        //             };
-        //         },
-        //     )
-        // );
 
         var j = median - 1 : Nat;
 
@@ -934,45 +912,37 @@ module BpTree {
     };
 
     public func redistribute_leaf_keys(leaf_node : Leaf<Nat, Nat>){
-        var adj_node = leaf_node;
-        
-        // retrieve adjacent node
-        switch(leaf_node.parent){
-            case (null) {};
-            case (?parent){
-                if (parent.count > 1){
-                    if (leaf_node.index != 0){
-                        let ?#leaf(left_adj_node) = parent.children[leaf_node.index - 1] else Debug.trap("1. redistribute_leaf_keys: accessed a null value");
-                        adj_node := left_adj_node;
-                    };
 
-                    if (leaf_node.index + 1 != parent.count){
-                        let ?#leaf(right_adj_node) = parent.children[leaf_node.index + 1] else Debug.trap("2. redistribute_leaf_keys: accessed a null value");
-                        if (right_adj_node.count > adj_node.count){
-                            adj_node := right_adj_node;
-                        };
-                    };
-                }
-            }
+        let ?parent = leaf_node.parent else return; 
+
+        var adj_node = leaf_node;
+        if (parent.count > 1){
+            if (leaf_node.index != 0){
+                let ?#leaf(left_adj_node) = parent.children[leaf_node.index - 1] else Debug.trap("1. redistribute_leaf_keys: accessed a null value");
+                adj_node := left_adj_node;
+            };
+
+            if (leaf_node.index != (parent.count - 1 : Nat)){
+                let ?#leaf(right_adj_node) = parent.children[leaf_node.index + 1] else Debug.trap("2. redistribute_leaf_keys: accessed a null value");
+                if (right_adj_node.count > adj_node.count){
+                    adj_node := right_adj_node;
+                };
+            };
         };
 
         if (adj_node.index == leaf_node.index) return; // no adjacent node to distribute data to
 
         let sum_count = leaf_node.count + adj_node.count;
         let min_count_for_both_nodes = leaf_node.kvs.size();
-        // Debug.print("sum_count = " # debug_show sum_count);
-        // Debug.print("min_count_for_both_nodes = " # debug_show min_count_for_both_nodes);
+
         if (sum_count < min_count_for_both_nodes) return; // not enough entries to distribute
 
         let data_to_move = (sum_count / 2 ) - leaf_node.count : Nat;
 
-        // Debug.print("data_to_move = " # debug_show data_to_move);
-
         // distribute data between adjacent nodes
         if (adj_node.index < leaf_node.index){ 
-            // Debug.print("chose left node");
             // adj_node is before leaf_node
-            var i = adj_node.count;
+            var i = adj_node.count - 1;
 
             for (_ in Iter.range(0, data_to_move - 1)){
                 let val = ArrayMut.remove(adj_node.kvs, i, adj_node.count);
@@ -982,7 +952,6 @@ module BpTree {
             };
         }else { 
             // adj_node is after leaf_node
-            // Debug.print("chose right node");
             var j = leaf_node.count;
             
             for (_ in Iter.range(0, data_to_move - 1)){
@@ -996,29 +965,30 @@ module BpTree {
         adj_node.count -= data_to_move;
         leaf_node.count += data_to_move;
 
+        // assert validate_array_equal_count(leaf_node.kvs, leaf_node.count);
+        // assert validate_array_equal_count(adj_node.kvs, adj_node.count);
+
         // update parent keys
+        if (adj_node.index < leaf_node.index){
+            // no need to worry about leaf_node.index - 1 being out of bounds because
+            // the adj_node is before the leaf_node, meaning the leaf_node is not the first child
+            let ?leaf_2nd_entry = leaf_node.kvs[0] else Debug.trap("3. redistribute_leaf_keys: accessed a null value");
+            let leaf_node_key = leaf_2nd_entry.0;
+            
+            let key_index = leaf_node.index - 1 : Nat;
+            parent.keys[key_index] := ?leaf_node_key;
+        }else {
+            // and vice versa
+            let ?adj_2nd_entry = adj_node.kvs[0] else Debug.trap("4. redistribute_leaf_keys: accessed a null value");
+            let adj_node_key = adj_2nd_entry.0;
 
-        switch(leaf_node.parent){
-            case (null) {};
-            case (?parent){
-                if (adj_node.index < leaf_node.index){
-                    // no need to worry about leaf_node.index - 1 being out of bounds because
-                    // the adj_node is before the leaf_node, meaning the leaf_node is not the first child
-                    let ?leaf_2nd_entry = leaf_node.kvs[0] else Debug.trap("3. redistribute_leaf_keys: accessed a null value");
-                    let leaf_node_key = leaf_2nd_entry.0;
-                    
-                    let key_index = leaf_node.index - 1 : Nat;
-                    parent.keys[key_index] := ?leaf_node_key;
-                }else {
-                    // and vice versa
-                    let ?adj_2nd_entry = adj_node.kvs[0] else Debug.trap("4. redistribute_leaf_keys: accessed a null value");
-                    let adj_node_key = adj_2nd_entry.0;
-
-                    let key_index = adj_node.index - 1 : Nat;
-                    parent.keys[key_index] := ?adj_node_key;
-                };
-            };
+            let key_index = adj_node.index - 1 : Nat;
+            parent.keys[key_index] := ?adj_node_key;
         };
+
+        // assert validate_array_equal_count(parent.keys, parent.count - 1 : Nat);
+        // assert validate_array_equal_count(parent.children, parent.count);
+        // assert validate_indexes(parent.children, parent.count);
     };
 
     public func redistribute_branch_keys(branch_node: Branch<Nat, Nat>){
@@ -1047,12 +1017,11 @@ module BpTree {
         if (adj_node.index == branch_node.index) return; // no adjacent node to distribute data to
 
         let sum_count = branch_node.count + adj_node.count;
-        let min_count_for_both_nodes = branch_node.keys.size();
+        let min_count_for_both_nodes = branch_node.children.size();
 
         if (sum_count < min_count_for_both_nodes) return; // not enough entries to distribute
 
-        let diff = min_count_for_both_nodes - sum_count : Nat;
-        let data_to_move = diff / 2 : Nat;
+        let data_to_move = (sum_count / 2) - branch_node.count : Nat;
 
         // every node from this point on has a parent because an adjacent node was found
         let ?parent = branch_node.parent else Debug.trap("3. redistribute_branch_keys: accessed a null value");
@@ -1067,8 +1036,8 @@ module BpTree {
                 ArrayMut.insert(branch_node.keys, 0, median_key, branch_node.count - 1: Nat);
                 median_key := ArrayMut.remove(adj_node.keys, i - 1 : Nat, adj_node.count - 1 : Nat);
 
-                let val = ArrayMut.remove(adj_node.keys, i, adj_node.count);
-                ArrayMut.insert(branch_node.keys, 0, val, branch_node.count);
+                let val = Utils.unwrap(Branch.remove(adj_node, i), "4. redistribute_branch_keys: accessed a null value");
+                Branch.insert<Nat, Nat>(branch_node, 0, val);
 
                 i -= 1;
             };
@@ -1078,16 +1047,16 @@ module BpTree {
         }else { 
             // adj_node is after branch_node
 
-            var j = branch_node.count - 1 : Nat;
+            var j = branch_node.count : Nat;
             var median_key = parent.keys[branch_node.index];
             
             for (_ in Iter.range(0, data_to_move - 1)){
-        
+                
                 ArrayMut.insert(branch_node.keys, j - 1 : Nat, median_key, branch_node.count - 1: Nat);
                 median_key := ArrayMut.remove(adj_node.keys, 0, adj_node.count - 1 : Nat);
 
-                let val = ArrayMut.remove(adj_node.keys, 0, adj_node.count);
-                ArrayMut.insert(branch_node.keys, j, val, branch_node.count);
+                let val = Utils.unwrap(Branch.remove(adj_node, 0), "5. redistribute_branch_keys: accessed a null value");
+                Branch.insert(branch_node, j, val);
 
                 j += 1;
             };
@@ -1099,6 +1068,15 @@ module BpTree {
         adj_node.count -= data_to_move;
         branch_node.count += data_to_move;
 
+        // assert validate_array_equal_count(branch_node.children, branch_node.count);
+        // assert validate_indexes(branch_node.children, branch_node.count);
+
+        // assert validate_array_equal_count(adj_node.children, adj_node.count);
+        // assert validate_indexes(adj_node.children, adj_node.count);
+
+        // assert validate_array_equal_count(parent.children, parent.count);
+        // assert validate_indexes(parent.children, parent.count);
+
     };
 
     // merges two leaf nodes into the left node
@@ -1109,6 +1087,7 @@ module BpTree {
         var i = 0;
         var j = 0;
 
+        
         for (_ in Iter.range(0, right.count - 1)){
             let val = right.kvs[i];
             ArrayMut.insert(left.kvs, left.count + i, val, left.count);
@@ -1126,45 +1105,51 @@ module BpTree {
             case (null) {};
             case (?parent){
                 ignore ArrayMut.remove(parent.keys, right.index - 1 : Nat, parent.count - 1 : Nat);
-                ignore ArrayMut.remove(parent.children, right.index : Nat, parent.count);
+                ignore Branch.remove(parent, right.index : Nat);
+
                 parent.count -= 1;
+                // assert validate_array_equal_count(parent.children, parent.count);
+                // assert validate_indexes(parent.children, parent.count);
             };
         };
+
 
     };
 
     public func merge_branch_nodes(left: Branch<Nat, Nat>, right: Branch<Nat, Nat>){
-        let min_count = left.keys.size() / 2;
-        Debug.print("min_count = " # debug_show min_count);
-        Debug.print("left = " # debug_show Array.freeze(left.children));
-        Debug.print("right = " # debug_show Array.freeze(right.children));
+        assert left.index + 1 == right.index;
 
-        if (left.count + right.count > min_count) Debug.trap("merge_branch_nodes: not enough space to merge");
+        let min_count = left.children.size() / 2;
 
         // merge right into left
         var i = left.count : Nat;
 
+        // if there are two adjacent nodes then there must be a parent
+        let ?parent = left.parent else Debug.trap("1. merge_branch_nodes: accessed a null value");
+
+        var median_key = parent.keys[right.index - 1];
+
         for (_ in Iter.range(0, right.count - 1)){
-            let val = ArrayMut.remove(right.keys, 0, right.count - 1 : Nat);
-            ArrayMut.insert(left.keys, i, val, left.count - 1 : Nat);
+            ArrayMut.insert(left.keys, i - 1 : Nat, median_key, left.count - 1 : Nat);
+            median_key := ArrayMut.remove(right.keys, 0, right.count - 1 : Nat);
 
-            let child = ArrayMut.remove(right.children, 0, right.count);
-            ArrayMut.insert(left.children, i + 1 : Nat, child, left.count);
-
+            let ?child = ArrayMut.remove(right.children, 0, right.count) else Debug.trap("2. merge_branch_nodes: accessed a null value");
+            Branch.insert(left, i, child);
             i += 1;
         };
 
         left.count += right.count;
 
+        // assert validate_array_equal_count(left.children, left.count);
+        // assert validate_indexes(left.children, left.count);
+
         // update parent keys
-        switch(left.parent){
-            case (null) {};
-            case (?parent){
-                ignore ArrayMut.remove(parent.keys, right.index - 1 : Nat, parent.count - 1 : Nat);
-                ignore ArrayMut.remove(parent.children, right.index : Nat, parent.count);
-                parent.count -= 1;
-            };
-        };
+        ignore ArrayMut.remove(parent.keys, right.index - 1 : Nat, parent.count - 1 : Nat);
+        ignore Branch.remove(parent, right.index);
+        parent.count -= 1;
+
+        // assert validate_array_equal_count(parent.children, parent.count);
+        // assert validate_indexes(parent.children, parent.count);
     };
     
     public func remove(self: BpTree<Nat, Nat>, cmp: CmpFn<Nat>, key: Nat) : ?Nat {
@@ -1172,14 +1157,38 @@ module BpTree {
 
         let int_elem_index = binary_search<(Nat, Nat), Nat>(leaf_node.kvs, adapt_cmp(cmp), key, leaf_node.count);
         let elem_index = if (int_elem_index >= 0) Int.abs(int_elem_index) else return null;
-
+        // remove parent key as well
         let ?entry : ?(Nat, Nat) = ArrayMut.remove(leaf_node.kvs, elem_index, leaf_node.count) 
             else Debug.trap("1. remove: accessed a null value");
-        self.size -= 1;
 
         let deleted = entry.1;
+        self.size -= 1;
+        leaf_node.count -= 1;
 
         let min_count = self.order / 2;
+
+        let ?_parent = leaf_node.parent else return ?deleted; // if parent is null then leaf_node is the root
+        var parent = _parent;
+
+        func update_deleted_median_key(_parent: Branch<Nat, Nat>, index: Nat, deleted_key: Nat, next_key: Nat){
+            var parent = _parent;
+            var i = index;
+
+            while (i == 0){
+                i:= parent.index;
+                let ?__parent = parent.parent else return; // occurs when key is the first key in the tree
+                parent := __parent;
+            };
+
+            assert parent.keys[i - 1] == ?deleted_key;
+            parent.keys[i - 1] := ?next_key;
+        };
+
+        if (elem_index == 0){
+            let next = leaf_node.kvs[elem_index]; // same as entry index because we removed the entry from the array
+            let ?next_key = do?{next!.0} else Debug.trap("update_deleted_median_key: accessed a null value");
+            update_deleted_median_key(parent, leaf_node.index, key, next_key);
+        };
 
         if (leaf_node.count >= min_count) return ?deleted;
 
@@ -1187,17 +1196,14 @@ module BpTree {
 
         if (leaf_node.count >= min_count) return ?deleted;
 
-        let ?_parent = leaf_node.parent else return ?deleted; // if parent is null then leaf_node is the root
-        var parent = _parent;
-
         // the parent will always have (self.order / 2) children
-        let ?#leaf(adj_node) = if (leaf_node.index == 0) {
+        let opt_adj_node = if (leaf_node.index == 0) {
             parent.children[1];
         } else {
             parent.children[leaf_node.index - 1];
-        } else {
-            Debug.trap("2. remove: accessed a null value");
         };
+
+        let ?#leaf(adj_node) = opt_adj_node else return ?deleted;
 
         if (adj_node.index < leaf_node.index){
             merge_leaf_nodes(adj_node, leaf_node);
@@ -1205,30 +1211,74 @@ module BpTree {
             merge_leaf_nodes(leaf_node, adj_node);
         };
 
+        // assert validate_array_equal_count(parent.children, parent.count);
+
         var branch_node = parent;
-        let ?__parent = branch_node.parent else return ?deleted;
+        let ?__parent = branch_node.parent else { 
+            
+            // update root node as this node does not have a parent
+            // which means it is the root node
+            if (branch_node.count == 1){
+                let ?child = branch_node.children[0] else Debug.trap("3. remove: accessed a null value");
+                switch(child){
+                    case (#branch(node) or #leaf(node): SharedNode<Nat, Nat>) {
+                        node.parent := null;
+                    };
+                };
+                self.root := child;
+
+                // Debug.print("new root keys" # debug_show toNodeKeys(self));
+                // Debug.print("new root leafs" # debug_show toLeafNodes(self));
+            };
+            
+            return ?deleted
+        };
+
         parent := __parent;
-        
-        while (parent.count < min_count) {
+
+        // Debug.print("branch_node count (" # debug_show branch_node.count # ") < min_count (" # debug_show min_count # ") ");
+
+        while (branch_node.count < min_count) {
             redistribute_branch_keys(branch_node);
-            Debug.print("redistributed branch keys");
-            if (parent.count >= min_count) return ?deleted;
+            if (branch_node.count >= min_count) return ?deleted;
 
             let ?#branch(adj_branch_node) = if (branch_node.index == 0) {
                 parent.children[1];
             } else {
                 parent.children[branch_node.index - 1];
             } else {
-                Debug.trap("3. remove: accessed a null value");
+                // if the adjacent node is null then the branch node is the only child of the parent
+                // this only happens if the branch node is the root node
+
+                // update root node if necessary
+                assert parent.count == 1;
+                let ?child = parent.children[0] else Debug.trap("3. remove: accessed a null value");
+                self.root := child;
+
+                return ?deleted
             };
 
             let left_node = if (adj_branch_node.index < branch_node.index) adj_branch_node else branch_node;
             let right_node = if (adj_branch_node.index < branch_node.index) branch_node else adj_branch_node;
-            Debug.print("merged branch nodes");
+
             merge_branch_nodes(left_node, right_node);
 
             branch_node := parent;
-            let ?_parent = branch_node.parent else return ?deleted;
+            let ?_parent = branch_node.parent else {
+                // update root node if necessary
+                if (branch_node.count == 1){
+                    let ?child = branch_node.children[0] else Debug.trap("3. remove: accessed a null value");
+                    switch(child){
+                        case (#branch(node) or #leaf(node): SharedNode<Nat, Nat>) {
+                            node.parent := null;
+                        };
+                    };
+                    self.root := child;
+                };
+
+                return ?deleted;
+            };
+
             parent := _parent;
         };
 

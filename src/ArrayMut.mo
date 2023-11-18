@@ -10,6 +10,8 @@ module {
     };
 
     public func remove<A>(arr: [var ?A], index: Nat, size: Nat) : ?A {
+        if (size == 0) return null;
+
         var i = index;
         let item = arr[i];
 
