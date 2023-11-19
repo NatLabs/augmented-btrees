@@ -85,8 +85,9 @@ suite(
                 label _l for ((i, (k, v)) in Itertools.enumerate(rand.vals())) {
 
                     // Debug.print("deleting " # debug_show k # " at index " # debug_show i);
-                    if (?v != BpTree.remove(bptree, Nat.compare, k)) {
-                        Debug.print("mismatch: " # debug_show (k, v) # " at index " # debug_show i);
+                    let removed = BpTree.remove(bptree, Nat.compare, k);
+                    if (?v != removed) {
+                        Debug.print("mismatch: " # debug_show (?v, removed, ?v == removed) # " at index " # debug_show i);
                         assert false;
                     };
 
@@ -109,8 +110,9 @@ suite(
                 label _l for ((i, (k, v)) in Itertools.enumerate(rand.vals())) {
 
                     // Debug.print("deleting " # debug_show k # " at index " # debug_show i);
-                    if (?v != BpTree.remove(bptree, Nat.compare, k)) {
-                        Debug.print("mismatch: " # debug_show (k, v) # " at index " # debug_show i);
+                    let removed = BpTree.remove(bptree, Nat.compare, k);
+                    if (?v != removed) {
+                        Debug.print("mismatch: " # debug_show (?v, removed, ?v == removed) # " at index " # debug_show i);
                         assert false;
                     };
 
