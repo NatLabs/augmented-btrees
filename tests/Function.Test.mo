@@ -6,6 +6,7 @@ import { test; suite } "mo:test";
 import Itertools "mo:itertools/Iter";
 
 import { BpTree; Leaf; Branch } "../src";
+import ArrayMut "../src/internal/ArrayMut";
 
 func new_leaf(start : Nat, end : Nat) : BpTree.Leaf<Nat, Nat> {
     let size = end - start : Nat;
@@ -50,11 +51,11 @@ suite(
                 assert left.index == 0;
                 assert right.index == 1;
 
-                BpTree.redistribute_leaf_keys(left);
+                BpTree.Leaf.redistribute_keys(left);
 
                 assert left.count == 3;
                 assert right.count == 3;
-
+                Debug.print("right " # debug_show Array.freeze(right.kvs));
                 assert Array.freeze(left.kvs) == [?(1, 1), ?(3, 3), ?(5, 5), null, null, null];
                 assert Array.freeze(right.kvs) == [?(7, 7), ?(9, 9), ?(11, 11), null, null, null];
 
@@ -82,7 +83,7 @@ suite(
                 assert middle.index == 1;
                 assert right.index == 2;
 
-                BpTree.redistribute_leaf_keys(middle);
+                BpTree.Leaf.redistribute_keys(middle);
 
                 assert left.count == 4;
                 assert middle.count == 4;
@@ -485,7 +486,7 @@ suite(
 //                 let leaf = BpTree.Leaf.new(6, ?kvs);
 //                 leaf.count := 6;
 
-//                 let right = BpTree.split_leaf<Nat, Nat>(leaf, 6, (13, 13));
+//                 let right = BpTree.Leaf.split<Nat, Nat>(leaf, 6, (13, 13));
 
 //                 let left = leaf;
 
@@ -507,7 +508,7 @@ suite(
 //                 let leaf = BpTree.Leaf.new(6, ?kvs);
 //                 leaf.count := 6;
 
-//                 let right = BpTree.split_leaf<Nat, Nat>(leaf, 0, (0, 0));
+//                 let right = BpTree.Leaf.split<Nat, Nat>(leaf, 0, (0, 0));
 
 //                 let left = leaf;
 
@@ -529,7 +530,7 @@ suite(
 //                 let leaf = BpTree.Leaf.new(6, ?kvs);
 //                 leaf.count := 6;
 
-//                 let right = BpTree.split_leaf<Nat, Nat>(leaf, 2, (4, 4));
+//                 let right = BpTree.Leaf.split<Nat, Nat>(leaf, 2, (4, 4));
 
 //                 let left = leaf;
 
@@ -551,7 +552,7 @@ suite(
 //                 let leaf = BpTree.Leaf.new(6, ?kvs);
 //                 leaf.count := 6;
 
-//                 let right = BpTree.split_leaf<Nat, Nat>(leaf, 5, (10, 10));
+//                 let right = BpTree.Leaf.split<Nat, Nat>(leaf, 5, (10, 10));
 
 //                 let left = leaf;
 
@@ -573,7 +574,7 @@ suite(
 //                 let leaf = BpTree.Leaf.new(6, ?kvs);
 //                 leaf.count := 6;
 
-//                 let right = BpTree.split_leaf<Nat, Nat>(leaf, 3, (6, 6));
+//                 let right = BpTree.Leaf.split<Nat, Nat>(leaf, 3, (6, 6));
 
 //                 let left = leaf;
 
@@ -603,7 +604,7 @@ suite(
 //                 let leaf = BpTree.Leaf.new(5, 5, ?kvs);
 //                 assert leaf.count == 5;
 
-//                 let right = BpTree.split_leaf<Nat, Nat>(leaf, 5, 5, (11, 11));
+//                 let right = BpTree.Leaf.split<Nat, Nat>(leaf, 5, 5, (11, 11));
 
 //                 let left = leaf;
 
@@ -625,7 +626,7 @@ suite(
 //                 let leaf = BpTree.Leaf.new(5, ?kvs);
 //                 leaf.count := 5;
 
-//                 let right = BpTree.split_leaf<Nat, Nat>(leaf, 0, (0, 0));
+//                 let right = BpTree.Leaf.split<Nat, Nat>(leaf, 0, (0, 0));
 
 //                 let left = leaf;
 
@@ -647,7 +648,7 @@ suite(
 //                 let leaf = BpTree.Leaf.new(5, ?kvs);
 //                 leaf.count := 5;
 
-//                 let right = BpTree.split_leaf<Nat, Nat>(leaf, 1, (2, 2));
+//                 let right = BpTree.Leaf.split<Nat, Nat>(leaf, 1, (2, 2));
 
 //                 let left = leaf;
 
@@ -669,7 +670,7 @@ suite(
 //                 let leaf = BpTree.Leaf.new(5, ?kvs);
 //                 leaf.count := 5;
 
-//                 let right = BpTree.split_leaf<Nat, Nat>(leaf, 4, (8, 8));
+//                 let right = BpTree.Leaf.split<Nat, Nat>(leaf, 4, (8, 8));
 
 //                 let left = leaf;
 
@@ -691,7 +692,7 @@ suite(
 //                 let leaf = BpTree.Leaf.new(5, ?kvs);
 //                 leaf.count := 5;
 
-//                 let right = BpTree.split_leaf<Nat, Nat>(leaf, 3, (6, 6));
+//                 let right = BpTree.Leaf.split<Nat, Nat>(leaf, 3, (6, 6));
 
 //                 let left = leaf;
 
@@ -718,23 +719,23 @@ suite(
                 let arr = [var ?1, ?3, ?5, ?7, null];
                 var count = 4;
 
-                assert 0 == BpTree.binary_search(arr, Nat.compare, 1, count);
-                assert 1 == BpTree.binary_search(arr, Nat.compare, 3, count);
-                assert 2 == BpTree.binary_search(arr, Nat.compare, 5, count);
-                assert 3 == BpTree.binary_search(arr, Nat.compare, 7, count);
+                assert 0 == ArrayMut.binary_search(arr, Nat.compare, 1, count);
+                assert 1 == ArrayMut.binary_search(arr, Nat.compare, 3, count);
+                assert 2 == ArrayMut.binary_search(arr, Nat.compare, 5, count);
+                assert 3 == ArrayMut.binary_search(arr, Nat.compare, 7, count);
 
-                assert -1 == BpTree.binary_search(arr, Nat.compare, 0, count);
-                assert -2 == BpTree.binary_search(arr, Nat.compare, 2, count);
-                assert -3 == BpTree.binary_search(arr, Nat.compare, 4, count);
-                assert -4 == BpTree.binary_search(arr, Nat.compare, 6, count);
-                assert -5 == BpTree.binary_search(arr, Nat.compare, 8, count);
+                assert -1 == ArrayMut.binary_search(arr, Nat.compare, 0, count);
+                assert -2 == ArrayMut.binary_search(arr, Nat.compare, 2, count);
+                assert -3 == ArrayMut.binary_search(arr, Nat.compare, 4, count);
+                assert -4 == ArrayMut.binary_search(arr, Nat.compare, 6, count);
+                assert -5 == ArrayMut.binary_search(arr, Nat.compare, 8, count);
 
                 arr[4] := ?9;
                 count := 5;
 
-                assert 4 == BpTree.binary_search(arr, Nat.compare, 9, count);
-                assert -5 == BpTree.binary_search(arr, Nat.compare, 8, count);
-                assert -6 == BpTree.binary_search(arr, Nat.compare, 10, count);
+                assert 4 == ArrayMut.binary_search(arr, Nat.compare, 9, count);
+                assert -5 == ArrayMut.binary_search(arr, Nat.compare, 8, count);
+                assert -6 == ArrayMut.binary_search(arr, Nat.compare, 10, count);
 
                 arr[4] := null;
                 arr[3] := null;
@@ -742,9 +743,9 @@ suite(
                 arr[1] := null;
                 count := 1;
 
-                assert 0 == BpTree.binary_search(arr, Nat.compare, 1, count);
-                assert -1 == BpTree.binary_search(arr, Nat.compare, 0, count);
-                assert -2 == BpTree.binary_search(arr, Nat.compare, 10, count);
+                assert 0 == ArrayMut.binary_search(arr, Nat.compare, 1, count);
+                assert -1 == ArrayMut.binary_search(arr, Nat.compare, 0, count);
+                assert -2 == ArrayMut.binary_search(arr, Nat.compare, 10, count);
 
             },
         );

@@ -27,7 +27,15 @@ jobs:
           key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-node-
-    
+
+      - name: Cache mops packages
+        uses: actions/cache@v3
+        with:
+          key: mops-packages-${{ hashFiles('mops.toml') }}
+          path: |
+            ~/.cache/mops
+            ~/mops
+
       - uses: aviate-labs/setup-dfx@v0.2.3
         with:
           dfx-version: 0.15.0

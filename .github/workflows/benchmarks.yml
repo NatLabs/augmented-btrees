@@ -80,5 +80,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          msg: "Benchmark Results:\n```\n${{ env.BENCHMARK_OUTPUT }}\n```"
+          msg: "# Benchmark Results\n\n${{ env.BENCHMARK_OUTPUT }}\n"
           check_for_duplicate_msg: false

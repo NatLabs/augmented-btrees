@@ -12,7 +12,7 @@ import Fuzz "mo:fuzz";
 import Itertools "mo:itertools/Iter";
 
 import { BpTree } "../src";
-import Utils "../src/Utils";
+import Utils "../src/internal/Utils";
 
 type Order = Order.Order;
 
