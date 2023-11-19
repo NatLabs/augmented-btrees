@@ -480,7 +480,7 @@ module BpTree {
     };
 
     public func fromEntries(entries: Iter<(Nat, Nat)>, cmp: CmpFn<Nat> ) : BpTree<Nat, Nat> {
-        let bptree = BpTree.newWithOrder<Nat, Nat>(4);
+        let bptree = BpTree.new<Nat, Nat>();
 
         for (entry in entries) {
             let (k, v) = entry;

@@ -17,7 +17,10 @@ module Leaf {
         {
             var parent = null;
             var index = 0;
-            kvs = Option.get(opt_kvs, Array.init<?(K, V)>(order, null));
+            kvs = switch (opt_kvs) {
+                case (?kvs) kvs;
+                case (_) Array.init(order, null);
+            };
             var count = count;
             var next = null;
         };
