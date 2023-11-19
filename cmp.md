@@ -80,7 +80,7 @@ Heap
 | BTree  | 1_226_592 |   1_159_348 | 486_736 |   602_452 |   5_209_008 |
 | B+Tree |   636_748 |     415_012 | 215_008 |     9_020 | -27_051_704 |
 
-#### Combine array operations to improve performance
+#### Combine array operations to improve delete() performance (turns out the performance was reduced)
 
 Instructions
 
