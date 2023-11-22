@@ -7,6 +7,7 @@ import Order "mo:base/Order";
 import Int "mo:base/Int";
 import Iter "mo:base/Iter";
 import Nat "mo:base/Nat";
+import Result "mo:base/Result";
 import Buffer "mo:base/Buffer";
 import BufferDeque "mo:buffer-deque/BufferDeque";
 
@@ -16,12 +17,16 @@ import BranchModule "Branch";
 import ArrayMut "../internal/ArrayMut";
 import Utils "../internal/Utils";
 import T "Types";
+import Cursor "Cursor";
+import InternalTypes "../internal/Types";
 
 module BpTree {
     type Iter<A> = Iter.Iter<A>;
     type Order = Order.Order;
     type CmpFn<A> = (A, A) -> Order;
+    type Result<A, B> = Result.Result<A, B>;
     type BufferDeque<A> = BufferDeque.BufferDeque<A>;
+    public type Cursor<K, V> = Cursor.Cursor<K, V>;
 
     public let Leaf = LeafModule;
     public let Branch = BranchModule;
@@ -37,6 +42,10 @@ module BpTree {
     public func new<K, V>() : BpTree<K, V> {
         BpTree.newWithOrder<K, V>(32);
     };
+
+    // public func new2<K, V>(): T.BpTreeV2<K, V> {
+    //     new<K, V>();
+    // };
 
     public func newWithOrder<K, V>(order : Nat) : BpTree<K, V> {
         assert order >= 4 and order <= 512;
@@ -658,6 +667,75 @@ module BpTree {
         };
 
         Buffer.toArray(buffer);
+    };
+
+//Cursor.Cursor<K, V>
+
+    /// Returns a cursor pointing to the first element in the tree
+    public func cursorAtFirst<K, V>(self : BpTree<K, V>, cmp: CmpFn<K>) : Cursor<K, V> {
+        let leaf_node = get_min_leaf_node(self);
+        var i = 0;
+        
+        Cursor.Cursor(self, cmp, leaf_node, i);
+    };
+
+    /// Returns a cursor pointing to the last element in the tree
+    public func cursorAtLast<K, V>(self : BpTree<K, V>, cmp: CmpFn<K>) : Cursor<K, V> {
+        let leaf_node = get_max_leaf_node(self);
+        var i = leaf_node.count - 1 : Nat;
+        
+        Cursor.Cursor(self, cmp, leaf_node, i);
+    };
+
+    /// Returns a cursor pointing to the given key.
+    /// This function returns a Result because it is not guaranteed that the key exists in the tree.
+    /// The function returns #ok(cursor) if the key exists and #err("key not found") otherwise.
+    /// 
+    /// Consider using [cursorAtUpperBound](#cursorAtUpperBound) or [cursorAtLowerBound](#cursorAtLowerBound) 
+    /// if you want to get a cursor that falls back to the upper or lower bound of the given key instead of returning an error
+    public func cursorAtKey<K, V>(self : BpTree<K, V>, cmp: CmpFn<K>, key: K) : Result<Cursor<K, V>, Text> {
+        let leaf_node = get_leaf_node(self, cmp, key);
+        let i = ArrayMut.binary_search<(K, V), K>(leaf_node.kvs, adapt_cmp(cmp), key, leaf_node.count);
+
+        if (i < 0){
+            return #err("key not found");
+        };
+
+        let cursor =  Cursor.Cursor<K, V>(self, cmp, leaf_node, Int.abs(i));
+        #ok(cursor);
+    };
+
+    /// Returns a cursor pointing to the element that is less than or equal to the given key
+    /// In other words, it returns a cursor pointing to an element that is upper bounded by the given key
+    public func cursorAtUpperBound<K, V>(self : BpTree<K, V>, cmp: CmpFn<K>, key: K) : Cursor<K, V> {
+        var leaf_node = get_leaf_node(self, cmp, key);
+        let i = ArrayMut.binary_search<(K, V), K>(leaf_node.kvs, adapt_cmp(cmp), key, leaf_node.count);
+
+        let index = if (i < 0) Int.abs(i) - 1 else Int.abs(i);
+
+        // add function to move to the previous element
+        Cursor.Cursor<K, V>(self, cmp, leaf_node, index);
+    };
+
+    /// Returns a cursor pointing to the element that is greater than or equal to the given key
+    /// In other words, it returns a cursor pointing to an element that is lower bounded by the given key
+    public func cursorAtLowerBound<K, V>(self : BpTree<K, V>, cmp: CmpFn<K>, key: K) : Cursor<K, V> {
+        var leaf_node = get_leaf_node(self, cmp, key);
+        let i = ArrayMut.binary_search<(K, V), K>(leaf_node.kvs, adapt_cmp(cmp), key, leaf_node.count);
+
+        var index = if (i < 0) (Int.abs(i) - 1 : Nat) else Int.abs(i);
+
+        if (index == leaf_node.count){
+            switch(leaf_node.next){
+                case (?next){
+                    leaf_node := next;
+                    index := 0;
+                };
+                case (_) {};
+            };
+        };
+
+        Cursor.Cursor<K, V>(self, cmp, leaf_node, index);
     };
 
 };

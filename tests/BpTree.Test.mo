@@ -45,7 +45,7 @@ suite(
 
         let unique_iter = Itertools.unique<Nat>(data.vals(), Nat32.fromNat, Nat.equal);
         let random = Itertools.toBuffer<Nat>(unique_iter);
-
+        assert random.size() > 9_000;
         test(
             "insert random",
             func() {
