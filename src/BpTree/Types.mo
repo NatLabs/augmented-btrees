@@ -1,7 +1,42 @@
 import Order "mo:base/Order";
+import InternalTypes "../internal/Types";
 
 module {
     type Order = Order.Order;
+
+    public type CmpFn<K> = InternalTypes.CmpFn<K>;
+
+    public type BpTreeType<Node> = {
+        var order : Nat;
+        var root : Node;
+        var size : Nat;
+    };
+
+    public type BpTreeNodeType<Leaf, Branch> = {
+        #leaf : Leaf;
+        #branch : Branch;
+    };
+
+    public type BpTreeBranchType<K, V, NodeType> = {
+        var parent : ?BpTreeBranchType<K, V, NodeType>;
+        var index : Nat;
+        var keys : [var ?K];
+        var children : [var ?NodeType];
+        var count : Nat;
+    };
+
+    public type BpTreeLeafType<K, V, BranchType> = {
+        var parent : ?BranchType;
+        var index : Nat;
+        kvs : [var ?(K, V)];
+        var count : Nat;
+        var next : ?BpTreeLeafType<K, V, BranchType>;
+    };
+
+    public type BpTreeNodeV2<K, V> = BpTreeNodeType<BpTreeLeafV2<K, V>, BpTreeNodeV2<K, V>>;
+    public type BpTreeBranchV2<K, V> = BpTreeBranchType<K, V, BpTreeNodeV2<K, V>>;
+    public type BpTreeLeafV2<K, V> = BpTreeLeafType<K, V, BpTreeLeafV2<K, V>>;
+    public type BpTreeV2<K, V> = BpTreeType<BpTreeNodeV2<K, V>>;
 
     public type BpTree<K, V> = {
         order : Nat;

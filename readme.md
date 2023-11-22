@@ -1,5 +1,5 @@
 ## Augmented Btrees
-This library containing implementations of different Btree variants.
+This library contains implementations of different Btree variants.
 
 - [x] B+ Tree ([BpTree](./src/BpTree/lib.mo))
 - [ ] Max Value B+ Tree ([MaxBpTree](./src/MaxBpTree/lib.mo)) `in-progress`
@@ -7,7 +7,7 @@ This library containing implementations of different Btree variants.
 
 #### Benchmarks
 Comparing RBTree, BTree and B+Tree (BpTree)
-			
+
 Benchmarking the performance with 10k entries
 
 **Instructions**
