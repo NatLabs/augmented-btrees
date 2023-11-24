@@ -46,6 +46,7 @@ suite(
         let unique_iter = Itertools.unique<Nat>(data.vals(), Nat32.fromNat, Nat.equal);
         let random = Itertools.toBuffer<Nat>(unique_iter);
         assert random.size() > 9_500;
+        
         test(
             "insert random",
             func() {
@@ -73,6 +74,21 @@ suite(
                 };
             },
         );
+
+        test("get", func(){
+            let iter = Iter.map<Nat, (Nat, Nat)>(random.vals(), func(n : Nat) : (Nat, Nat) = (n, n));
+            let rand = Iter.toArray(iter);
+
+            let bptree = BpTree.fromEntries(rand.vals(), Nat.compare);
+
+            for ((k, v) in rand.vals()) {
+                let retrieved = BpTree.get(bptree, Nat.compare, k);
+                if (?v != retrieved) {
+                    Debug.print("mismatch: " # debug_show (?v, retrieved, ?v == retrieved));
+                    assert false;
+                };
+            };
+        });
         
         test(
             "delete with acsending order",
@@ -88,7 +104,7 @@ suite(
                     // Debug.print("deleting " # debug_show k # " at index " # debug_show i);
                     let removed = BpTree.remove(bptree, Nat.compare, k);
                     if (?v != removed) {
-                        // Debug.print("mismatch: " # debug_show (?v, removed, ?v == removed) # " at index " # debug_show i);
+                        Debug.print("mismatch: " # debug_show (?v, removed, ?v == removed) # " at index " # debug_show i);
                         assert false;
                     };
 
@@ -113,9 +129,9 @@ suite(
                     // Debug.print("deleting " # debug_show k # " at index " # debug_show i);
                     let removed = BpTree.remove(bptree, Nat.compare, k);
                     if (?v != removed) {
-                        // Debug.print("mismatch: " # debug_show (?v, removed, ?v == removed) # " at index " # debug_show i);
-                        // Debug.print("keys " # debug_show BpTree.toNodeKeys(bptree));
-                        // Debug.print("leafs " # debug_show BpTree.toLeafNodes(bptree));
+                        Debug.print("mismatch: " # debug_show (?v, removed, ?v == removed) # " at index " # debug_show i);
+                        Debug.print("keys " # debug_show BpTree.toNodeKeys(bptree));
+                        Debug.print("leafs " # debug_show BpTree.toLeafNodes(bptree));
                         assert false;
                     };
 
