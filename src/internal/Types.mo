@@ -8,10 +8,31 @@ module {
     public type CmpFn<A> = (A, A) -> Order;
     public type MultiCmpFn<A, B> = (A, B) -> Order;
 
+    public type Node<K, V> = {
+        #leaf : Leaf<K, V>;
+        #branch : Branch<K, V>;
+    };
+
+    public type Branch<K, V> = {
+        var parent : ?Branch<K, V>;
+        var index : Nat;
+        var keys : [var ?K];
+        var children : [var ?Node<K, V>];
+        var count : Nat;
+    };
+
+    public type Leaf<K, V> = {
+        var parent : ?Branch<K, V>;
+        var index : Nat;
+        kvs : [var ?(K, V)];
+        var count : Nat;
+        var next : ?Leaf<K, V>;
+    };
+
     public type SharedNodeFields<K, V> = {
         var count : Nat;
         var index : Nat;
-        var parent : ?SharedNodeFields<K, V>;
+        var parent : ?Branch<K, V>;
     };
 
     public type SharedNode<K, V> = {

@@ -3,6 +3,7 @@ import Debug "mo:base/Debug";
 import Array "mo:base/Array";
 import Int "mo:base/Int";
 import Nat "mo:base/Nat";
+import Order "mo:base/Order";
 
 import T "Types";
 import InternalTypes "../internal/Types";
@@ -11,6 +12,7 @@ import Utils "../internal/Utils";
 import ArrayMut "../internal/ArrayMut";
 
 module Branch {
+    type Order = Order.Order;
     public type Branch<K, V> = T.Branch<K, V>;
     type Node<K, V> = T.Node<K, V>;
     type CmpFn<K> = InternalTypes.CmpFn<K>;
@@ -121,7 +123,7 @@ module Branch {
 
                 let j = Int.abs(shift) + i - 1 : Nat;
                 self.children[j] := child;
-
+                // Debug.print("shift_by: " # debug_show (i-1)  # " -> " # debug_show j);
                 switch (child) {
                     case (? #branch(node) or ? #leaf(node) : ?SharedNode<K, V>) {
                         node.index := j;
@@ -315,22 +317,28 @@ module Branch {
 
         // every node from this point on has a parent because an adjacent node was found
         let ?parent = branch_node.parent else Debug.trap("3. redistribute_branch_keys: accessed a null value");
-        
+        // Debug.print("redistribute branch");
+        // assert Utils.is_sorted<Nat>(branch_node.keys, Nat.compare);
+
         // distribute data between adjacent nodes
         if (adj_node.index < branch_node.index){ 
             // adj_node is before branch_node
+            // Debug.print("chose left adj node");
             var median_key = parent.keys[adj_node.index];
 
+            // Debug.print("branch keys " # debug_show Array.freeze(branch_node.keys));
             ArrayMut.shift_by(branch_node.keys, 0, branch_node.count - 1 : Nat, data_to_move : Nat);
             Branch.shift_by(branch_node, 0, branch_node.count : Nat, data_to_move : Nat);
             var i = 0;
             for (_ in Iter.range(0, data_to_move - 1)){
                 let j = adj_node.count - i - 1 : Nat;
-                branch_node.keys[i] := median_key;
-                median_key := ArrayMut.remove(adj_node.keys, j - 1: Nat, adj_node.count - 1 : Nat);
-
-                let val = Utils.unwrap(Branch.remove(adj_node, j), "4. redistribute_branch_keys: accessed a null value");
-                Branch.put(branch_node, i, val);
+                branch_node.keys[data_to_move - i - 1] := median_key;
+                let ?mk = ArrayMut.remove(adj_node.keys, j - 1: Nat, adj_node.count - 1 : Nat) else Debug.trap("4. redistribute_branch_keys: accessed a null value");
+                median_key := ?mk;
+                
+                // Debug.print("branch keys (" # debug_show i # ") is " # debug_show Array.freeze(branch_node.keys));
+                let val = Utils.unwrap(Branch.remove(adj_node, j, adj_node.count - i: Nat), "4. redistribute_branch_keys: accessed a null value");
+                Branch.put(branch_node, data_to_move - i - 1: Nat, val);
                 i += 1;
             };
 
@@ -338,6 +346,7 @@ module Branch {
 
         }else { 
             // adj_node is after branch_node
+            // Debug.print("chose right adj node");
 
             var j = branch_node.count : Nat;
             var median_key = parent.keys[branch_node.index];
@@ -362,11 +371,27 @@ module Branch {
 
         adj_node.count -= data_to_move;
         branch_node.count += data_to_move;
+
+        // Debug.print("adj_node keys " # debug_show Array.freeze(adj_node.keys));
+        // Debug.print("branch_node keys " # debug_show Array.freeze(branch_node.keys));
+
+        // assert Utils.validate_indexes<Nat, Nat>(branch_node.children, branch_node.count);
+        // assert Utils.validate_array_equal_count(branch_node.children, branch_node.count);
+        let cmp = func((a, _) : (Nat, Nat), (b, _): (Nat, Nat)): Order = Nat.compare(a, b);
+        // assert Utils.is_sorted<Nat>(branch_node.keys, Nat.compare);
+
+        // assert Utils.validate_array_equal_count(adj_node.children, adj_node.count);
+        // assert Utils.is_sorted<Nat>(adj_node.keys, Nat.compare);
+
+        // assert Utils.validate_indexes<Nat, Nat>(parent.children, parent.count);
+        // assert Utils.validate_array_equal_count(parent.children, parent.count);
+        // assert Utils.is_sorted<Nat>(parent.keys, Nat.compare);
         
     };
 
     public func merge(left: Branch<Nat, Nat>, right: Branch<Nat, Nat>){
         assert left.index + 1 == right.index;
+        // Debug.print("merge branch");
 
         // if there are two adjacent nodes then there must be a parent
         let ?parent = left.parent else Debug.trap("1. merge_branch_nodes: accessed a null value");
@@ -384,22 +409,39 @@ module Branch {
 
         left.count += right.count;
 
+        let cmp = func((a, _) : (Nat, Nat), (b, _): (Nat, Nat)): Order = Nat.compare(a, b);
+
+        // assert Utils.validate_indexes<Nat, Nat>(left.children, left.count);
+        // assert Utils.validate_array_equal_count(left.keys, left.count - 1);
+        // assert Utils.validate_array_equal_count(left.children, left.count);
+        // assert Utils.is_sorted<Nat>(left.keys, Nat.compare);
+
+
         // update parent keys
         ignore ArrayMut.remove(parent.keys, right.index - 1 : Nat, parent.count - 1 : Nat);
-        ignore Branch.remove(parent, right.index);
+        ignore Branch.remove(parent, right.index, parent.count);
         parent.count -= 1;
+
+        // assert Utils.validate_indexes<Nat, Nat>(parent.children, parent.count);
+        // assert Utils.validate_array_equal_count(parent.keys, parent.count - 1);
+        // assert Utils.validate_array_equal_count(parent.children, parent.count);
+        // assert Utils.is_sorted<Nat>(parent.keys, Nat.compare);
+
 
     };
 
-    public func remove<K, V>(self : Branch<K, V>, index : Nat) : ?Node<K, V> {
+    public func remove(self : Branch<Nat, Nat>, index : Nat, count: Nat) : ?Node<Nat, Nat> {
+        // Debug.print("Branch.remove: index: " # debug_show index # ", count: " # debug_show self.count);
+        // Debug.print("Branch.remove: keys: " # debug_show Array.freeze(self.keys));
+        // Debug.print("Branch.remove: self: " # debug_show toText(self, Nat.toText, Nat.toText));
         let removed = self.children[index];
 
         var i = index;
-        while (i < (self.count - 1 : Nat)) {
+        while (i < (count - 1 : Nat)) {
             self.children[i] := self.children[i + 1];
 
             switch (self.children[i]) {
-                case (? #leaf(node) or ? #branch(node) : ?SharedNode<K, V>) {
+                case (? #leaf(node) or ? #branch(node) : ?SharedNode<Nat, Nat>) {
                     node.index := i;
                 };
                 case (_) Debug.trap("Branch.remove: accessed a null value");
@@ -407,7 +449,8 @@ module Branch {
             i += 1;
         };
 
-        self.children[self.count - 1] := null;
+        self.children[count - 1] := null;
+        // self.count -=1;
 
         removed;
     };

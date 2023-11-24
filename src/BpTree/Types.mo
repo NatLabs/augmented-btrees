@@ -35,7 +35,7 @@ module {
 
     public type BpTreeNodeV2<K, V> = BpTreeNodeType<BpTreeLeafV2<K, V>, BpTreeNodeV2<K, V>>;
     public type BpTreeBranchV2<K, V> = BpTreeBranchType<K, V, BpTreeNodeV2<K, V>>;
-    public type BpTreeLeafV2<K, V> = BpTreeLeafType<K, V, BpTreeLeafV2<K, V>>;
+    public type BpTreeLeafV2<K, V> = BpTreeLeafType<K, V, BpTreeBranchV2<K, V>>;
     public type BpTreeV2<K, V> = BpTreeType<BpTreeNodeV2<K, V>>;
 
     public type BpTree<K, V> = {
