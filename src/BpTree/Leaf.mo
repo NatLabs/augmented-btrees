@@ -2,6 +2,8 @@ import Array "mo:base/Array";
 import Iter "mo:base/Iter";
 import Debug "mo:base/Debug";
 import Option "mo:base/Option";
+import Nat "mo:base/Nat";
+import Order "mo:base/Order";
 
 import T "Types";
 import InternalTypes "../internal/Types";
@@ -10,6 +12,7 @@ import ArrayMut "../internal/ArrayMut";
 import Utils "../internal/Utils";
 
 module Leaf {
+    type Order = Order.Order;
     public type Leaf<K, V> = T.Leaf<K, V>;
     type CmpFn<K> = InternalTypes.CmpFn<K>;
 
@@ -17,7 +20,10 @@ module Leaf {
         {
             var parent = null;
             var index = 0;
-            kvs = Option.get(opt_kvs, Array.init<?(K, V)>(order, null));
+            kvs = switch (opt_kvs) {
+                case (?kvs) kvs;
+                case (_) Array.init(order, null);
+            };
             var count = count;
             var next = null;
         };
@@ -107,20 +113,25 @@ module Leaf {
 
         let data_to_move = (sum_count / 2 ) - leaf_node.count : Nat;
 
+        // Debug.print("before after " # debug_show adj_node.kvs);
+        // Debug.print("before after " # debug_show leaf_node.kvs);
+
         // distribute data between adjacent nodes
         if (adj_node.index < leaf_node.index){ 
             // adj_node is before leaf_node
+            // Debug.print("chose left node");
             var i = 0;
             ArrayMut.shift_by(leaf_node.kvs, 0, leaf_node.count, data_to_move);
             for (_ in Iter.range(0, data_to_move - 1)){
                 let val = ArrayMut.remove(adj_node.kvs, adj_node.count  - i - 1: Nat, adj_node.count);
-
-                leaf_node.kvs[i] := val;
+                leaf_node.kvs[data_to_move - i - 1] := val;
 
                 i += 1;
             };
         }else { 
             // adj_node is after leaf_node
+            // Debug.print("chose right node");
+
             var i = 0;
             for (_ in Iter.range(0, data_to_move - 1)){
                 let val = adj_node.kvs[i];
@@ -134,6 +145,17 @@ module Leaf {
 
         adj_node.count -= data_to_move;
         leaf_node.count += data_to_move;
+
+        // Debug.print("adj_node after " # debug_show adj_node.kvs);
+        // Debug.print("left_node after " # debug_show leaf_node.kvs);
+
+        let cmp = func((a, _) : (Nat, Nat), (b, _): (Nat, Nat)): Order = Nat.compare(a, b);
+
+        // assert Utils.validate_array_equal_count(leaf_node.kvs, leaf_node.count);
+        // assert Utils.is_sorted<(Nat, Nat)>(leaf_node.kvs, cmp);
+        
+        // assert Utils.validate_array_equal_count(adj_node.kvs, adj_node.count);
+        // assert Utils.is_sorted<(Nat, Nat)>(adj_node.kvs, cmp);
 
         // update parent keys
         if (adj_node.index < leaf_node.index){
@@ -152,6 +174,11 @@ module Leaf {
             let key_index = adj_node.index - 1 : Nat;
             parent.keys[key_index] := ?adj_node_key;
         };
+
+        // assert Utils.validate_array_equal_count(parent.keys, parent.count - 1);
+        // assert Utils.validate_array_equal_count(parent.children, parent.count);
+        // assert Utils.validate_indexes(parent.children, parent.count);
+        // assert Utils.is_sorted<Nat>(parent.keys, Nat.compare);
 
     };
 

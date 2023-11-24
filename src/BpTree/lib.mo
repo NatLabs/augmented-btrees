@@ -7,6 +7,7 @@ import Order "mo:base/Order";
 import Int "mo:base/Int";
 import Iter "mo:base/Iter";
 import Nat "mo:base/Nat";
+import Result "mo:base/Result";
 import Buffer "mo:base/Buffer";
 import BufferDeque "mo:buffer-deque/BufferDeque";
 
@@ -16,12 +17,16 @@ import BranchModule "Branch";
 import ArrayMut "../internal/ArrayMut";
 import Utils "../internal/Utils";
 import T "Types";
+import Cursor "Cursor";
+import InternalTypes "../internal/Types";
 
 module BpTree {
     type Iter<A> = Iter.Iter<A>;
     type Order = Order.Order;
     type CmpFn<A> = (A, A) -> Order;
+    type Result<A, B> = Result.Result<A, B>;
     type BufferDeque<A> = BufferDeque.BufferDeque<A>;
+    public type Cursor<K, V> = Cursor.Cursor<K, V>;
 
     public let Leaf = LeafModule;
     public let Branch = BranchModule;
@@ -37,6 +42,10 @@ module BpTree {
     public func new<K, V>() : BpTree<K, V> {
         BpTree.newWithOrder<K, V>(32);
     };
+
+    // public func new2<K, V>(): T.BpTreeV2<K, V> {
+    //     new<K, V>();
+    // };
 
     public func newWithOrder<K, V>(order : Nat) : BpTree<K, V> {
         assert order >= 4 and order <= 512;
@@ -70,12 +79,6 @@ module BpTree {
         };
 
         depth;
-    };
-
-    func adapt_cmp<K, V>(cmp : CmpFn<K>) : MultiCmpFn<K, (K, V)> {
-        func(a : K, b : (K, V)) : Order {
-            cmp(a, b.0);
-        };
     };
 
     public func get_leaf_node<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, key : K) : Leaf<K, V> {
@@ -131,7 +134,7 @@ module BpTree {
     public func get<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, key : K) : ?V {
         let leaf_node = get_leaf_node<K, V>(self, cmp, key);
 
-        let i = ArrayMut.binary_search<(K, V), K>(leaf_node.kvs, adapt_cmp(cmp), key, leaf_node.count);
+        let i = ArrayMut.binary_search<(K, V), K>(leaf_node.kvs, Utils.adapt_cmp(cmp), key, leaf_node.count);
 
         if (i >= 0) {
             let ?kv = leaf_node.kvs[Int.abs(i)] else Debug.trap("1. get: accessed a null value");
@@ -166,20 +169,6 @@ module BpTree {
         t;
     };
 
-    public func is_sorted<T>(arr: [var ?T], cmp: CmpFn<T>): Bool {
-        var i = 0;
-
-        while (i < ((arr.size() - 1) : Nat)) {
-            let ?a = arr[i] else return true;
-            let ?b = arr[i + 1] else return true;
-
-            if (cmp(a, b) == #greater) return false;
-            i += 1;
-        };
-
-        true;
-    };
-
     public func indexes<K, V>(children : [var ?Node<K, V>]) : [Int] {
         Array.map<?Node<K, V>, Int>(
             Array.freeze(children),
@@ -198,7 +187,7 @@ module BpTree {
 
         let entry = (key, val);
 
-        let int_elem_index = ArrayMut.binary_search<(Nat, Nat), Nat>(leaf_node.kvs, adapt_cmp(cmp), key, leaf_node.count);
+        let int_elem_index = ArrayMut.binary_search<(Nat, Nat), Nat>(leaf_node.kvs, Utils.adapt_cmp(cmp), key, leaf_node.count);
         let elem_index = if (int_elem_index >= 0) Int.abs(int_elem_index) else Int.abs(int_elem_index + 1);
 
         let prev_value = if (int_elem_index >= 0) {
@@ -326,17 +315,20 @@ module BpTree {
             case (null) {};
             case (?parent){
                 ignore ArrayMut.remove(parent.keys, right.index - 1 : Nat, parent.count - 1 : Nat);
-                ignore Branch.remove(parent, right.index : Nat);
+                ignore Branch.remove(parent, right.index : Nat, parent.count);
 
                 parent.count -= 1;
+                // assert Utils.is_sorted<Nat>(parent.keys, Nat.compare);
+
             };
         };
+
     };
 
     public func remove(self: BpTree<Nat, Nat>, cmp: CmpFn<Nat>, key: Nat) : ?Nat {
         let leaf_node = get_leaf_node<Nat, Nat>(self, cmp, key);
 
-        let int_elem_index = ArrayMut.binary_search<(Nat, Nat), Nat>(leaf_node.kvs, adapt_cmp(cmp), key, leaf_node.count);
+        let int_elem_index = ArrayMut.binary_search<(Nat, Nat), Nat>(leaf_node.kvs, Utils.adapt_cmp(cmp), key, leaf_node.count);
         let elem_index = if (int_elem_index >= 0) Int.abs(int_elem_index) else return null;
         // remove parent key as well
         let ?entry : ?(Nat, Nat) = ArrayMut.remove(leaf_node.kvs, elem_index, leaf_node.count) 
@@ -392,9 +384,11 @@ module BpTree {
         Leaf.merge(left_node, right_node);
         // remove merged right node from parent
         ignore ArrayMut.remove(parent.keys, right_node.index - 1 : Nat, parent.count - 1 : Nat);
-        ignore Branch.remove(parent, right_node.index : Nat);
+        ignore Branch.remove(parent, right_node.index : Nat, parent.count);
         parent.count -= 1;
 
+        // assert Utils.is_sorted<Nat>(parent.keys, Nat.compare);
+        
         // assert validate_array_equal_count(parent.children, parent.count);
 
         var branch_node = parent;
@@ -424,6 +418,8 @@ module BpTree {
 
         while (branch_node.count < min_count) {
             Branch.redistribute_keys(branch_node);
+            // assert Utils.is_sorted<Nat>(branch_node.keys, Nat.compare);
+
             if (branch_node.count >= min_count) return ?deleted;
 
             let ?#branch(adj_branch_node) = if (branch_node.index == 0) {
@@ -447,6 +443,8 @@ module BpTree {
 
             Branch.merge(left_node, right_node);
 
+            // assert Utils.is_sorted<Nat>(left_node.keys, Nat.compare);
+            
             branch_node := parent;
             let ?_parent = branch_node.parent else {
                 // update root node if necessary
@@ -480,7 +478,7 @@ module BpTree {
     };
 
     public func fromEntries(entries: Iter<(Nat, Nat)>, cmp: CmpFn<Nat> ) : BpTree<Nat, Nat> {
-        let bptree = BpTree.newWithOrder<Nat, Nat>(4);
+        let bptree = BpTree.newWithOrder<Nat, Nat>(32);
 
         for (entry in entries) {
             let (k, v) = entry;
@@ -571,7 +569,7 @@ module BpTree {
     public func range<K, V>(self: BpTree<K, V>, cmp: CmpFn<K>, start: K, end: K) : Iter<(K, V)> {
         var leaf_node = get_leaf_node<K, V>(self, cmp, start);
 
-        let b_index = ArrayMut.binary_search<(K, V), K>(leaf_node.kvs, adapt_cmp(cmp), start, leaf_node.count);
+        let b_index = ArrayMut.binary_search<(K, V), K>(leaf_node.kvs, Utils.adapt_cmp(cmp), start, leaf_node.count);
 
         // if b_index is negative then the element was not found
         // moreover if b_index is negative then abs(i) - 1 is the index of the first element greater than start
@@ -658,6 +656,75 @@ module BpTree {
         };
 
         Buffer.toArray(buffer);
+    };
+
+//Cursor.Cursor<K, V>
+
+    /// Returns a cursor pointing to the first element in the tree
+    public func cursorAtFirst<K, V>(self : BpTree<K, V>, cmp: CmpFn<K>) : Cursor<K, V> {
+        let leaf_node = get_min_leaf_node(self);
+        var i = 0;
+        
+        Cursor.Cursor(self, cmp, leaf_node, i);
+    };
+
+    /// Returns a cursor pointing to the last element in the tree
+    public func cursorAtLast<K, V>(self : BpTree<K, V>, cmp: CmpFn<K>) : Cursor<K, V> {
+        let leaf_node = get_max_leaf_node(self);
+        var i = leaf_node.count - 1 : Nat;
+        
+        Cursor.Cursor(self, cmp, leaf_node, i);
+    };
+
+    /// Returns a cursor pointing to the given key.
+    /// This function returns a Result because it is not guaranteed that the key exists in the tree.
+    /// The function returns #ok(cursor) if the key exists and #err("key not found") otherwise.
+    /// 
+    /// Consider using [cursorAtUpperBound](#cursorAtUpperBound) or [cursorAtLowerBound](#cursorAtLowerBound) 
+    /// if you want to get a cursor that falls back to the upper or lower bound of the given key instead of returning an error
+    public func cursorAtKey<K, V>(self : BpTree<K, V>, cmp: CmpFn<K>, key: K) : Result<Cursor<K, V>, Text> {
+        let leaf_node = get_leaf_node(self, cmp, key);
+        let i = ArrayMut.binary_search<(K, V), K>(leaf_node.kvs, Utils.adapt_cmp(cmp), key, leaf_node.count);
+
+        if (i < 0){
+            return #err("key not found");
+        };
+
+        let cursor =  Cursor.Cursor<K, V>(self, cmp, leaf_node, Int.abs(i));
+        #ok(cursor);
+    };
+
+    /// Returns a cursor pointing to the element that is less than or equal to the given key
+    /// In other words, it returns a cursor pointing to an element that is upper bounded by the given key
+    public func cursorAtUpperBound<K, V>(self : BpTree<K, V>, cmp: CmpFn<K>, key: K) : Cursor<K, V> {
+        var leaf_node = get_leaf_node(self, cmp, key);
+        let i = ArrayMut.binary_search<(K, V), K>(leaf_node.kvs, Utils.adapt_cmp(cmp), key, leaf_node.count);
+
+        let index = if (i < 0) Int.abs(i + 1) else Int.abs(i);
+
+        // add function to move to the previous element
+        Cursor.Cursor<K, V>(self, cmp, leaf_node, index);
+    };
+
+    /// Returns a cursor pointing to the element that is greater than or equal to the given key
+    /// In other words, it returns a cursor pointing to an element that is lower bounded by the given key
+    public func cursorAtLowerBound<K, V>(self : BpTree<K, V>, cmp: CmpFn<K>, key: K) : Cursor<K, V> {
+        var leaf_node = get_leaf_node(self, cmp, key);
+        let i = ArrayMut.binary_search<(K, V), K>(leaf_node.kvs, Utils.adapt_cmp(cmp), key, leaf_node.count);
+
+        var index = if (i < 0) (Int.abs(i) - 1 : Nat) else Int.abs(i);
+
+        if (index == leaf_node.count){
+            switch(leaf_node.next){
+                case (?next){
+                    leaf_node := next;
+                    index := 0;
+                };
+                case (_) {};
+            };
+        };
+
+        Cursor.Cursor<K, V>(self, cmp, leaf_node, index);
     };
 
 };

@@ -2,6 +2,9 @@ import T "Types";
 import InternalTypes "../internal/Types";
 import BpTree "../BpTree";
 
+import Leaf "Leaf";
+import Branch "Branch";
+
 module MaxBpTree {
 
     public type MaxBpTree<K, V> = T.MaxBpTree<K, V>;
@@ -12,10 +15,12 @@ module MaxBpTree {
     type SharedNode<K, V> = T.SharedNode<K, V>;
     type MultiCmpFn<A, B> = InternalTypes.MultiCmpFn<A, B>;
 
-    // public func new<K, V>() : MaxBpTree<K, V> {
-    //     return {
-    //         order = 32;
-    //         root = Leaf
-    //     };
-    // };
+    public func new<K, V>() : MaxBpTree<K, V> {
+        return {
+            order = 32;
+            var root = #leaf(Leaf.new<K, V>(32, 0, null));
+            var size = 0;
+        };
+    };
+
 }

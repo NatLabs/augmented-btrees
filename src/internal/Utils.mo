@@ -1,7 +1,10 @@
 import Debug "mo:base/Debug";
+import Order "mo:base/Order";
 import T "Types";
 
 module {
+    type Order = Order.Order;
+    
     public func unwrap<T>(optional: ?T, trap_msg: Text) : T {
         switch(optional) {
             case (?v) return v;
@@ -15,17 +18,6 @@ module {
         tmp;
     };
 
-    public type SharedNodeFields<K, V> = {
-        var count : Nat;
-        var index : Nat;
-        var parent : ?SharedNodeFields<K, V>;
-    };
-
-    public type SharedNode<K, V> = {
-        #leaf : SharedNodeFields<K, V>;
-        #branch : SharedNodeFields<K, V>;
-    };
-
     public func validate_array_equal_count<T>(arr : [var ?T], count : Nat) : Bool {
         var i = 0;
 
@@ -37,12 +29,12 @@ module {
         i == count;
     };
 
-    public func validate_indexes<K, V>(arr : [var ?SharedNode<K, V>], count : Nat) : Bool {
+    public func validate_indexes<K, V>(arr : [var ?T.Node<K, V>], count : Nat) : Bool {
 
         var i = 0;
 
         while (i < count) {
-            switch (arr[i] : ?SharedNode<K, V>) {
+            switch (arr[i] : ?T.SharedNode<K, V>) {
                 case (? #branch(node) or ? #leaf(node)) {
                     if (node.index != i) return false;
                 };
@@ -52,5 +44,25 @@ module {
         };
 
         true;
+    };
+
+    public func is_sorted<T>(arr: [var ?T], cmp: T.CmpFn<T>): Bool {
+        var i = 0;
+
+        while (i < ((arr.size() - 1) : Nat)) {
+            let ?a = arr[i] else return true;
+            let ?b = arr[i + 1] else return true;
+
+            if (cmp(a, b) == #greater) return false;
+            i += 1;
+        };
+
+        true;
+    };
+
+    public func adapt_cmp<K, V>(cmp : T.CmpFn<K>) : T.MultiCmpFn<K, (K, V)> {
+        func(a : K, b : (K, V)) : Order {
+            cmp(a, b.0);
+        };
     };
 }

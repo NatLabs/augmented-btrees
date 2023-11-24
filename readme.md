@@ -7,7 +7,7 @@ This library contains implementations of different Btree variants.
 
 #### Benchmarks
 Comparing RBTree, BTree and B+Tree (BpTree)
-			
+
 Benchmarking the performance with 10k entries
 
 **Instructions**
