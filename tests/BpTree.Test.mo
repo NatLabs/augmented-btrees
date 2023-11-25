@@ -16,19 +16,6 @@ import Utils "../src/internal/Utils";
 
 type Order = Order.Order;
 
-func print_node(node : BpTree.Node<Nat, Nat>) {
-    switch (node) {
-        case (#branch(n)) {
-            // // Debug.print("branch keys: " # debug_show n.keys);
-            // Debug.print("branch children: " # debug_show n.children);
-
-        };
-        case (#leaf(n)) {
-            // Debug.print("leaf node: " # debug_show n.kvs);
-        };
-    };
-};
-
 let fuzz = Fuzz.Fuzz();
 
 suite(
@@ -60,13 +47,14 @@ suite(
                 assert BpTree.size(bptree) == random.size();
                 let keys = BpTree.keys(bptree);
                 var prev : Nat = Utils.unwrap(keys.next(), "expected key");
+                Debug.print("prev " # debug_show prev);
 
                 // Debug.print("entries " # debug_show BpTree.toArray(bptree));
                 for ((i, curr) in Itertools.enumerate(keys)) {
                     if (prev > curr) {
                         let leaf_node = BpTree.get_leaf_node(bptree, Nat.compare, curr);
-                        // Debug.print("leaf node:" # BpTree.Leaf.toText(leaf_node, Nat.toText, Nat.toText));
-                        // Debug.print("mismatch: " # debug_show (prev, curr) # " at index " # debug_show i);
+                        Debug.print("leaf node:" # BpTree.Leaf.toText(leaf_node, Nat.toText, Nat.toText));
+                        Debug.print("mismatch: " # debug_show (prev, curr) # " at index " # debug_show i);
                         assert false;
                     };
 
@@ -89,9 +77,9 @@ suite(
                 };
             };
         });
-        
+
         test(
-            "delete with acsending order",
+            "delete with ascending order",
             func() {
                 let iter = Iter.map<Nat, (Nat, Nat)>(random.vals(), func(n : Nat) : (Nat, Nat) = (n, n));
                 let rand = Itertools.toBuffer<(Nat, Nat)>(iter);
@@ -136,7 +124,7 @@ suite(
                     };
 
                     // Debug.print("keys " # debug_show BpTree.toNodeKeys(bptree));
-                        // Debug.print("leafs " # debug_show BpTree.toLeafNodes(bptree));
+                    // Debug.print("leafs " # debug_show BpTree.toLeafNodes(bptree));
 
                     assert BpTree.size(bptree) == (rand.size() - i - 1 : Nat);
                 };
@@ -144,5 +132,37 @@ suite(
                 assert BpTree.size(bptree) == 0;
             },
         );
+
+        test("entries.rev()", func(){
+            let iter = Iter.map<Nat, (Nat, Nat)>(random.vals(), func(n : Nat) : (Nat, Nat) = (n, n));
+            let rand = Itertools.toBuffer<(Nat, Nat)>(Itertools.take(iter, 1000));
+
+            let bptree = BpTree.fromEntries(rand.vals(), Nat.compare);
+
+            assert BpTree.size(bptree) == rand.size();
+
+            rand.sort(Utils.tuple_cmp(Nat.compare));
+            Buffer.reverse(rand);
+
+            for ((i, (k, v)) in Itertools.enumerate(BpTree.entries(bptree).rev())) {
+                let expected = rand.get(i).1;
+
+                if (v != expected) {
+                    Debug.print("mismatch: (" # debug_show i # ") ->" # debug_show (v, expected, v == expected));
+                    Debug.print("revEntries " # debug_show Iter.toArray(BpTree.entries(bptree).rev()));
+                    assert false;
+                };
+            };
+
+            while (rand.size() > 1) {
+                let index = fuzz.nat.randomRange(0, rand.size() - 1);
+                let (k, v) = rand.remove(index);
+                assert ?v == BpTree.remove(bptree, Nat.compare, k);
+
+                assert Buffer.toArray(rand) == Iter.toArray(BpTree.entries(bptree).rev());
+            };
+
+            assert BpTree.entries(bptree).next() == ?rand.get(0);
+        });
     },
 );

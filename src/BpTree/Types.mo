@@ -49,20 +49,44 @@ module {
         #branch : Branch<K, V>;
     };
 
+    /// Branch nodes store keys and pointers to child nodes.
     public type Branch<K, V> = {
+        /// The parent branch node.
         var parent : ?Branch<K, V>;
+
+        /// The index of this branch node in the parent branch node.
         var index : Nat;
+
+        /// The keys in this branch node.
         var keys : [var ?K];
+
+        /// The child nodes in this branch node.
         var children : [var ?Node<K, V>];
+
+        /// The number of child nodes in this branch node.
         var count : Nat;
+
     };
 
+    /// Leaf nodes are doubly linked lists of key-value pairs.
     public type Leaf<K, V> = {
+        /// The parent branch node.
         var parent : ?Branch<K, V>;
+
+        /// The index of this leaf node in the parent branch node.
         var index : Nat;
+
+        /// The key-value pairs in this leaf node.
         kvs : [var ?(K, V)];
+
+        /// The number of key-value pairs in this leaf node.
         var count : Nat;
+
+        /// The next leaf node in the linked list.
         var next : ?Leaf<K, V>;
+
+        /// The previous leaf node in the linked list.
+        var prev : ?Leaf<K, V>;
     };
 
     public type SharedNodeFields<K, V> = {

@@ -19,6 +19,7 @@ import Utils "../internal/Utils";
 import T "Types";
 import Cursor "Cursor";
 import InternalTypes "../internal/Types";
+import DoubleEndedIter "../internal/DoubleEndedIter";
 
 module BpTree {
     type Iter<A> = Iter.Iter<A>;
@@ -27,6 +28,7 @@ module BpTree {
     type Result<A, B> = Result.Result<A, B>;
     type BufferDeque<A> = BufferDeque.BufferDeque<A>;
     public type Cursor<K, V> = Cursor.Cursor<K, V>;
+    public type DoubleEndedIter<A> = DoubleEndedIter.DoubleEndedIter<A>;
 
     public let Leaf = LeafModule;
     public let Branch = BranchModule;
@@ -307,8 +309,13 @@ module BpTree {
 
         left.count += right.count;
 
-        // update next pointers
+        // update leaf pointers
         left.next := right.next;
+        switch(left.next){
+            case (?next) next.prev := ?left;
+            case (_) {};
+        };
+
 
         // update parent keys
         switch(left.parent){
@@ -522,32 +529,85 @@ module BpTree {
         Buffer.toArray(buffer);
     };
 
-    public func entries<K, V>(self : BpTree<K, V>) : Iter<(K, V)> {
-        var node = ?get_min_leaf_node(self);
-        var i = 0;
+    public func revEntries<K, V>(bptree: BpTree<K, V>) : Iter<(K,V)>{
+        var _max_leaf = get_max_leaf_node(bptree);
+        var max_leaf = ?_max_leaf;
+        var j = _max_leaf.count;
 
-        object {
+          object {
             public func next() : ?(K, V) {
-                switch (node) {
+                switch (max_leaf) {
                     case (?leaf) {
-                        if (i >= leaf.count) {
-                            node := leaf.next;
-                            i := 0;
+                        if (j == 0) {
+                            max_leaf := leaf.prev;
+                            switch(max_leaf){
+                                case (?prev) j := prev.count;
+                                case (_) {};
+                            };
                             return next();
                         };
 
-                        let entry = leaf.kvs[i];
-                        i += 1;
+                        let entry = leaf.kvs[j - 1];
+                        j -= 1;
                         entry;
                     };
                     case (_) null;
                 };
             };
+
         };
     };
 
-    public func keys<K, V>(self : BpTree<K, V>) : Iter<K> {
-        Iter.map(
+    public func entries<K, V>(bptree : BpTree<K, V>) : DoubleEndedIter<(K, V)> {
+        var min_leaf = ?get_min_leaf_node(bptree);
+        var i = 0;
+
+        let _max_leaf = get_max_leaf_node(bptree);
+        var max_leaf = ?_max_leaf;
+        var j = _max_leaf.count;
+
+        func next() : ?(K, V) {
+            switch (min_leaf) {
+                case (?leaf) {
+                    if (i >= leaf.count) {
+                        min_leaf := leaf.next;
+                        i := 0;
+                        return next();
+                    };
+
+                    let entry = leaf.kvs[i];
+                    i += 1;
+                    entry;
+                };
+                case (_) null;
+            };
+        };
+
+        func nextFromEnd() : ?(K, V){
+            switch (max_leaf) {
+                case (?leaf) {
+                    if (j == 0) {
+                        max_leaf := leaf.prev;
+                        switch(max_leaf){
+                            case (?prev) j := prev.count;
+                            case (_) {};
+                        };
+                        return nextFromEnd();
+                    };
+
+                    let entry = leaf.kvs[j - 1];
+                    j -= 1;
+                    entry;
+                };
+                case (_) null;
+            };
+        };
+
+        DoubleEndedIter.new(next, nextFromEnd);
+    };
+
+    public func keys<K, V>(self : BpTree<K, V>) : DoubleEndedIter<K> {
+        DoubleEndedIter.map(
             entries(self),
             func(kv : (K, V)) : K {
                 kv.0;
@@ -555,8 +615,8 @@ module BpTree {
         );
     };
 
-    public func vals<K, V>(self : BpTree<K, V>) : Iter<V> {
-        Iter.map(
+    public func vals<K, V>(self : BpTree<K, V>) : DoubleEndedIter<V> {
+        DoubleEndedIter.map(
             entries(self),
             func(kv : (K, V)) : V {
                 kv.1;
@@ -566,44 +626,78 @@ module BpTree {
 
     /// Returns an iterator over the entries of the tree in the range [start, end]
     /// The iterator is inclusive of start and end
+    /// If the start key does not exist in the tree then the iterator will start from next key greater than start
+    /// If the end key does not exist in the tree then the iterator will end at the last key less than end
     public func range<K, V>(self: BpTree<K, V>, cmp: CmpFn<K>, start: K, end: K) : Iter<(K, V)> {
-        var leaf_node = get_leaf_node<K, V>(self, cmp, start);
+        let _left_node = get_leaf_node<K, V>(self, cmp, start);
+        var left_node = ?_left_node;
+        let start_index = ArrayMut.binary_search<(K, V), K>(_left_node.kvs, Utils.adapt_cmp(cmp), start, _left_node.count);
 
-        let b_index = ArrayMut.binary_search<(K, V), K>(leaf_node.kvs, Utils.adapt_cmp(cmp), start, leaf_node.count);
+        // if start_index is negative then the element was not found
+        // moreover if start_index is negative then abs(i) - 1 is the index of the first element greater than start
+        var i = if (start_index >= 0) Int.abs(start_index) else Int.abs(start_index) - 1 : Nat; 
 
-        // if b_index is negative then the element was not found
-        // moreover if b_index is negative then abs(i) - 1 is the index of the first element greater than start
-        var i = if (b_index >= 0) Int.abs(b_index) else Int.abs(b_index) - 1 : Nat; 
+        func next() : ?(K, V) {
+            switch (left_node) {
+                case (null) null;
+                case (?leaf) {
+                    if (i >= leaf.count) {
+                        left_node := leaf.next;
+                        i := 0;
+                        return next();
+                    };
 
-        var node = ?leaf_node;
-
-        object {
-            public func next() : ?(K, V) {
-                switch (node) {
-                    case (null) null;
-                    case (?leaf) {
-                        if (i >= leaf.count) {
-                            node := leaf.next;
-                            i := 0;
-                            return next();
-                        };
-
-                        switch(leaf.kvs[i]){
-                            case (?kv) {
-                                if (cmp(kv.0, end) == #greater) {
-                                    node := null;
-                                    return null;
-                                };
-
-                                i += 1;
-                                ?kv;
+                    switch(leaf.kvs[i]){
+                        case (?kv) {
+                            if (cmp(kv.0, end) == #greater) {
+                                left_node := null;
+                                return null;
                             };
-                            case (_) Debug.trap("range: accessed a null value");
+
+                            i += 1;
+                            ?kv;
                         };
+                        case (_) Debug.trap("range: accessed a null value");
                     };
                 };
             };
         };
+
+        let _right_node = get_leaf_node<K, V>(self, cmp, end);
+        var right_node = ?_right_node;
+        let end_index = ArrayMut.binary_search<(K, V), K>(_right_node.kvs, Utils.adapt_cmp(cmp), end, _right_node.count);
+        var j = if (end_index >= 0) Int.abs(end_index) + 1 else Int.abs(end_index) - 1 : Nat;
+
+        func nextFromEnd() : ?(K, V){
+            switch (right_node) {
+                case (null) null;
+                case (?leaf) {
+                    if (j == 0) {
+                        right_node := leaf.prev;
+                        switch(right_node){
+                            case (?prev) j := prev.count;
+                            case (_) {};
+                        };
+                        return nextFromEnd();
+                    };
+
+                    switch(leaf.kvs[j - 1]){
+                        case (?kv) {
+                            if (cmp(kv.0, start) == #less) {
+                                right_node := null;
+                                return null;
+                            };
+
+                            j -= 1;
+                            ?kv;
+                        };
+                        case (_) Debug.trap("range: accessed a null value");
+                    };
+                };
+            };
+        };
+
+        DoubleEndedIter.new(next, nextFromEnd);
     };
 
     public func toLeafNodes<K, V>(self : BpTree<K, V>) : [[?(K, V)]] {
