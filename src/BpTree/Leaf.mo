@@ -26,6 +26,7 @@ module Leaf {
             };
             var count = count;
             var next = null;
+            var prev = null;
         };
     };
 
@@ -78,9 +79,16 @@ module Leaf {
         right_node.index := leaf.index + 1;
         right_node.parent := leaf.parent;
 
-        // update next pointers
+        // update leaf pointers
         right_node.next := leaf.next;
         leaf.next := ?right_node;
+
+        right_node.prev := ?leaf;
+
+        switch(right_node.next){
+            case (?next) next.prev := ?right_node;
+            case (_) {};
+        };
 
         right_node;
     };
@@ -197,8 +205,12 @@ module Leaf {
 
         left.count += right.count;
 
-        // update next pointers
+        // update leaf pointers
         left.next := right.next;
+        switch(left.next){
+            case (?next) next.prev := ?left;
+            case (_) {};
+        };
     };
 
     public func remove<K, V>(leaf : Leaf<K, V>, index : Nat) : ?(K, V) {
