@@ -66,6 +66,11 @@ module {
         /// The number of child nodes in this branch node.
         var count : Nat;
 
+        // /// The total number of nodes in the subtree rooted at this branch node.
+        // var subtree_size : Nat;  // optimal approach replaces the subtree_size with prefix sum array to enable binary search 
+                                    // in branch nodes when executing getRank()
+                                    // might not replace as we can afford to have a getRank() fn that is not the most optimized 
+                                    // -> runs in O((log n) ^ 2) instead of O(log n)
     };
 
     /// Leaf nodes are doubly linked lists of key-value pairs.

@@ -29,6 +29,7 @@ module Branch {
             var keys = [var];
             var children = [var];
             var count = 0;
+            // var subtree_size = 0;
         };
 
         let children = switch (opt_children) {

@@ -101,6 +101,26 @@ module BpTree {
         };
     };
 
+    public func get_leaf_node_and_update_path<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, key : K, update: (Branch<K, V>) -> ()) : Leaf<K, V> {
+        var curr = ?self.root;
+
+        loop {
+            switch (curr) {
+                case (? #branch(node)) {
+                    let int_index = ArrayMut.binary_search<K, K>(node.keys, cmp, key, node.count - 1);
+                    let node_index = if (int_index >= 0) Int.abs(int_index) + 1 else Int.abs(int_index + 1);
+                    update(node);
+
+                    curr := node.children[node_index];
+                };
+                case (? #leaf(leaf_node)) {
+                    return leaf_node;
+                };
+                case (_) Debug.trap("get_leaf_node: accessed a null value");
+            };
+        };
+    };
+
     public func get_min_leaf_node<K, V>(self : BpTree<K, V>) : Leaf<K, V> {
         var node = ?self.root;
 
@@ -628,7 +648,7 @@ module BpTree {
     /// The iterator is inclusive of start and end
     /// If the start key does not exist in the tree then the iterator will start from next key greater than start
     /// If the end key does not exist in the tree then the iterator will end at the last key less than end
-    public func range<K, V>(self: BpTree<K, V>, cmp: CmpFn<K>, start: K, end: K) : Iter<(K, V)> {
+    public func scan<K, V>(self: BpTree<K, V>, cmp: CmpFn<K>, start: K, end: K) : DoubleEndedIter<(K, V)> {
         let _left_node = get_leaf_node<K, V>(self, cmp, start);
         var left_node = ?_left_node;
         let start_index = ArrayMut.binary_search<(K, V), K>(_left_node.kvs, Utils.adapt_cmp(cmp), start, _left_node.count);

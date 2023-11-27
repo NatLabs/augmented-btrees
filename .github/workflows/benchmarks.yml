@@ -1,10 +1,6 @@
 name: Comment Benchmarks
 
 on:
-  push:
-    branches:
-      - main
-      - dev
   pull_request:
     branches:
       - "*"
@@ -50,11 +46,6 @@ jobs:
           npm --yes -g i ic-mops
           mops i
 
-      - name: Install wasmtime
-        run: |
-          curl https://wasmtime.dev/install.sh -sSf | bash
-          echo "$HOME/.wasmtime/bin" >> $GITHUB_PATH
-      
       - name: Set DFX MOC Path
         run: |
           make set-moc-version
@@ -63,7 +54,7 @@ jobs:
       - name: Benchmarks
         id: benchmarks
         run: |
-          mops bench 2>&1 | tee benchmark_results.txt
+          mops bench --gc copying 2>&1 | tee benchmark_results.txt
           
           # Process the output to remove everything up to the last occurrence of \033[2K
           awk '/\x1b\[2K/ { buffer = "" } { buffer = buffer $0 "\n" } END { print buffer }' benchmark_results.txt > intermediate_results.txt
