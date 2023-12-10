@@ -1,10 +1,24 @@
+import Array "mo:base/Array";
 import Debug "mo:base/Debug";
 import Order "mo:base/Order";
 import T "Types";
 
 module {
     type Order = Order.Order;
-    
+
+    public func tabulate_var<T>(capacity : Nat, size: Nat, fn : (Nat) -> ?T) : [var ?T] {
+        var arr = Array.init<?T>(capacity, null);
+
+        var i = 0;
+
+        while (i < size) {
+            arr[i] := fn(i);
+            i += 1;
+        };
+
+        arr;
+    };
+
     public func unwrap<T>(optional: ?T, trap_msg: Text) : T {
         switch(optional) {
             case (?v) return v;
@@ -29,12 +43,12 @@ module {
         i == count;
     };
 
-    public func validate_indexes<K, V>(arr : [var ?T.Node<K, V>], count : Nat) : Bool {
+    public func validate_indexes<K, V>(arr : [var ?{#leaf:{var index : Nat};#branch:{var index : Nat};}], count : Nat) : Bool {
 
         var i = 0;
 
         while (i < count) {
-            switch (arr[i] : ?T.SharedNode<K, V>) {
+            switch (arr[i]) {
                 case (? #branch(node) or ? #leaf(node)) {
                     if (node.index != i) return false;
                 };

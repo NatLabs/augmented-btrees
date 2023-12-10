@@ -27,15 +27,15 @@ module {
         let limit = 10_000;
 
         let btree = BTree.init<Nat, Nat>(?32);
-        let bptree = BpTree.newWithOrder<Nat, Nat>(32);
+        let bptree = BpTree.new<Nat, Nat>(?32);
         let rbtree = RbTree.RBTree<Nat, Nat>(Nat.compare);
 
-        let insert_entries = Buffer.Buffer<(Nat, Nat)>(limit);
+        let entries = Buffer.Buffer<(Nat, Nat)>(limit);
 
         for (i in Iter.range(0, limit - 1)) {
             let key = fuzz.nat.randomRange(1, limit ** 3);
 
-            insert_entries.add((key, i));
+            entries.add((key, i));
         };
 
         bench.runner(
@@ -44,7 +44,7 @@ module {
                 case ("RBTree", "insert()") {
                     var i = 0;
 
-                    for ((key, val) in insert_entries.vals()) {
+                    for ((key, val) in entries.vals()) {
                         rbtree.put(key, val);
                         i += 1;
                     };
@@ -52,14 +52,14 @@ module {
                 case ("RBTree", "replace()") {
                     var i = 0;
 
-                    for ((key, val) in insert_entries.vals()) {
+                    for ((key, val) in entries.vals()) {
                         rbtree.put(key, val * 2);
                         i += 1;
                     };
                 };
                 case ("RBTree", "get()") {
                     for (i in Iter.range(0, limit - 1)) {
-                        let key = insert_entries.get(i).0;
+                        let key = entries.get(i).0;
                         ignore rbtree.get(key);
                     };
                 };
@@ -73,24 +73,18 @@ module {
                 };
 
                 case ("BTree", "insert()") {
-                    var i = 0;
-
-                    for ((key, val) in insert_entries.vals()) {
+                    for ((key, val) in entries.vals()) {
                         ignore BTree.insert(btree, Nat.compare, key, val);
-                        i += 1;
                     };
                 };
                 case ("BTree", "replace()") {
-                    var i = 0;
-
-                    for ((key, val) in insert_entries.vals()) {
+                    for ((key, val) in entries.vals()) {
                         ignore BTree.insert(btree, Nat.compare, key, val * 2);
-                        i += 1;
                     };
                 };
                 case ("BTree", "get()") {
                     for (i in Iter.range(0, limit - 1)) {
-                        let key = insert_entries.get(i).0;
+                        let key = entries.get(i).0;
                         ignore BTree.get(btree, Nat.compare, key);
                     };
                 };
@@ -98,30 +92,24 @@ module {
                     for (i in BTree.entries(btree)) { ignore i };
                 };
                 case ("BTree", "delete()") {
-                    for (i in Iter.range(0, limit - 1)) {
-                        ignore BTree.delete(btree, Nat.compare, i);
+                    for ((k, v) in entries.vals()) {
+                        ignore BTree.delete(btree, Nat.compare, k);
                     };
                 };
 
                 case ("B+Tree", "insert()") {
-                    var i = 0;
-
-                    for ((key, val) in insert_entries.vals()) {
+                    for ((key, val) in entries.vals()) {
                         ignore BpTree.insert(bptree, Nat.compare, key, val);
-                        i += 1;
                     };
                 };
                 case ("B+Tree", "replace()") {
-                    var i = 0;
-
-                    for ((key, val) in insert_entries.vals()) {
+                    for ((key, val) in entries.vals()) {
                         ignore BpTree.insert(bptree, Nat.compare, key, val * 2);
-                        i += 1;
                     };
                 };
                 case ("B+Tree", "get()") {
                     for (i in Iter.range(0, limit - 1)) {
-                        let key = insert_entries.get(i).0;
+                        let key = entries.get(i).0;
                         ignore BpTree.get(bptree, Nat.compare, key);
                     };
                 };
@@ -129,8 +117,8 @@ module {
                     for (i in BpTree.entries(bptree)) { ignore i };
                 };
                 case ("B+Tree", "delete()") {
-                    for (i in Iter.range(0, limit - 1)) {
-                        ignore BpTree.remove(bptree, Nat.compare, i);
+                    for ((k, v) in entries.vals()) {
+                        ignore BpTree.remove(bptree, Nat.compare, k);
                     };
                 };
 
