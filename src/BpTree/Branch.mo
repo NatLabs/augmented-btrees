@@ -61,8 +61,9 @@ module Branch {
             case (_) Debug.trap("Branch.new: should replace the opt_children input with a null value ");
         };
 
-        let keys = Array.tabulateVar<?K>(
+        let keys = Utils.tabulate_var<K>(
             order - 1 : Nat,
+            order - 1,
             func(i : Nat) : ?K {
                 switch (children[i + 1]) {
                     case (? #leaf(node)) {
@@ -92,6 +93,7 @@ module Branch {
         self.keys := keys;
         self.children := children;
         self.count := count;
+
 
         self;
     };
@@ -210,8 +212,9 @@ module Branch {
 
         let right_keys = Array.init<?Nat>(node.keys.size(), null);
 
-        let right_children = Array.tabulateVar<?Node<Nat, Nat>>(
+        let right_children = Utils.tabulate_var<Node<Nat, Nat>>(
             node.children.size(),
+            node.count + 1 - median,
             func(i : Nat) : ?Node<Nat, Nat> {
 
                 let j = i + median - offset : Nat;

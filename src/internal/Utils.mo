@@ -7,6 +7,7 @@ module {
     type Order = Order.Order;
 
     public func tabulate_var<T>(capacity : Nat, size: Nat, fn : (Nat) -> ?T) : [var ?T] {
+        assert size <= capacity;
         var arr = Array.init<?T>(capacity, null);
 
         var i = 0;

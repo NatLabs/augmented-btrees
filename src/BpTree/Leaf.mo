@@ -44,8 +44,9 @@ module Leaf {
         var offset = if (is_elem_added_to_right) 0 else 1;
 
         var already_inserted = false;
-        let right_kvs = Array.tabulateVar<?(K, V)>(
+        let right_kvs = Utils.tabulate_var<(K, V)>(
             leaf.kvs.size(),
+            leaf.count + 1 - median,
             func(i : Nat) : ?(K, V) {
 
                 let j = i + median - offset : Nat;

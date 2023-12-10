@@ -686,7 +686,6 @@ module BpTree {
         };
 
         DoubleEndedIter.new(next, nextFromEnd);
-
     };
 
     public func entries<K, V>(bptree : BpTree<K, V>) : DoubleEndedIter<(K, V)> {

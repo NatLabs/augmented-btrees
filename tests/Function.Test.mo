@@ -13,8 +13,9 @@ func gen_id() : Nat = 0;
 
 func new_leaf(order : Nat, start : Nat, end : Nat) : BpTree.Leaf<Nat, Nat> {
     let size = end - start : Nat;
-    let kvs = Array.tabulateVar<?(Nat, Nat)>(
+    let kvs = Utils.tabulate_var<(Nat, Nat)>(
         order,
+        size,
         func(i : Nat) : ?(Nat, Nat) {
             if (i < size) return ?(start + i, start + i);
             return null;
@@ -26,7 +27,8 @@ func new_leaf(order : Nat, start : Nat, end : Nat) : BpTree.Leaf<Nat, Nat> {
 
 func new_branch(order : Nat, start : Nat) : BpTree.Branch<Nat, Nat> {
 
-    let children = Array.tabulateVar<?BpTree.Node<Nat, Nat>>(
+    let children = Utils.tabulate_var<BpTree.Node<Nat, Nat>>(
+        order,
         order,
         func(i : Nat) : ?BpTree.Node<Nat, Nat> {
             return ? #leaf(new_leaf(order, start, start + order));
@@ -116,6 +118,7 @@ suite(
                 assert right.count == 4;
 
                 let parent = BpTree.Branch.new<Nat, Nat>(6, ?[var ? #leaf(left), ? #leaf(right), null, null, null, null], gen_id);
+                Debug.print("parent: " # debug_show parent.subtree_size);
                 assert parent.subtree_size == 6;
                 assert parent.count == 2;
                 assert Array.freeze(parent.keys) == [?5, null, null, null, null];
