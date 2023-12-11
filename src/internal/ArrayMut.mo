@@ -54,7 +54,7 @@ module {
         item;
     };
 
-    public func binary_search<A, B>(arr : [var ?A], cmp : T.MultiCmpFn<B, A>, search_key : B, arr_len : Nat) : Int {
+    public func binary_search<B, A>(arr : [var ?A], cmp : T.MultiCmpFn<B, A>, search_key : B, arr_len : Nat) : Int {
         if (arr_len == 0) return -1; // should insert at index Int.abs(i + 1)
         var l = 0;
 
@@ -113,4 +113,4 @@ module {
             };
         };
     };
-};
+}
