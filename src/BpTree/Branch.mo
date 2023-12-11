@@ -186,7 +186,7 @@ module Branch {
         };
     };
 
-    public func update_median_key(_parent: Branch<Nat, Nat>, index: Nat, new_key: Nat){
+    public func update_median_key<K, V>(_parent: Branch<K, V>, index: Nat, new_key: K){
         var parent = _parent;
         var i = index;
 
@@ -199,7 +199,7 @@ module Branch {
         parent.keys[i - 1] := ?new_key;
     };
 
-    public func split(node : Branch<Nat, Nat>, child : Node<Nat, Nat>, child_index : Nat, first_child_key : Nat, gen_id : () -> Nat) : Branch<Nat, Nat> {
+    public func split<K, V>(node : Branch<K, V>, child : Node<K, V>, child_index : Nat, first_child_key : K, gen_id : () -> Nat) : Branch<K, V> {
         let arr_len = node.count;
         let median = (arr_len / 2) + 1;
 
@@ -210,12 +210,12 @@ module Branch {
         var offset = if (is_elem_added_to_right) 0 else 1;
         var already_inserted = false;
 
-        let right_keys = Array.init<?Nat>(node.keys.size(), null);
+        let right_keys = Array.init<?K>(node.keys.size(), null);
 
-        let right_children = Utils.tabulate_var<Node<Nat, Nat>>(
+        let right_children = Utils.tabulate_var<Node<K, V>>(
             node.children.size(),
             node.count + 1 - median,
-            func(i : Nat) : ?Node<Nat, Nat> {
+            func(i : Nat) : ?Node<K, V> {
 
                 let j = i + median - offset : Nat;
 
@@ -262,7 +262,7 @@ module Branch {
             node.children[j] := node.children[j - 1];
 
             switch (node.children[j]) {
-                case (? #branch(node) or ? #leaf(node) : ?SharedNode<Nat, Nat>) {
+                case (? #branch(node) or ? #leaf(node) : ?SharedNode<K, V>) {
                     node.index := j;
                 };
                 case (_) {};
@@ -287,7 +287,7 @@ module Branch {
         let right_node = switch (node.children[0]) {
             case (? #leaf(_)) Branch.new(node.children.size(), ?right_children, gen_id);
             case (? #branch(_)) {
-                Branch.newWithKeys<Nat, Nat>(right_keys, right_children, gen_id);
+                Branch.newWithKeys<K, V>(right_keys, right_children, gen_id);
                 // Branch new fails to update the median key to its correct position so we do it manually
             };
             case (_) Debug.trap("right_node: accessed a null value");
@@ -305,7 +305,7 @@ module Branch {
         right_node;
     };
 
-    public func redistribute_keys(branch_node: Branch<Nat, Nat>){
+    public func redistribute_keys<K, V>(branch_node: Branch<K, V>){
         var adj_node = branch_node;
         
         // retrieve adjacent node
@@ -413,7 +413,7 @@ module Branch {
         branch_node.subtree_size += moved_subtree_size;
     };
 
-    public func merge(left: Branch<Nat, Nat>, right: Branch<Nat, Nat>){
+    public func merge<K, V>(left: Branch<K, V>, right: Branch<K, V>){
         assert left.index + 1 == right.index;
         // Debug.print("merge branch");
 
@@ -434,26 +434,14 @@ module Branch {
         left.count += right.count;
         left.subtree_size += right_subtree_size;
 
-        // assert Utils.validate_indexes<Nat, Nat>(left.children, left.count);
-        // assert Utils.validate_array_equal_count(left.keys, left.count - 1);
-        // assert Utils.validate_array_equal_count(left.children, left.count);
-        // assert Utils.is_sorted<Nat>(left.keys, Nat.compare);
-
         // update parent keys
         ignore ArrayMut.remove(parent.keys, right.index - 1 : Nat, parent.count - 1 : Nat);
         ignore Branch.remove(parent, right.index, parent.count);
         parent.count -= 1;
 
-        // assert Utils.validate_indexes<Nat, Nat>(parent.children, parent.count);
-        // assert Utils.validate_array_equal_count(parent.keys, parent.count - 1);
-        // assert Utils.validate_array_equal_count(parent.children, parent.count);
-        // assert Utils.is_sorted<Nat>(parent.keys, Nat.compare);
     };
 
-    public func remove(self : Branch<Nat, Nat>, index : Nat, count: Nat) : ?Node<Nat, Nat> {
-        // Debug.print("Branch.remove: index: " # debug_show index # ", count: " # debug_show self.count);
-        // Debug.print("Branch.remove: keys: " # debug_show Array.freeze(self.keys));
-        // Debug.print("Branch.remove: self: " # debug_show toText(self, Nat.toText, Nat.toText));
+    public func remove<K, V>(self : Branch<K, V>, index : Nat, count: Nat) : ?Node<K, V> {
         let removed = self.children[index];
 
         var i = index;
@@ -461,7 +449,7 @@ module Branch {
             self.children[i] := self.children[i + 1];
 
             switch (self.children[i]) {
-                case (? #leaf(node) or ? #branch(node) : ?SharedNode<Nat, Nat>) {
+                case (? #leaf(node) or ? #branch(node) : ?SharedNode<K, V>) {
                     node.index := i;
                 };
                 case (_) Debug.trap("Branch.remove: accessed a null value");
@@ -530,6 +518,19 @@ module Branch {
         };
 
         true;
+    };
+
+    public func subtrees<K, V>(node : Branch<K, V>) : [Nat] {
+        Array.tabulate(
+            node.count,
+            func(i : Nat) : Nat {
+                let ?child = node.children[i] else Debug.trap("subtrees: accessed a null value");
+                switch (child) {
+                    case (#branch(node)) node.subtree_size;
+                    case (#leaf(node)) node.count;
+                };
+            },
+        );
     };
 
     public func toText<K, V>(self : Branch<K, V>, key_to_text : (K) -> Text, val_to_text : (V) -> Text) : Text {

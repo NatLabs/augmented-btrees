@@ -95,7 +95,7 @@ module Leaf {
         right_node;
     };
 
-    public func redistribute_keys(leaf_node : Leaf<Nat, Nat>) {
+    public func redistribute_keys<K, V>(leaf_node : Leaf<K, V>) {
 
         let ?parent = leaf_node.parent else return;
 
@@ -122,9 +122,6 @@ module Leaf {
         if (sum_count < min_count_for_both_nodes) return; // not enough entries to distribute
 
         let data_to_move = (sum_count / 2) - leaf_node.count : Nat;
-
-        // Debug.print("before after " # debug_show adj_node.kvs);
-        // Debug.print("before after " # debug_show leaf_node.kvs);
 
         // distribute data between adjacent nodes
         if (adj_node.index < leaf_node.index) {
@@ -156,17 +153,6 @@ module Leaf {
         adj_node.count -= data_to_move;
         leaf_node.count += data_to_move;
 
-        // Debug.print("adj_node after " # debug_show adj_node.kvs);
-        // Debug.print("left_node after " # debug_show leaf_node.kvs);
-
-        let cmp = func((a, _) : (Nat, Nat), (b, _) : (Nat, Nat)) : Order = Nat.compare(a, b);
-
-        // assert Utils.validate_array_equal_count(leaf_node.kvs, leaf_node.count);
-        // assert Utils.is_sorted<(Nat, Nat)>(leaf_node.kvs, cmp);
-
-        // assert Utils.validate_array_equal_count(adj_node.kvs, adj_node.count);
-        // assert Utils.is_sorted<(Nat, Nat)>(adj_node.kvs, cmp);
-
         // update parent keys
         if (adj_node.index < leaf_node.index) {
             // no need to worry about leaf_node.index - 1 being out of bounds because
@@ -185,16 +171,11 @@ module Leaf {
             parent.keys[key_index] := ?adj_node_key;
         };
 
-        // assert Utils.validate_array_equal_count(parent.keys, parent.count - 1);
-        // assert Utils.validate_array_equal_count(parent.children, parent.count);
-        // assert Utils.validate_indexes(parent.children, parent.count);
-        // assert Utils.is_sorted<Nat>(parent.keys, Nat.compare);
-
     };
 
     // merges two leaf nodes into the left node
     // !!! dont use
-    public func merge(left : Leaf<Nat, Nat>, right : Leaf<Nat, Nat>) {
+    public func merge<K, V>(left : Leaf<K, V>, right : Leaf<K, V>) {
         var i = 0;
 
         // merge right into left
@@ -213,6 +194,7 @@ module Leaf {
             case (?next) next.prev := ?left;
             case (_) {};
         };
+        
     };
 
     public func remove<K, V>(leaf : Leaf<K, V>, index : Nat) : ?(K, V) {

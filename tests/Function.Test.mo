@@ -35,10 +35,10 @@ func new_branch(order : Nat, start : Nat) : BpTree.Branch<Nat, Nat> {
         },
     );
 
-    let branch = BpTree.Branch.new(6, ?children, gen_id);
+    let branch = BpTree.Branch.new<Nat, Nat>(6, ?children, gen_id);
 };
 
-func to_bptree(order : Nat, branch : BpTree.Branch<Nat, Nat>) : BpTree.BpTree<Nat, Nat> {
+func to_bptree<K, V>(order : Nat, branch : BpTree.Branch<K, V>) : BpTree.BpTree<K, V> {
     {
         order;
         var root = #branch(branch);
@@ -438,8 +438,8 @@ suite(
 );
 
 func c0() : BpTree.Leaf<Nat, Nat> = new_leaf(6, 1, 7);
-func c1() : BpTree.Leaf<Nat, Nat> = new_leaf(6, 10, 16);
 func c2() : BpTree.Leaf<Nat, Nat> = new_leaf(6, 20, 26);
+func c1() : BpTree.Leaf<Nat, Nat> = new_leaf(6, 10, 16);
 func c3() : BpTree.Leaf<Nat, Nat> = new_leaf(6, 30, 36);
 func c4() : BpTree.Leaf<Nat, Nat> = new_leaf(6, 40, 46);
 func c5() : BpTree.Leaf<Nat, Nat> = new_leaf(6, 50, 56);

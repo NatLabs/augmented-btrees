@@ -66,8 +66,6 @@ func b_plus_test(order : Nat, random : Buffer.Buffer<Nat>) {
             // Debug.print("entries " # debug_show BpTree.toArray(bptree));
             for ((i, curr) in Itertools.enumerate(keys)) {
                 if (prev > curr) {
-                    let leaf_node = BpTree.get_leaf_node(bptree, Nat.compare, curr);
-                    Debug.print("leaf node:" # BpTree.Leaf.toText(leaf_node, Nat.toText, Nat.toText));
                     Debug.print("mismatch: " # debug_show (prev, curr) # " at index " # debug_show i);
                     assert false;
                 };
@@ -83,7 +81,7 @@ func b_plus_test(order : Nat, random : Buffer.Buffer<Nat>) {
             let iter = Iter.map<Nat, (Nat, Nat)>(random.vals(), func(n : Nat) : (Nat, Nat) = (n, n));
             let rand = Iter.toArray(iter);
 
-            let bptree = BpTree.fromEntries(?4, rand.vals(), Nat.compare);
+            let bptree = BpTree.fromEntries<Nat, Nat>(?4, rand.vals(), Nat.compare);
 
             for ((k, v) in rand.vals()) {
                 let retrieved = BpTree.get(bptree, Nat.compare, k);
@@ -102,7 +100,7 @@ func b_plus_test(order : Nat, random : Buffer.Buffer<Nat>) {
             let rand = Itertools.toBuffer<(Nat, Nat)>(iter);
             rand.sort(func(a : (Nat, Nat), b : (Nat, Nat)) : Order = Nat.compare(a.0, b.0));
 
-            let bptree = BpTree.fromEntries(?4, rand.vals(), Nat.compare);
+            let bptree = BpTree.fromEntries<Nat, Nat>(?4, rand.vals(), Nat.compare);
             assert BpTree.size(bptree) == rand.size();
 
             label _l for ((i, (k, v)) in Itertools.enumerate(rand.vals())) {
@@ -134,7 +132,7 @@ func b_plus_test(order : Nat, random : Buffer.Buffer<Nat>) {
             let iter = Iter.map<Nat, (Nat, Nat)>(random.vals(), func(n : Nat) : (Nat, Nat) = (n, n));
             let rand = Itertools.toBuffer<(Nat, Nat)>(iter);
             rand.sort(func(a : (Nat, Nat), b : (Nat, Nat)) : Order = Nat.compare(b.0, a.0));
-            let bptree = BpTree.fromEntries(?4, rand.vals(), Nat.compare);
+            let bptree = BpTree.fromEntries<Nat, Nat>(?4, rand.vals(), Nat.compare);
             assert BpTree.size(bptree) == rand.size();
 
             label _l for ((i, (k, v)) in Itertools.enumerate(rand.vals())) {
@@ -166,7 +164,7 @@ func b_plus_test(order : Nat, random : Buffer.Buffer<Nat>) {
             let iter = Iter.map<Nat, (Nat, Nat)>(random.vals(), func(n : Nat) : (Nat, Nat) = (n, n));
             let rand = Iter.toArray(iter);
 
-            let bptree = BpTree.fromEntries(?4, rand.vals(), Nat.compare);
+            let bptree = BpTree.fromEntries<Nat, Nat>(?4, rand.vals(), Nat.compare);
             assert BpTree.size(bptree) == rand.size();
 
             label _l for ((i, (k, v)) in Itertools.enumerate(rand.vals())) {
@@ -196,7 +194,7 @@ func b_plus_test(order : Nat, random : Buffer.Buffer<Nat>) {
             let iter = Iter.map<Nat, (Nat, Nat)>(random.vals(), func(n : Nat) : (Nat, Nat) = (n, n));
             let rand = Itertools.toBuffer<(Nat, Nat)>(Itertools.take(iter, 1000));
 
-            let bptree = BpTree.fromEntries(?4, rand.vals(), Nat.compare);
+            let bptree = BpTree.fromEntries<Nat, Nat>(?4, rand.vals(), Nat.compare);
 
             assert BpTree.size(bptree) == rand.size();
 
@@ -232,7 +230,7 @@ func b_plus_test(order : Nat, random : Buffer.Buffer<Nat>) {
             let iter = Iter.map<Nat, (Nat, Nat)>(random.vals(), func(n : Nat) : (Nat, Nat) = (n, n));
             let rand = Itertools.toBuffer<(Nat, Nat)>(Itertools.take(iter, 1000));
 
-            let bptree = BpTree.fromEntries(?4, rand.vals(), Nat.compare);
+            let bptree = BpTree.fromEntries<Nat, Nat>(?4, rand.vals(), Nat.compare);
 
             rand.sort(Utils.tuple_cmp(Nat.compare));
 
@@ -255,7 +253,7 @@ func b_plus_test(order : Nat, random : Buffer.Buffer<Nat>) {
             let iter = Iter.map<Nat, (Nat, Nat)>(random.vals(), func(n : Nat) : (Nat, Nat) = (n, n));
             let rand = Itertools.toBuffer<(Nat, Nat)>(Itertools.take(iter, 1000));
 
-            let bptree = BpTree.fromEntries(?4, rand.vals(), Nat.compare);
+            let bptree = BpTree.fromEntries<Nat, Nat>(?4, rand.vals(), Nat.compare);
 
             rand.sort(Utils.tuple_cmp(Nat.compare));
 
@@ -278,7 +276,7 @@ func b_plus_test(order : Nat, random : Buffer.Buffer<Nat>) {
             let iter = Iter.map<Nat, (Nat, Nat)>(random.vals(), func(n : Nat) : (Nat, Nat) = (n, n));
             let _rand = Iter.toArray<(Nat, Nat)>(Itertools.take(iter, 100));
 
-            let bptree = BpTree.fromEntries(?4, _rand.vals(), Nat.compare);
+            let bptree = BpTree.fromEntries<Nat, Nat>(?4, _rand.vals(), Nat.compare);
             let rand = Array.sort<(Nat, Nat)>(_rand, Utils.tuple_cmp(Nat.compare));
 
             for (i in Itertools.range(0, BpTree.size(bptree))) {
@@ -310,7 +308,7 @@ func b_plus_test(order : Nat, random : Buffer.Buffer<Nat>) {
             let iter = Iter.map<Nat, (Nat, Nat)>(random.vals(), func(n : Nat) : (Nat, Nat) = (n, n));
             let _rand = Iter.toArray<(Nat, Nat)>(Itertools.take(iter, 100));
 
-            let bptree = BpTree.fromEntries(?4, _rand.vals(), Nat.compare);
+            let bptree = BpTree.fromEntries<Nat, Nat>(?4, _rand.vals(), Nat.compare);
             let rand = Array.sort<(Nat, Nat)>(_rand, Utils.tuple_cmp(Nat.compare));
 
             for (i in Itertools.range(0, BpTree.size(bptree))) {
