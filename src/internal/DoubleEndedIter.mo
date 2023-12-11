@@ -38,4 +38,31 @@ module {
 
         return new(next, nextFromEnd);
     };
+
+    public func fromMutArray<A>(arr: [var A]): DoubleEndedIter<A> {
+        var i = 0;
+        var j = arr.size();
+
+        func next() : ?A {
+            if (i < arr.size() and i < j) {
+                let res = arr[i];
+                i := i + 1;
+                return ?res;
+            } else {
+                return null;
+            };
+        };
+
+        func nextFromEnd() : ?A {
+            if (j > 0 and j > i) {
+                let res = arr[j - 1];
+                j -= 1;
+                return ?res;
+            } else {
+                return null;
+            };
+        };
+
+        return new(next, nextFromEnd);
+    };
 };

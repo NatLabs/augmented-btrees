@@ -31,7 +31,6 @@ module {
         var root : Node<K, V>;
         var size : Nat;
     };
-
     
     public type SharedNodeFields<K, V> = {
         var parent : ?Branch<K, V>;

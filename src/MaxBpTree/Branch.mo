@@ -53,8 +53,9 @@ module {
             case (_) Debug.trap("Branch.new: should replace the opt_children input with a null value ");
         };
 
-        let keys = Array.tabulateVar<?K>(
+        let keys = Utils.tabulate_var<K>(
             order - 1 : Nat,
+            if (count > 1) count - 1 else 0,
             func(i : Nat) : ?K {
                 switch (children[i + 1]) {
                     case (? #leaf(node)) {
