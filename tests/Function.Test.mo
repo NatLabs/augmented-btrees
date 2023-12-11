@@ -5,7 +5,7 @@ import Iter "mo:base/Iter";
 import { test; suite } "mo:test";
 import Itertools "mo:itertools/Iter";
 
-import { BpTree; Leaf; Branch } "../src";
+import { BpTree } "../src";
 import ArrayMut "../src/internal/ArrayMut";
 import Utils "../src/internal/Utils";
 

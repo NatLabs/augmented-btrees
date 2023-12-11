@@ -262,9 +262,7 @@ module BpTree {
                 leaf_node.kvs[j] := leaf_node.kvs[j - 1];
                 j -= 1;
             };
-            // Debug.print("elem_index: " # debug_show elem_index);
-            // Debug.print("leaf_node count: " # debug_show leaf_node.count);
-            // Debug.print("order: " # debug_show self.order);
+
             leaf_node.kvs[elem_index] := ?entry;
             leaf_node.count += 1;
 
@@ -290,8 +288,6 @@ module BpTree {
             var subtree_diff : Nat = 0;
             let ?parent = opt_parent else Debug.trap("3. insert: accessed a null parent value");
 
-            // Debug.print("parent subtree size: " # debug_show parent.subtree_size );
-            // Debug.print("diff: " # debug_show subtree_diff );
             parent.subtree_size -= subtree_diff;
 
             if (parent.count < self.order) {
@@ -301,10 +297,6 @@ module BpTree {
                     if (j == right_index) {
                         parent.keys[j - 1] := ?right_key;
                         parent.children[j] := ?right_node;
-                        // parent.subtree_size += switch(right_node){
-                        //     case (#branch(n)) n.subtree_size;
-                        //     case (#leaf(n)) n.count;
-                        // };
                     } else {
                         parent.keys[j - 1] := parent.keys[j - 2];
                         parent.children[j] := parent.children[j - 1];
@@ -327,7 +319,6 @@ module BpTree {
 
             } else {
 
-                // Debug.print("before split subtrees " # debug_show subtrees(parent));
                 let median = (parent.count / 2) + 1; // include inserted key-value pair
                 let prev_subtree_size = parent.subtree_size;
 
@@ -335,9 +326,6 @@ module BpTree {
 
                 let ?first_key = extract(split_node.keys, split_node.keys.size() - 1 : Nat) else Debug.trap("4. insert: accessed a null value in first key of branch");
                 right_key := first_key;
-
-                // Debug.print("left split subtrees " # debug_show subtrees(parent));
-                // Debug.print("right split subtrees " # debug_show subtrees(split_node));
 
                 left_node := #branch(parent);
                 right_node := #branch(split_node);
@@ -355,32 +343,11 @@ module BpTree {
 
         let root_node = Branch.new<Nat, Nat>(self.order, ?children, gen_id);
         root_node.keys[0] := ?right_key;
-        assert root_node.count == 2;
 
         self.root := #branch(root_node);
-
         self.size += 1;
-        // Debug.print("root_node subtree size: " # debug_show root_node.subtree_size );
-        // Debug.print("self size: " # debug_show self.size );
-        // Debug.print("root subtrees " # debug_show subtrees(root_node));
-
-        // switch(left_node){
-        //     case (#branch(node)) {
-        //         Debug.print("left subtrees " # debug_show subtrees(node));
-        //     };
-        //     case (_){};
-        // };
-
-        // switch(right_node){
-        //     case (#branch(node)) {
-        //         Debug.print("right subtrees " # debug_show subtrees(node));
-        //     };
-        //     case (_) {};
-        // };
-
-        assert root_node.subtree_size == self.size;
+     
         prev_value;
-
     };
 
     public func subtrees<K, V>(node : Branch<K, V>) : [Nat] {
@@ -434,8 +401,6 @@ module BpTree {
                 ignore Branch.remove(parent, right.index : Nat, parent.count);
 
                 parent.count -= 1;
-                // assert Utils.is_sorted<Nat>(parent.keys, Nat.compare);
-
             };
         };
 
@@ -476,7 +441,6 @@ module BpTree {
         };
 
         if (elem_index == 0) {
-
             let next = leaf_node.kvs[elem_index]; // same as entry index because we removed the entry from the array
             let ?next_key = do ? { next!.0 } else Debug.trap("update_deleted_median_key: accessed a null value");
             update_deleted_median_key(parent, leaf_node.index, key, next_key);
@@ -848,18 +812,19 @@ module BpTree {
 
     /// Returns the key-value pair at the given rank.
     /// Returns null if the rank is greater than the size of the tree.
-    public func getByRank<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, rank : Nat) : ?(K, V) {
-        if (rank >= self.size) return null;
+    public func getByRank<K, V>(self : BpTree<K, V>, rank : Nat) : (K, V) {
+        if (rank >= self.size) return Debug.trap("getByRank: rank is greater than the size of the tree");
         let (leaf_node, i) = get_leaf_node_by_rank(self, rank);
 
         assert i < leaf_node.count;
 
-        leaf_node.kvs[i];
+        let ?entry = leaf_node.kvs[i] else Debug.trap("getByRank: accessed a null value");
+        entry;
     };
 
     /// Returns an iterator over the entries of the tree in the range [start, end]
     /// Where the range is defined by the ranks of the given start and end keys
-    public func range(self : BpTree<Nat, Nat>, cmp : CmpFn<Nat>, start : Nat, end : Nat) : DoubleEndedIter<(Nat, Nat)> {
+    public func range(self : BpTree<Nat, Nat>, start : Nat, end : Nat) : DoubleEndedIter<(Nat, Nat)> {
         let (start_node, start_node_rank) = get_leaf_node_by_rank(self, start);
         let (end_node, end_node_rank) = get_leaf_node_by_rank(self, end);
 

@@ -22,7 +22,7 @@ module {
         bench.description("Benchmarking the performance with 10k entries");
 
         bench.rows(["RBTree", "BTree", "B+Tree"]);
-        bench.cols(["insert()", "replace()", "get()", "entries()", "delete()"]);
+        bench.cols(["insert()", "replace()", "get()", "entries()", "remove()"]);
 
         let limit = 10_000;
 
@@ -66,7 +66,7 @@ module {
                 case ("RBTree", "entries()") {
                     for (i in rbtree.entries()) { ignore i };
                 };
-                case ("RBTree", "delete()") {
+                case ("RBTree", "remove()") {
                     for (i in Iter.range(0, limit - 1)) {
                         rbtree.delete(i);
                     };
@@ -91,7 +91,7 @@ module {
                 case ("BTree", "entries()") {
                     for (i in BTree.entries(btree)) { ignore i };
                 };
-                case ("BTree", "delete()") {
+                case ("BTree", "remove()") {
                     for ((k, v) in entries.vals()) {
                         ignore BTree.delete(btree, Nat.compare, k);
                     };
@@ -116,7 +116,7 @@ module {
                 case ("B+Tree", "entries()") {
                     for (i in BpTree.entries(bptree)) { ignore i };
                 };
-                case ("B+Tree", "delete()") {
+                case ("B+Tree", "remove()") {
                     for ((k, v) in entries.vals()) {
                         ignore BpTree.remove(bptree, Nat.compare, k);
                     };

@@ -261,7 +261,7 @@ func b_plus_test(order : Nat, random : Buffer.Buffer<Nat>) {
 
             for (i in Itertools.range(0, rand.size())) {
                 let expected = rand.get(i);
-                let ?received = BpTree.getByRank(bptree, Nat.compare, i);
+                let received = BpTree.getByRank(bptree, i);
 
                 if (not (expected == received)) {
                     Debug.print("mismatch at rank:" # debug_show i);
@@ -319,13 +319,13 @@ func b_plus_test(order : Nat, random : Buffer.Buffer<Nat>) {
 
                     if (
                         not Itertools.equal<(Nat, Nat)>(
-                            BpTree.range(bptree, Nat.compare, i, j),
+                            BpTree.range(bptree, i, j),
                             Itertools.fromArraySlice(rand, i, j + 1),
                             func(a : (Nat, Nat), b : (Nat, Nat)) : Bool = a == b,
                         )
                     ) {
                         Debug.print("mismatch: " # debug_show (i, j));
-                        Debug.print("scan " # debug_show Iter.toArray(BpTree.range(bptree, Nat.compare, i, j)));
+                        Debug.print("scan " # debug_show Iter.toArray(BpTree.range(bptree, i, j)));
                         Debug.print("expected " # debug_show Iter.toArray(Itertools.fromArraySlice(rand, i, j + 1)));
                         assert false;
                     };
