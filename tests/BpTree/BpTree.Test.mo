@@ -323,7 +323,7 @@ func b_plus_test(order : Nat, random : Buffer.Buffer<Nat>) {
                         )
                     ) {
                         Debug.print("mismatch: " # debug_show (i, j));
-                        Debug.print("scan " # debug_show Iter.toArray(BpTree.range(bptree, i, j)));
+                        Debug.print("range " # debug_show Iter.toArray(BpTree.range(bptree, i, j)));
                         Debug.print("expected " # debug_show Iter.toArray(Itertools.fromArraySlice(rand, i, j + 1)));
                         assert false;
                     };

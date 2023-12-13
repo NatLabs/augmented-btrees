@@ -22,7 +22,7 @@ module {
         bench.description("Benchmarking the performance with 10k entries");
 
         bench.rows(["RBTree", "BTree", "B+Tree"]);
-        bench.cols(["insert()", "replace()", "get()", "entries()", "remove()"]);
+        bench.cols(["insert()", "replace()", "get()", "entries()", "scan()", "remove()"]);
 
         let limit = 10_000;
 
@@ -37,6 +37,9 @@ module {
 
             entries.add((key, i));
         };
+
+        let sorted = Buffer.clone(entries);
+        sorted.sort(func(a, b) = Nat.compare(a.0, b.0));
 
         bench.runner(
             func(row, col) = switch (row, col) {
@@ -66,6 +69,7 @@ module {
                 case ("RBTree", "entries()") {
                     for (i in rbtree.entries()) { ignore i };
                 };
+                case ("RBTree", "scan()") { };
                 case ("RBTree", "remove()") {
                     for (i in Iter.range(0, limit - 1)) {
                         rbtree.delete(i);
@@ -91,6 +95,17 @@ module {
                 case ("BTree", "entries()") {
                     for (i in BTree.entries(btree)) { ignore i };
                 };
+                case ("BTree", "scan()") {
+                    var i = 0;
+
+                    while (i < limit){
+                        let a = sorted.get(i).0;
+                        let b = sorted.get(i + 199).0;
+
+                        for (kv in BTree.scanLimit(btree, Nat.compare, a, b, #fwd, 200).results.vals()) { ignore kv };
+                        i += 200;
+                    };
+                };
                 case ("BTree", "remove()") {
                     for ((k, v) in entries.vals()) {
                         ignore BTree.delete(btree, Nat.compare, k);
@@ -114,7 +129,18 @@ module {
                     };
                 };
                 case ("B+Tree", "entries()") {
-                    for (i in BpTree.entries(bptree)) { ignore i };
+                    for (kv in BpTree.entries(bptree)) { ignore kv };
+                };
+                case ("B+Tree", "scan()") {
+                    var i = 0;
+
+                    while (i < limit){
+                        let a = sorted.get(i).0;
+                        let b = sorted.get(i + 199).0;
+
+                        for (kv in Iter.toArray(BpTree.scan(bptree, Nat.compare, a, b)).vals()) { ignore kv };
+                        i += 200;
+                    };
                 };
                 case ("B+Tree", "remove()") {
                     for ((k, v) in entries.vals()) {

@@ -22,18 +22,17 @@ This library contains implementations of different Btree variants.
 ```motoko
     let bptree = BpTree.fromArray(?32, [('A', 0), ('B', 1), ('C', 2), ('D', 3), ('E', 4)], Char.compare);
 
-    assert BpTree.get(bptree, 'A') == 1;
-
     assert Iter.toArray(BpTree.keys(bptree)) == ['A', 'B', 'C', 'D'];
 
+    assert BpTree.get(bptree, 'A') == 0;
+
     ignore BpTree.insert(bptree, 'E', 4);
-    assert Iter.toArray(BpTree.keys(bptree)) == ['A', 'B', 'C', 'D', 'E'];
+    assert Iter.toArray(BpTree.vals(bptree)) == ['A', 'B', 'C', 'D', 'E'];
 
     // replace
-    assert BpTree.replace(bptree, 'C', "3") == ?3;
+    assert BpTree.insert(bptree, 'C', 33) == ?3;
 
-    assert BpTree.remove(bptree, Char.compare, 'C') == ?"3";
-
+    assert BpTree.remove(bptree, Char.compare, 'C') == ?33;
     assert BpTree.toArray(bptree) == [('A', 0), ('B', 1), ('D', 3), ('E', 4)];
 
     assert BpTree.min(bptree, Char.compare) == ?('A', 0);
@@ -70,6 +69,8 @@ This library contains implementations of different Btree variants.
 
     // retrieve the next 3 elements after a given key
     let rankB = BpTree.getRank(bptree, Char.compare, 'B');
+    assert rankB == 1;
+    
     let range2 = BpTree.range(bptree, rankB + 1, rankB + 3);
     assert Iter.toArray(range2) == [('C', 2), ('D', 3), ('E', 4)];
 ```
