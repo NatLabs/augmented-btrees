@@ -28,6 +28,7 @@ module Leaf {
             var count = count;
             var next = null;
             var prev = null;
+            fields = ();
         };
     };
 

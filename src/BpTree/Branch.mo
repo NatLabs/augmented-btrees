@@ -7,6 +7,7 @@ import Order "mo:base/Order";
 
 import T "Types";
 import InternalTypes "../internal/Types";
+import InternalBranch "../internal/Branch";
 import Leaf "Leaf";
 import Utils "../internal/Utils";
 import ArrayMut "../internal/ArrayMut";
@@ -16,118 +17,15 @@ module Branch {
     public type Branch<K, V> = T.Branch<K, V>;
     type Node<K, V> = T.Node<K, V>;
     type CmpFn<K> = InternalTypes.CmpFn<K>;
-    type SharedNode<K, V> = T.SharedNode<K, V>;
+    type CommonNodeFields<K, V> = T.CommonNodeFields<K, V>;
 
     public func new<K, V>(
         order : Nat,
+        opt_keys : ?[var ?K],
         opt_children : ?[var ?Node<K, V>],
         gen_id: () -> Nat,
     ) : Branch<K, V> {
-
-        let self : Branch<K, V> = {
-            id = gen_id();
-            var parent = null;
-            var index = 0;
-            var keys = [var];
-            var children = [var];
-            var count = 0;
-            var subtree_size = 0;
-        };
-
-        let children = switch (opt_children) {
-            case (?children) { children };
-            case (_) {
-                self.keys := Array.init<?K>(order - 1, null);
-                self.children := Array.init<?Node<K, V>>(order, null);
-                return self;
-            };
-        };
-
-        var count = 0;
-
-        switch (children[0]) {
-            case (? #leaf(node)) {
-                node.parent := ?self;
-                node.index := 0;
-                count += 1;
-                self.subtree_size += node.count;
-            };
-            case (?#branch(node)){
-                node.parent := ?self;
-                node.index := 0;
-                count += 1;
-                self.subtree_size += node.subtree_size;
-            };
-            case (_) Debug.trap("Branch.new: should replace the opt_children input with a null value ");
-        };
-
-        let keys = Utils.tabulate_var<K>(
-            order - 1 : Nat,
-            order - 1,
-            func(i : Nat) : ?K {
-                switch (children[i + 1]) {
-                    case (? #leaf(node)) {
-                        node.parent := ?self;
-                        node.index := count;
-                        count += 1;
-                        self.subtree_size += node.count;
-
-                        switch (node.kvs[0]) {
-                            case (?kv) ?kv.0;
-                            case (_) null;
-                        };
-                    };
-                    case (? #branch(node)) {
-                        node.parent := ?self;
-                        node.index := count;
-                        count += 1;
-                        self.subtree_size += node.subtree_size;
-
-                        node.keys[0];
-                    };
-                    case (_) null;
-                };
-            },
-        );
-
-        self.keys := keys;
-        self.children := children;
-        self.count := count;
-
-
-        self;
-    };
-
-    public func newWithKeys<K, V>(keys : [var ?K], children : [var ?Node<K, V>], gen_id: () -> Nat) : Branch<K, V> {
-        let self : Branch<K, V> = {
-            id = gen_id();
-            var parent = null;
-            var index = 0;
-            var keys = keys;
-            var children = children;
-            var count = 0;
-            var subtree_size = 0;
-        };
-
-        for (child in children.vals()) {
-            switch (child) {
-                case (? #leaf(node)) {
-                    node.parent := ?self;
-                    node.index := self.count;
-                    self.count += 1;
-                    self.subtree_size += node.count;
-                };
-                case (? #branch(node)) {
-                    node.parent := ?self;
-                    node.index := self.count;
-                    self.count += 1;
-                    self.subtree_size += node.subtree_size;
-                };
-                case (_) {};
-            };
-        };
-
-        self;
+        InternalBranch.new<K, V, ()>(order, opt_keys, opt_children, gen_id, (), null);
     };
 
     public func shift_by<K, V>(self: Branch<K, V>, start: Nat, end: Nat, shift: Int){
@@ -143,8 +41,16 @@ module Branch {
                 let j = Int.abs(shift) + i - 1 : Nat;
                 self.children[j] := child;
                 // Debug.print("shift_by: " # debug_show (i-1)  # " -> " # debug_show j);
+
+                // type Shared<K, V> = T.Branch<K, V> and T.Leaf<K, V>;
+
+                // type Fields<K, V> = {
+                //     #leaf: Shared<K, V>;
+                //     #branch: Shared<K, V>;
+                // };
+
                 switch (child) {
-                    case (? #branch(node) or ? #leaf(node) : ?SharedNode<K, V>) {
+                    case (? #branch(node) or ? #leaf(node) : ?InternalTypes.CommonNodeFields<K, V, ()>) {
                         node.index := j;
                     };
                     case (_) {};
@@ -165,7 +71,7 @@ module Branch {
             self.children[j] := child;
 
             switch (child) {
-                case (? #branch(node) or ? #leaf(node) : ?SharedNode<K, V>) {
+                case (? #branch(node) or ? #leaf(node) : ?CommonNodeFields<K, V>) {
                     node.index := j;
                 };
                 case (_) {};
@@ -179,7 +85,7 @@ module Branch {
         branch.children[i] := ?child;
 
         switch (child) {
-            case (#branch(node) or  #leaf(node) : SharedNode<K, V>) {
+            case (#branch(node) or  #leaf(node) : CommonNodeFields<K, V>) {
                 node.parent := ?branch;
                 node.index := i;
             };
@@ -262,7 +168,7 @@ module Branch {
             node.children[j] := node.children[j - 1];
 
             switch (node.children[j]) {
-                case (? #branch(node) or ? #leaf(node) : ?SharedNode<K, V>) {
+                case (? #branch(node) or ? #leaf(node) : ?CommonNodeFields<K, V>) {
                     node.index := j;
                 };
                 case (_) {};
@@ -285,9 +191,9 @@ module Branch {
         let right_cnt = node.children.size() + 1 - median : Nat;
 
         let right_node = switch (node.children[0]) {
-            case (? #leaf(_)) Branch.new(node.children.size(), ?right_children, gen_id);
+            case (? #leaf(_)) Branch.new(node.children.size(), null, ?right_children, gen_id);
             case (? #branch(_)) {
-                Branch.newWithKeys<K, V>(right_keys, right_children, gen_id);
+                Branch.new<K, V>(node.children.size(), ?right_keys, ?right_children, gen_id);
                 // Branch new fails to update the median key to its correct position so we do it manually
             };
             case (_) Debug.trap("right_node: accessed a null value");
@@ -449,7 +355,7 @@ module Branch {
             self.children[i] := self.children[i + 1];
 
             switch (self.children[i]) {
-                case (? #leaf(node) or ? #branch(node) : ?SharedNode<K, V>) {
+                case (? #leaf(node) or ? #branch(node) : ?CommonNodeFields<K, V>) {
                     node.index := i;
                 };
                 case (_) Debug.trap("Branch.remove: accessed a null value");
@@ -471,7 +377,7 @@ module Branch {
             branch.children[j + 1] := branch.children[j];
 
             switch (branch.children[j + 1]) {
-                case (? #branch(node) or ? #leaf(node) : ?SharedNode<K, V>) {
+                case (? #branch(node) or ? #leaf(node) : ?CommonNodeFields<K, V>) {
                     node.parent := ?branch;
                     node.index := j + 1;
                 };
@@ -483,7 +389,7 @@ module Branch {
         branch.children[i] := ?child;
 
         switch (child) {
-            case (#branch(node) or #leaf(node) : SharedNode<K, V>) {
+            case (#branch(node) or #leaf(node) : CommonNodeFields<K, V>) {
                 node.parent := ?branch;
                 node.index := i;
             };

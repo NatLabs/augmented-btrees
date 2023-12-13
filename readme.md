@@ -20,58 +20,58 @@ This library contains implementations of different Btree variants.
 
 - Examples of operations on a B+ Tree
 ```motoko
-    let bptree = BpTree.fromArray(?32, [('A', "one"), ('B', "two"), ('C', "three"), ('D', "four"), ('E', "five")], Char.compare);
+    let bptree = BpTree.fromArray(?32, [('A', 0), ('B', 1), ('C', 2), ('D', 3), ('E', 4)], Char.compare);
 
-    assert BpTree.get(bptree, 'A') == "one";
+    assert BpTree.get(bptree, 'A') == 1;
 
     assert Iter.toArray(BpTree.keys(bptree)) == ['A', 'B', 'C', 'D'];
 
-    ignore BpTree.insert(bptree, 'E', "five");
+    ignore BpTree.insert(bptree, 'E', 4);
     assert Iter.toArray(BpTree.keys(bptree)) == ['A', 'B', 'C', 'D', 'E'];
 
     // replace
-    assert BpTree.replace(bptree, 'C', "3") == ?"three";
+    assert BpTree.replace(bptree, 'C', "3") == ?3;
 
     assert BpTree.remove(bptree, Char.compare, 'C') == ?"3";
 
-    assert BpTree.toArray(bptree) == [('A', "one"), ('B', "two"), ('D', "four"), ('E', "five")];
+    assert BpTree.toArray(bptree) == [('A', 0), ('B', 1), ('D', 3), ('E', 4)];
 
-    assert BpTree.min(bptree, Char.compare) == ?('A', "one");
-    assert BpTree.max(bptree, Char.compare) == ?('E', "five");
+    assert BpTree.min(bptree, Char.compare) == ?('A', 0);
+    assert BpTree.max(bptree, Char.compare) == ?('E', 4);
 
     // get sorted position of a key
     assert BpTree.getRank(bptree, Char.compare, 'A') == 0;
 
     // get the key and value at a given position
-    assert BpTree.getByRank(bptree, 0) == ('A', "one");
+    assert BpTree.getByRank(bptree, 0) == ('A', 0);
 ```
 
 - Iterating over a B+ Tree
     - Each iterator is implemented as a `DoubleEndedIter` and can be iterated in both directions.
-    - An iter can be created from a B+ Tree using the `entries()`, `keys()` and `vals()`, `scan()`, or `range()` functions.
+    - An iter can be created from a B+ Tree using the `entries()`, `keys()`, `vals()`, `scan()`, or `range()` functions.
     - The iterator can be reversed just by calling the `rev()` function on the iterator.
 
 ```motoko
-    let bptree = BpTree.fromArray(?32, [('A', "one"), ('B', "two"), ('C', "three"), ('D', "four"), ('E', "five")], Char.compare);
+    let bptree = BpTree.fromArray(?32, [('A', 0), ('B', 1), ('C', 2), ('D', 3), ('E', 4)], Char.compare);
 
     let entries = BpTree.entries(bptree);
-    assert Iter.toArray(entries.rev()) == [('E', "five"), ('D', "four"), ('C', "three"), ('B', "two"), ('A', "one")];
+    assert Iter.toArray(entries.rev()) == [('E', 4), ('D', 3), ('C', 2), ('B', 1), ('A', 0)];
 
     // search for elements bounded by the given keys (the keys are inclusive)
     let results = BpTree.scan(bptree, Char.compare, 'B', 'D');
-    assert Iter.toArray(results) == [('B', "two"), ('C', "three"), ('D', "four")];
+    assert Iter.toArray(results) == [('B', 1), ('C', 2), ('D', 3)];
     
     let results2 = BpTree.scan(bptree, Char.compare, 'A', 'C');
-    assert Iter.toArray(results2.rev()) == [('C', "three"), ('B', "two"), ('A', "one")];
+    assert Iter.toArray(results2.rev()) == [('C', 2), ('B', 1), ('A', 0)];
 
     // retrieve elements by their rank
     let range1 = BpTree.range(bptree, 2, 4);
-    assert Iter.toArray(range1) == [('C', "three"), ('D', "four"), ('E', "five")];
+    assert Iter.toArray(range1) == [('C', 2), ('D', 3), ('E', 4)];
 
     // retrieve the next 3 elements after a given key
-    let rank = BpTree.getRank(bptree, Char.compare, 'B');
-    let range2 = BpTree.range(bptree, rank + 1, rank + 3);
-    assert Iter.toArray(range2) == [('C', "three"), ('D', "four"), ('E', "five")];
+    let rankB = BpTree.getRank(bptree, Char.compare, 'B');
+    let range2 = BpTree.range(bptree, rankB + 1, rankB + 3);
+    assert Iter.toArray(range2) == [('C', 2), ('D', 3), ('E', 4)];
 ```
 
 #### Benchmarks

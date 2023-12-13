@@ -11,8 +11,8 @@ import { test; suite } "mo:test";
 import Fuzz "mo:fuzz";
 import Itertools "mo:itertools/Iter";
 
-import { BpTree } "../src";
-import Utils "../src/internal/Utils";
+import { BpTree } "../../src";
+import Utils "../../src/internal/Utils";
 
 type Order = Order.Order;
 
