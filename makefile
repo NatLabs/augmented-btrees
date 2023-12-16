@@ -20,4 +20,4 @@ docs:  set-moc-version
 	$(MocvPath)/mo-doc --format plain
 
 bench: set-dfx-moc-path
-	mops bench
+	mops bench  --gc incremental

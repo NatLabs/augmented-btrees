@@ -62,6 +62,24 @@ module MaxBpTree {
         InternalMethods.get(self, cmp, key);
     };
 
+    /// Returns the value associated with the minimum key in the tree.
+    /// If the tree is empty, it returns null.
+    ///
+    /// #### Examples
+    /// ```motoko
+    ///     let arr = [('A', 1), ('B', 2), ('C', 3)];
+    ///     let bptree = MaxBpTree.fromArray<Char, Nat>(null, arr, Char.compare);
+    ///
+    ///     assert MaxBpTree.min(bptree) == ?1;
+    /// ```
+    // public func min<K, V>(self : MaxBpTree<K, V>) : ?V {
+    //     InternalMethods.min(self);
+    // };
+
+    // public func max_value<K, V>(self : MaxBpTree<K, V>) : ?(K, V) {
+    //     InternalMethods.max_value(self);
+    // };
+
     /// Inserts the given key-value pair into the tree.
     /// If the key already exists in the tree, it replaces the value and returns the old value.
     /// Otherwise, it returns null.

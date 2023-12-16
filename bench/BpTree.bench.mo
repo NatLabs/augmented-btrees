@@ -138,7 +138,7 @@ module {
                         let a = sorted.get(i).0;
                         let b = sorted.get(i + 199).0;
 
-                        for (kv in Iter.toArray(BpTree.scan(bptree, Nat.compare, a, b)).vals()) { ignore kv };
+                        for (kv in BpTree.scan(bptree, Nat.compare, a, b)) { ignore kv };
                         i += 200;
                     };
                 };
