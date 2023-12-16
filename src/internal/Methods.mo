@@ -19,7 +19,7 @@ import Cursor "Cursor";
 import InternalTypes "../internal/Types";
 import DoubleEndedIter "../internal/DoubleEndedIter";
 
-module Methods {
+module InternalMethods {
     type Iter<A> = Iter.Iter<A>;
     type Order = Order.Order;
     type CmpFn<A> = (A, A) -> Order;
@@ -378,7 +378,7 @@ module Methods {
 
 
     public func get<K, V, Extra>(self : BpTree<K, V, Extra>, cmp : CmpFn<K>, key : K) : ?V {
-        let leaf_node = Methods.get_leaf_node<K, V, Extra>(self, cmp, key);
+        let leaf_node = InternalMethods.get_leaf_node<K, V, Extra>(self, cmp, key);
 
         let i = ArrayMut.binary_search<K, (K, V)>(leaf_node.kvs, Utils.adapt_cmp(cmp), key, leaf_node.count);
 
@@ -388,6 +388,123 @@ module Methods {
         };
 
         null;
+    };
+
+    public func to_array<K, V, Extra>(self : BpTree<K, V, Extra>) : [(K, V)] {
+        var node = ?self.root;
+        let buffer = Buffer.Buffer<(K, V)>(self.size);
+
+        var leaf_node : ?Leaf<K, V, Extra> = ?InternalMethods.get_min_leaf_node(self);
+
+        label _loop loop {
+            switch (leaf_node) {
+                case (?leaf) {
+                    label _for_loop for (opt in leaf.kvs.vals()) {
+                        let ?kv = opt else break _for_loop;
+                        buffer.add(kv);
+                    };
+
+                    leaf_node := leaf.next;
+                };
+                case (_) break _loop;
+            };
+        };
+
+        Buffer.toArray(buffer);
+    };
+
+     public func min<K, V, Extra>(self : BpTree<K, V, Extra>) : ?(K, V) {
+        let leaf_node = InternalMethods.get_min_leaf_node(self) else return null;
+        leaf_node.kvs[0];
+    };
+
+    // Returns the maximum key-value pair in the tree.
+    public func max<K, V, Extra>(self : BpTree<K, V, Extra>) : ?(K, V) {
+        let leaf_node = InternalMethods.get_max_leaf_node(self) else return null;
+        leaf_node.kvs[leaf_node.count - 1];
+    };
+
+    // Returns a double ended iterator over the entries of the tree.
+    public func entries<K, V, Extra>(bptree : BpTree<K, V, Extra>) : DoubleEndedIter<(K, V)> {
+        let min_leaf = InternalMethods.get_min_leaf_node(bptree);
+        let max_leaf = InternalMethods.get_max_leaf_node(bptree);
+        InternalMethods.new_iterator(min_leaf, 0, max_leaf, max_leaf.count);
+    };
+
+    // Returns a double ended iterator over the keys of the tree.
+    public func keys<K, V, Extra>(self : BpTree<K, V, Extra>) : DoubleEndedIter<K> {
+        DoubleEndedIter.map(
+            entries(self),
+            func(kv : (K, V)) : K {
+                kv.0;
+            },
+        );
+    };
+
+    // Returns a double ended iterator over the values of the tree.
+    public func vals<K, V, Extra>(self : BpTree<K, V, Extra>) : DoubleEndedIter<V> {
+        DoubleEndedIter.map(
+            entries(self),
+            func(kv : (K, V)) : V {
+                kv.1;
+            },
+        );
+    };
+
+    // Returns the rank of the given key in the tree.
+    public func get_rank<K, V, Extra>(self : BpTree<K, V, Extra>, cmp : CmpFn<K>, key : K) : Nat {
+        let (leaf_node, rank) = InternalMethods.get_leaf_node_and_rank(self, cmp, key);
+        let i = ArrayMut.binary_search<K, (K, V)>(leaf_node.kvs, Utils.adapt_cmp(cmp), key, leaf_node.count);
+
+        if (i < 0) {
+            return rank + (Int.abs(i) - 1 : Nat);
+        };
+
+        rank + Int.abs(i);
+    };
+
+    // Returns the key-value pair at the given rank.
+    // Returns null if the rank is greater than the size of the tree.
+    public func get_by_rank<K, V, Extra>(self : BpTree<K, V, Extra>, rank : Nat) : (K, V) {
+        if (rank >= self.size) return Debug.trap("getByRank: rank is greater than the size of the tree");
+        let (leaf_node, i) = InternalMethods.get_leaf_node_by_rank(self, rank);
+
+        assert i < leaf_node.count;
+
+        let ?entry = leaf_node.kvs[i] else Debug.trap("getByRank: accessed a null value");
+        entry;
+    };
+
+    // Returns an iterator over the entries of the tree in the range [start, end].
+    // The range is defined by the ranks of the start and end keys
+    public func range<K, V, Extra>(self : BpTree<K, V, Extra>, start : Nat, end : Nat) : DoubleEndedIter<(K, V)> {
+        let (start_node, start_node_rank) = InternalMethods.get_leaf_node_by_rank(self, start);
+        let (end_node, end_node_rank) = InternalMethods.get_leaf_node_by_rank(self, end);
+
+        let start_index = start_node_rank : Nat;
+        let end_index = end_node_rank + 1 : Nat; // + 1 because the end index is exclusive
+
+        InternalMethods.new_iterator(start_node, start_index, end_node, end_index);
+    };
+
+    // Returns an iterator over the entries of the tree in the range [start, end].
+    // The iterator is inclusive of start and end.
+    //
+    // If the start key does not exist in the tree then the iterator will start from next key greater than start.
+    // If the end key does not exist in the tree then the iterator will end at the last key less than end.
+    public func scan<K, V, Extra>(self : BpTree<K, V, Extra>, cmp : CmpFn<K>, start : K, end : K) : DoubleEndedIter<(K, V)> {
+        let left_node = InternalMethods.get_leaf_node(self, cmp, start);
+        let start_index = ArrayMut.binary_search<K, (K, V)>(left_node.kvs, Utils.adapt_cmp(cmp), start, left_node.count);
+
+        // if start_index is negative then the element was not found
+        // moreover if start_index is negative then abs(i) - 1 is the index of the first element greater than start
+        var i = if (start_index >= 0) Int.abs(start_index) else Int.abs(start_index) - 1 : Nat;
+
+        let right_node = InternalMethods.get_leaf_node(self, cmp, end);
+        let end_index = ArrayMut.binary_search<K, (K, V)>(right_node.kvs, Utils.adapt_cmp(cmp), end, right_node.count);
+        var j = if (end_index >= 0) Int.abs(end_index) + 1 else Int.abs(end_index) - 1 : Nat;
+
+        InternalMethods.new_iterator(left_node, i, right_node, j);
     };
 
 };

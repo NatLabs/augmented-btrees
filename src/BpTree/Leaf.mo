@@ -21,27 +21,11 @@ module Leaf {
     type CommonNodeFields<K, V> = T.CommonNodeFields<K, V>;
 
     public func new<K, V>(order : Nat, count : Nat, opt_kvs : ?[var ?(K, V)], gen_id : () -> Nat) : Leaf<K, V> {
-        return {
-            id = gen_id();
-            var parent = null;
-            var index = 0;
-            kvs = switch (opt_kvs) {
-                case (?kvs) kvs;
-                case (_) Array.init<?(K, V)>(order, null);
-            };
-            var count = count;
-            var next = null;
-            var prev = null;
-            fields = ();
-        };
+        InternalLeaf.new(order, count, opt_kvs, gen_id, (), null);
     };
 
     public func split<K, V>(leaf : Leaf<K, V>, elem_index : Nat, elem : (K, V), gen_id : () -> Nat) : Leaf<K, V> {
-        func new_leaf(order : Nat, count : Nat, opt_kvs : ?[var ?(K, V)], gen_id : () -> Nat) : Leaf<K, V>{
-            InternalLeaf.new<K, V, ()>(order, count, opt_kvs, gen_id, ());
-        };
-
-        InternalLeaf.split<K, V, ()>(leaf, elem_index, elem, gen_id, new_leaf);
+        InternalLeaf.split(leaf, elem_index, elem, gen_id, (), null, null);
     };
 
     public func redistribute_keys<K, V>(leaf_node : Leaf<K, V>) {
@@ -143,7 +127,7 @@ module Leaf {
             case (?next) next.prev := ?left;
             case (_) {};
         };
-        
+
     };
 
     public func remove<K, V>(leaf : Leaf<K, V>, index : Nat) : ?(K, V) {

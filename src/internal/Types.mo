@@ -7,6 +7,8 @@ module {
 
     public type CmpFn<A> = (A, A) -> Order;
     public type MultiCmpFn<A, B> = (A, B) -> Order;
+    public type UpdateLeafFieldsFn<K, V, Extra> = (Extra, Nat, (K, V)) -> ();
+    public type UpdateBranchFieldsFn<K, V, Extra> = (Extra, Nat, Node<K, V, Extra>) -> ();
 
     public type BpTree<K, V, Extra> = {
         order : Nat;

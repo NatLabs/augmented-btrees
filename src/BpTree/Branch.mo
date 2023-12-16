@@ -21,11 +21,12 @@ module Branch {
     type CommonNodeFields<K, V> = T.CommonNodeFields<K, V>;
 
     public func new<K, V>(
-        bptree : BpTree<K, V>,
+        order : Nat,
         opt_keys : ?[var ?K],
         opt_children : ?[var ?Node<K, V>],
+        gen_id: () -> Nat,
     ) : Branch<K, V> {
-        InternalBranch.new<K, V, ()>(bptree, opt_keys, opt_children, (), null);
+        InternalBranch.new(order, opt_keys, opt_children, gen_id, (), null);
     };
 
     public func shift_by<K, V>(self: Branch<K, V>, start: Nat, end: Nat, shift: Int){
@@ -50,7 +51,7 @@ module Branch {
                 // };
 
                 switch (child) {
-                    case (? #branch(node) or ? #leaf(node) : ?InternalTypes.CommonNodeFields<K, V, ()>) {
+                    case (? #branch(node) or ? #leaf(node) : ?InternalTypes.CommonNodeFields<K, V, Any>) {
                         node.index := j;
                     };
                     case (_) {};
@@ -105,17 +106,8 @@ module Branch {
         parent.keys[i - 1] := ?new_key;
     };
 
-    public func split<K, V>(node : Branch<K, V>, child : Node<K, V>, child_index : Nat, first_child_key : K, bptree: BpTree<K, V>) : Branch<K, V> {
-
-        func new_branch(
-            bptree : BpTree<K, V>,
-            opt_keys : ?[var ?K],
-            opt_children : ?[var ?Node<K, V>],
-        ) : Branch<K, V> {
-            InternalBranch.new<K, V, ()>(bptree, opt_keys, opt_children, (), null);
-        };
-
-        InternalBranch.split<K, V, ()>(node, child, child_index, first_child_key, bptree, new_branch);
+    public func split<K, V>(node : Branch<K, V>, child : Node<K, V>, child_index : Nat, first_child_key : K, gen_id: () -> Nat) : Branch<K, V> {
+        InternalBranch.split(node, child, child_index, first_child_key, gen_id, (), null, null);
     };
 
     public func redistribute_keys<K, V>(branch_node: Branch<K, V>){

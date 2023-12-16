@@ -24,16 +24,19 @@ module Branch {
     type Leaf<K, V, Extra> = InternalTypes.Leaf<K, V, Extra>;
     type Branch<K, V, Extra> = InternalTypes.Branch<K, V, Extra>;
 
+    type UpdateBranchFieldsFn<K, V, Extra> = InternalTypes.UpdateBranchFieldsFn<K, V, Extra>;
+
     public func new<K, V, Extra>(
-        bptree : BpTree<K, V, Extra>,
+        order : Nat,
         opt_keys : ?[var ?K],
         opt_children : ?[var ?Node<K, V, Extra>],
+        gen_id: () -> Nat,
         default_fields : Extra,
-        opt_update_fields : ?((Extra, Nat, Node<K, V, Extra>) -> ()),
+        opt_update_fields : ?(UpdateBranchFieldsFn<K, V, Extra>),
     ) : Branch<K, V, Extra> {
 
         let self : Branch<K, V, Extra> = {
-            id = InternalMethods.gen_id(bptree);
+            id = gen_id();
             var parent = null;
             var index = 0;
             var keys = [var];
@@ -51,8 +54,8 @@ module Branch {
         let children = switch (opt_children) {
             case (?children) { children };
             case (_) {
-                self.keys := Array.init<?K>(bptree.order - 1, null);
-                self.children := Array.init<?Node<K, V, Extra>>(bptree.order, null);
+                self.keys := Array.init<?K>(order - 1, null);
+                self.children := Array.init<?Node<K, V, Extra>>(order, null);
                 return self;
             };
         };
@@ -105,8 +108,8 @@ module Branch {
             };
             case (_) {
                 Utils.tabulate_var<K>(
-                    bptree.order - 1 : Nat,
-                    bptree.order - 1,
+                    order - 1 : Nat,
+                    order - 1,
                     func(i : Nat) : ?K {
                         let child_index = i + 1;
                         switch (children[child_index]) {
@@ -164,8 +167,10 @@ module Branch {
         child : Node<K, V, Extra>,
         child_index : Nat,
         first_child_key : K,
-        bptree : BpTree<K, V, Extra>,
-        new_branch : (BpTree<K, V, Extra>, ?[var ?K], ?[var ?Node<K, V, Extra>]) -> Branch<K, V, Extra>,
+        gen_id : () -> Nat,
+        default_fields: Extra,
+        opt_reset_fields: ?((Extra) -> ()),
+        opt_update_fields: ?UpdateBranchFieldsFn<K, V, Extra>,
     ) : Branch<K, V, Extra> {
         let arr_len = node.count;
         let median = (arr_len / 2) + 1;
@@ -252,9 +257,9 @@ module Branch {
         let right_cnt = node.children.size() + 1 - median : Nat;
 
         let right_node = switch (node.children[0]) {
-            case (? #leaf(_)) new_branch(bptree, null, ?right_children);
+            case (? #leaf(_)) Branch.new(node.children.size(), null, ?right_children, gen_id, default_fields, opt_update_fields);
             case (? #branch(_)) {
-                new_branch(bptree, ?right_keys, ?right_children);
+                Branch.new(node.children.size(), ?right_keys, ?right_children, gen_id, default_fields, opt_update_fields);
                 // Branch new fails to update the median key to its correct position so we do it manually
             };
             case (_) Debug.trap("right_node: accessed a null value");
@@ -268,6 +273,20 @@ module Branch {
         // store the first key of the right node at the end of the keys in left node
         // no need to delete as the value will get overwritten because it exceeds the count position
         right_node.keys[right_node.keys.size() - 1] := median_key;
+
+        // update the left node's extra fields
+        let ?reset_fields = opt_reset_fields else return right_node;
+        let ?update_fields = opt_update_fields else return right_node;
+
+        var i = 0;
+        reset_fields(node.fields);
+        while ( i < node.count ) {
+            let ?child = node.children[i] else Debug.trap("Leaf.split: child is null");
+            update_fields(node.fields, i, child);
+            i += 1;
+        };
+
+        
 
         right_node;
     };

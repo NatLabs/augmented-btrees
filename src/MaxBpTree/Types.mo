@@ -1,6 +1,5 @@
 import Order "mo:base/Order";
 import InternalTypes "../internal/Types";
-import Internal "../internal";
 
 module {
     type Order = Order.Order;
@@ -27,4 +26,6 @@ module {
 
     public type CommonNodeFields<K, V> = InternalTypes.CommonNodeFields<K, V, MaxField<K, V>>;
 
+    public type UpdateLeafFieldsFn<K, V> = InternalTypes.UpdateLeafFieldsFn<K, V, MaxField<K, V>>;
+    public type UpdateBranchFieldsFn<K, V> = InternalTypes.UpdateBranchFieldsFn<K, V, MaxField<K, V>>;
 };

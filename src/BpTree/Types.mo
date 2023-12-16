@@ -6,15 +6,15 @@ module {
 
     public type CmpFn<K> = InternalTypes.CmpFn<K>;
 
-    public type BpTree<K, V> = InternalTypes.BpTree<K, V, ()>;
+    public type BpTree<K, V> = InternalTypes.BpTree<K, V, Any>;
 
-    public type Node<K, V> = InternalTypes.Node<K, V, ()>;
+    public type Node<K, V> = InternalTypes.Node<K, V, Any>;
 
-    public type Branch<K, V> = InternalTypes.Branch<K, V, ()>;
+    public type Branch<K, V> = InternalTypes.Branch<K, V, Any>;
 
-    public type Leaf<K, V> = InternalTypes.Leaf<K, V, ()>;
+    public type Leaf<K, V> = InternalTypes.Leaf<K, V, Any>;
 
-    public type CommonFields<K, V> = InternalTypes.CommonFields<K, V, ()>;
+    public type CommonFields<K, V> = InternalTypes.CommonFields<K, V, Any>;
 
     // public type CommonFields<K, V, Extra> = {
     //     var count : Nat;
@@ -23,7 +23,7 @@ module {
     //     var fields : Extra;
     // };
 
-    public type CommonNodeFields<K, V> = InternalTypes.CommonNodeFields<K, V, ()>;
+    public type CommonNodeFields<K, V> = InternalTypes.CommonNodeFields<K, V, Any>;
   
     // public type Node<K, V> = {
     //     #leaf : Leaf<K, V>;

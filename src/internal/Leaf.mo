@@ -24,8 +24,17 @@ module Leaf {
     type Leaf<K, V, Extra> = InternalTypes.Leaf<K, V, Extra>;
     type Branch<K, V, Extra> = InternalTypes.Branch<K, V, Extra>;
 
-    public func new<K, V, Extra>(order : Nat, count : Nat, opt_kvs : ?[var ?(K, V)], gen_id: () -> Nat, default_fields: Extra) : Leaf<K, V, Extra> {
-        return {
+    type UpdateLeafFieldsFn<K, V, Extra> = InternalTypes.UpdateLeafFieldsFn<K, V, Extra>;
+
+    public func new<K, V, Extra>(
+        order : Nat, 
+        count : Nat, 
+        opt_kvs : ?[var ?(K, V)], 
+        gen_id: () -> Nat, 
+        default_fields: Extra,
+        opt_update_fields: ?(UpdateLeafFieldsFn<K, V, Extra>)
+    ) : Leaf<K, V, Extra> {
+        let leaf_node : Leaf<K, V, Extra> = {
             id = gen_id();
             var parent = null;
             var index = 0;
@@ -38,6 +47,18 @@ module Leaf {
             var prev = null;
             fields = default_fields;
         };
+
+        let ?update_fields = opt_update_fields else return leaf_node;
+
+        var i = 0;
+
+        while ( i < count ) {
+            let ?kv = leaf_node.kvs[i] else Debug.trap("Leaf.new: kv is null");
+            update_fields(leaf_node.fields, i, kv);
+            i += 1;
+        };
+
+        leaf_node;
     };
 
     public func split<K, V, Extra>(
@@ -45,7 +66,9 @@ module Leaf {
         elem_index : Nat, 
         elem : (K, V), 
         gen_id: () -> Nat, 
-        new_leaf: (order : Nat, count : Nat, opt_kvs : ?[var ?(K, V)], gen_id: () -> Nat) -> Leaf<K, V, Extra>
+        default_fields: Extra,
+        opt_reset_fields: ?((Extra) -> ()),
+        opt_update_fields: ?UpdateLeafFieldsFn<K, V, Extra>,
     ) : Leaf<K, V, Extra> {
 
         let arr_len = leaf.count;
@@ -91,7 +114,7 @@ module Leaf {
 
         leaf.count := median;
         let right_cnt = arr_len + 1 - median : Nat;
-        let right_node = new_leaf(leaf.kvs.size(), right_cnt, ?right_kvs, gen_id);
+        let right_node = Leaf.new(leaf.kvs.size(), right_cnt, ?right_kvs, gen_id, default_fields, opt_update_fields);
 
         right_node.index := leaf.index + 1;
         right_node.parent := leaf.parent;
@@ -105,6 +128,17 @@ module Leaf {
         switch (right_node.next) {
             case (?next) next.prev := ?right_node;
             case (_) {};
+        };
+
+        let ?reset_fields = opt_reset_fields else return right_node;
+        let ?update_fields = opt_update_fields else return right_node;
+
+        var i = 0;
+        reset_fields(leaf.fields);
+        while ( i < leaf.count ) {
+            let ?kv = leaf.kvs[i] else Debug.trap("Leaf.split: kv is null");
+            update_fields(leaf.fields, i, kv);
+            i += 1;
         };
 
         right_node;

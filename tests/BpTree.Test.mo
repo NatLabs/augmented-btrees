@@ -11,8 +11,8 @@ import { test; suite } "mo:test";
 import Fuzz "mo:fuzz";
 import Itertools "mo:itertools/Iter";
 
-import { BpTree } "../../src";
-import Utils "../../src/internal/Utils";
+import {BpTree} "../src";
+import Utils "../src/internal/Utils";
 
 type Order = Order.Order;
 
@@ -30,7 +30,7 @@ let unique_iter = Itertools.unique<Nat>(data.vals(), Nat32.fromNat, Nat.equal);
 let random = Itertools.toBuffer<Nat>(unique_iter);
 // assert random.size() * 100 > (limit) * 95;
 
-func b_plus_test(order : Nat, random : Buffer.Buffer<Nat>) {
+func bp_tree_test(order : Nat, random : Buffer.Buffer<Nat>) {
 
     test(
         "insert random",
@@ -335,8 +335,7 @@ func b_plus_test(order : Nat, random : Buffer.Buffer<Nat>) {
 
 for (order in [4, 32].vals()) {
     suite(
-        "b-plus-tree: order " # debug_show order,
-        func() = b_plus_test(order, random),
+        "B+Tree Test: order " # debug_show order,
+        func() = bp_tree_test(order, random),
     );
 };
-
