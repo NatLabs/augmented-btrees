@@ -16,16 +16,16 @@ module Branch {
     type Order = Order.Order;
     public type Branch<K, V> = T.Branch<K, V>;
     type Node<K, V> = T.Node<K, V>;
+    type BpTree<K, V> = T.BpTree<K, V>;
     type CmpFn<K> = InternalTypes.CmpFn<K>;
     type CommonNodeFields<K, V> = T.CommonNodeFields<K, V>;
 
     public func new<K, V>(
-        order : Nat,
+        bptree : BpTree<K, V>,
         opt_keys : ?[var ?K],
         opt_children : ?[var ?Node<K, V>],
-        gen_id: () -> Nat,
     ) : Branch<K, V> {
-        InternalBranch.new<K, V, ()>(order, opt_keys, opt_children, gen_id, (), null);
+        InternalBranch.new<K, V, ()>(bptree, opt_keys, opt_children, (), null);
     };
 
     public func shift_by<K, V>(self: Branch<K, V>, start: Nat, end: Nat, shift: Int){
@@ -105,110 +105,17 @@ module Branch {
         parent.keys[i - 1] := ?new_key;
     };
 
-    public func split<K, V>(node : Branch<K, V>, child : Node<K, V>, child_index : Nat, first_child_key : K, gen_id : () -> Nat) : Branch<K, V> {
-        let arr_len = node.count;
-        let median = (arr_len / 2) + 1;
+    public func split<K, V>(node : Branch<K, V>, child : Node<K, V>, child_index : Nat, first_child_key : K, bptree: BpTree<K, V>) : Branch<K, V> {
 
-        let is_elem_added_to_right = child_index >= median;
-
-        var median_key = ?first_child_key;
-
-        var offset = if (is_elem_added_to_right) 0 else 1;
-        var already_inserted = false;
-
-        let right_keys = Array.init<?K>(node.keys.size(), null);
-
-        let right_children = Utils.tabulate_var<Node<K, V>>(
-            node.children.size(),
-            node.count + 1 - median,
-            func(i : Nat) : ?Node<K, V> {
-
-                let j = i + median - offset : Nat;
-
-                let child_node = if (j >= median and j == child_index and not already_inserted) {
-                    offset += 1;
-                    already_inserted := true;
-                    if (i > 0) right_keys[i - 1] := ?first_child_key;
-                    ?child;
-                } else if (j >= arr_len) {
-                    null;
-                } else {
-                    if (i == 0) {
-                        median_key := node.keys[j - 1];
-                    } else {
-                        right_keys[i - 1] := node.keys[j - 1];
-                    };
-                    node.keys[j - 1] := null;
-                    Utils.extract(node.children, j);
-                };
-
-                switch (child_node) {
-                    case (?#branch(child)){
-                        child.index := i;
-                        node.subtree_size -= child.subtree_size;
-                    };
-                    case (?#leaf(child)){
-                        child.index := i;
-                        node.subtree_size -= child.count;
-                    };
-                    case (_) {};
-                };
-
-                child_node;
-            },
-        );
-
-        var j = median - 1 : Nat;
-
-        while (j > child_index) {
-            if (j >= 2) {
-                node.keys[j - 1] := node.keys[j - 2];
-            };
-
-            node.children[j] := node.children[j - 1];
-
-            switch (node.children[j]) {
-                case (? #branch(node) or ? #leaf(node) : ?CommonNodeFields<K, V>) {
-                    node.index := j;
-                };
-                case (_) {};
-            };
-
-            j -= 1;
+        func new_branch(
+            bptree : BpTree<K, V>,
+            opt_keys : ?[var ?K],
+            opt_children : ?[var ?Node<K, V>],
+        ) : Branch<K, V> {
+            InternalBranch.new<K, V, ()>(bptree, opt_keys, opt_children, (), null);
         };
 
-        if (j == child_index) {
-            if (j > 0) {
-                node.keys[j - 1] := ?first_child_key;
-                node.children[j] := ?child;
-            } else {
-                update_median_key(node, 0, first_child_key);
-                node.children[0] := ?child;
-            };
-        };
-
-        node.count := median;
-        let right_cnt = node.children.size() + 1 - median : Nat;
-
-        let right_node = switch (node.children[0]) {
-            case (? #leaf(_)) Branch.new(node.children.size(), null, ?right_children, gen_id);
-            case (? #branch(_)) {
-                Branch.new<K, V>(node.children.size(), ?right_keys, ?right_children, gen_id);
-                // Branch new fails to update the median key to its correct position so we do it manually
-            };
-            case (_) Debug.trap("right_node: accessed a null value");
-        };
-
-        right_node.index := node.index + 1;
-
-        right_node.count := right_cnt;
-        right_node.parent := node.parent;
-
-        // store the first key of the right node at the end of the keys in left node
-        // no need to delete as the value will get overwritten because it exceeds the count position
-        right_node.keys[right_node.keys.size() - 1] := median_key;
-
-        right_node;
+        InternalBranch.split<K, V, ()>(node, child, child_index, first_child_key, bptree, new_branch);
     };
 
     public func redistribute_keys<K, V>(branch_node: Branch<K, V>){

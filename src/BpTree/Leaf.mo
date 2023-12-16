@@ -8,13 +8,17 @@ import Order "mo:base/Order";
 import T "Types";
 import InternalTypes "../internal/Types";
 import ArrayMut "../internal/ArrayMut";
+import InternalLeaf "../internal/Leaf";
 
 import Utils "../internal/Utils";
 
 module Leaf {
     type Order = Order.Order;
     public type Leaf<K, V> = T.Leaf<K, V>;
+    type Node<K, V> = T.Node<K, V>;
+    type BpTree<K, V> = T.BpTree<K, V>;
     type CmpFn<K> = InternalTypes.CmpFn<K>;
+    type CommonNodeFields<K, V> = T.CommonNodeFields<K, V>;
 
     public func new<K, V>(order : Nat, count : Nat, opt_kvs : ?[var ?(K, V)], gen_id : () -> Nat) : Leaf<K, V> {
         return {
@@ -33,67 +37,11 @@ module Leaf {
     };
 
     public func split<K, V>(leaf : Leaf<K, V>, elem_index : Nat, elem : (K, V), gen_id : () -> Nat) : Leaf<K, V> {
-
-        let arr_len = leaf.count;
-        let median = (arr_len / 2) + 1;
-
-        let is_elem_added_to_right = elem_index >= median;
-
-        // if elem is added to the left
-        // this variable allows us to retrieve the last element on the left
-        // that gets shifted by the inserted elemeent
-        var offset = if (is_elem_added_to_right) 0 else 1;
-
-        var already_inserted = false;
-        let right_kvs = Utils.tabulate_var<(K, V)>(
-            leaf.kvs.size(),
-            leaf.count + 1 - median,
-            func(i : Nat) : ?(K, V) {
-
-                let j = i + median - offset : Nat;
-
-                if (j >= median and j == elem_index and not already_inserted) {
-                    offset += 1;
-                    already_inserted := true;
-                    ?elem;
-                } else if (j >= arr_len) {
-                    null;
-                } else {
-                    Utils.extract(leaf.kvs, j);
-                };
-            },
-        );
-
-        var j = median - 1 : Nat;
-
-        while (j > elem_index) {
-            leaf.kvs[j] := leaf.kvs[j - 1];
-            j -= 1;
+        func new_leaf(order : Nat, count : Nat, opt_kvs : ?[var ?(K, V)], gen_id : () -> Nat) : Leaf<K, V>{
+            InternalLeaf.new<K, V, ()>(order, count, opt_kvs, gen_id, ());
         };
 
-        if (j == elem_index) {
-            leaf.kvs[j] := ?elem;
-        };
-
-        leaf.count := median;
-        let right_cnt = arr_len + 1 - median : Nat;
-        let right_node = Leaf.new<K, V>(leaf.kvs.size(), right_cnt, ?right_kvs, gen_id);
-
-        right_node.index := leaf.index + 1;
-        right_node.parent := leaf.parent;
-
-        // update leaf pointers
-        right_node.next := leaf.next;
-        leaf.next := ?right_node;
-
-        right_node.prev := ?leaf;
-
-        switch (right_node.next) {
-            case (?next) next.prev := ?right_node;
-            case (_) {};
-        };
-
-        right_node;
+        InternalLeaf.split<K, V, ()>(leaf, elem_index, elem, gen_id, new_leaf);
     };
 
     public func redistribute_keys<K, V>(leaf_node : Leaf<K, V>) {

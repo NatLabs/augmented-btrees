@@ -11,9 +11,6 @@ import Result "mo:base/Result";
 import Buffer "mo:base/Buffer";
 import BufferDeque "mo:buffer-deque/BufferDeque";
 
-import LeafModule "Leaf";
-import BranchModule "Branch";
-
 import ArrayMut "../internal/ArrayMut";
 import Itertools "mo:itertools/Iter";
 import Utils "../internal/Utils";
@@ -30,9 +27,6 @@ module Methods {
     type BufferDeque<A> = BufferDeque.BufferDeque<A>;
     public type Cursor<K, V, Extra> = Cursor.Cursor<K, V>;
     public type DoubleEndedIter<A> = DoubleEndedIter.DoubleEndedIter<A>;
-
-    public let Leaf = LeafModule;
-    public let Branch = BranchModule;
 
     public type BpTree<K, V, Extra> = InternalTypes.BpTree<K, V, Extra>;
     public type Node<K, V, Extra> = InternalTypes.Node<K, V, Extra>;
@@ -159,7 +153,7 @@ module Methods {
         tmp;
     };
 
-    public func unique_id<K, V, Extra>(bptree : BpTree<K, V, Extra>) : Nat {
+    public func gen_id<K, V, Extra>(bptree : BpTree<K, V, Extra>) : Nat {
         let id = bptree.next_id;
         bptree.next_id += 1;
         id;
@@ -396,142 +390,4 @@ module Methods {
         null;
     };
 
-    public func insert<K, V, Extra>(
-        self : BpTree<K, V, Extra>, 
-        cmp : CmpFn<K>, 
-        key : K, 
-        val : V, 
-        leaf_split: (Leaf<K, V, Extra>, Nat, (K, V), () -> Nat) -> Leaf<K, V, Extra>,
-        branch_new: (Nat, ?[var ?Node<K, V, Extra>], () -> Nat) -> Branch<K, V, Extra>,
-        branch_split: (Branch<K, V, Extra>, Node<K, V, Extra>, Nat, K, () -> Nat) -> Branch<K, V, Extra>,
-    ) : ?V {
-        func inc_branch_subtree_size(branch : Branch<K, V, Extra>) {
-            branch.subtree_size += 1;
-        };
-
-        func decrement_branch_subtree_size(branch : Branch<K, V, Extra>) {
-            branch.subtree_size -= 1;
-        };
-
-        func adapt_cmp<K, V, Extra>(cmp : T.CmpFn<K>) : InternalTypes.MultiCmpFn<K, (K, V)> {
-            func(a : K, b : (K, V)) : Order {
-                cmp(a, b.0);
-            };
-        };
-
-        func gen_id() : Nat = Methods.unique_id<K, V, Extra>(self);
-
-        let leaf_node = Methods.get_leaf_node_and_update_branch_path<K, V, Extra>(self, cmp, key, inc_branch_subtree_size);
-        let entry = (key, val);
-
-        let int_elem_index = ArrayMut.binary_search<K, (K, V)>(leaf_node.kvs, adapt_cmp(cmp), key, leaf_node.count);
-        let elem_index = if (int_elem_index >= 0) Int.abs(int_elem_index) else Int.abs(int_elem_index + 1);
-
-        let prev_value = if (int_elem_index >= 0) {
-            let ?kv = leaf_node.kvs[elem_index] else Debug.trap("1. insert: accessed a null value while replacing a key-value pair");
-            leaf_node.kvs[elem_index] := ?entry;
-
-            // undoes the update to subtree count for the nodes on the path to the root when replacing a key-value pair
-            Methods.update_branch_path_from_leaf_to_root<K, V, Extra>(self, leaf_node, decrement_branch_subtree_size);
-
-            return ?kv.1;
-        } else {
-            null;
-        };
-
-        if (leaf_node.count < self.order) {
-            // shift elems to the right and insert the new key-value pair
-            var j = leaf_node.count;
-
-            while (j > elem_index) {
-                leaf_node.kvs[j] := leaf_node.kvs[j - 1];
-                j -= 1;
-            };
-
-            leaf_node.kvs[elem_index] := ?entry;
-            leaf_node.count += 1;
-
-            self.size += 1;
-            return prev_value;
-        };
-
-        // split leaf node
-        let right_leaf_node = leaf_split(leaf_node, elem_index, entry, gen_id);
-
-        var opt_parent : ?Branch<K, V, Extra> = leaf_node.parent;
-        var left_node : Node<K, V, Extra> = #leaf(leaf_node);
-        var left_index = leaf_node.index;
-
-        var right_index = right_leaf_node.index;
-        let ?right_leaf_first_entry = right_leaf_node.kvs[0] else Debug.trap("2. insert: accessed a null value");
-        var right_key = right_leaf_first_entry.0;
-        var right_node : Node<K, V, Extra> = #leaf(right_leaf_node);
-
-        // insert split leaf nodes into parent nodes if there is space
-        // or iteratively split parent (internal) nodes to make space
-        label index_split_loop while (Option.isSome(opt_parent)) {
-            var subtree_diff : Nat = 0;
-            let ?parent = opt_parent else Debug.trap("3. insert: accessed a null parent value");
-
-            parent.subtree_size -= subtree_diff;
-
-            if (parent.count < self.order) {
-                var j = parent.count;
-
-                while (j >= right_index) {
-                    if (j == right_index) {
-                        parent.keys[j - 1] := ?right_key;
-                        parent.children[j] := ?right_node;
-                    } else {
-                        parent.keys[j - 1] := parent.keys[j - 2];
-                        parent.children[j] := parent.children[j - 1];
-                    };
-
-                    switch (parent.children[j]) {
-                        case ((? #branch(node) or ? #leaf(node)) : ?CommonNodeFields<K, V, Extra>) {
-                            node.index := j;
-                        };
-                        case (_) {};
-                    };
-
-                    j -= 1;
-                };
-
-                parent.count += 1;
-
-                self.size += 1;
-                return prev_value;
-
-            } else {
-
-                let median = (parent.count / 2) + 1; // include inserted key-value pair
-                let prev_subtree_size = parent.subtree_size;
-
-                let split_node = branch_split(parent, right_node, right_index, right_key, gen_id);
-
-                let ?first_key = Methods.extract(split_node.keys, split_node.keys.size() - 1 : Nat) else Debug.trap("4. insert: accessed a null value in first key of branch");
-                right_key := first_key;
-
-                left_node := #branch(parent);
-                right_node := #branch(split_node);
-
-                right_index := split_node.index;
-                opt_parent := split_node.parent;
-
-                subtree_diff := prev_subtree_size - parent.subtree_size;
-            };
-        };
-
-        let children = Array.init<?Node<K, V, Extra>>(self.order, null);
-        children[0] := ?left_node;
-        children[1] := ?right_node;
-
-        let root_node = branch_new(self.order, ?children, gen_id);
-        root_node.keys[0] := ?right_key;
-
-        self.root := #branch(root_node);
-        self.size += 1;
-
-        prev_value;
-    };
 };
