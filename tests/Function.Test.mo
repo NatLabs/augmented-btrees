@@ -35,7 +35,7 @@ func new_branch(order : Nat, start : Nat) : BpTree.Branch<Nat, Nat> {
         },
     );
 
-    let branch = BpTree.Branch.new<Nat, Nat>(6, ?children, gen_id);
+    let branch = BpTree.Branch.new<Nat, Nat>(6, null, ?children, gen_id);
 };
 
 func to_bptree<K, V>(order : Nat, branch : BpTree.Branch<K, V>) : BpTree.BpTree<K, V> {
@@ -117,7 +117,7 @@ suite(
                 let right = BpTree.Leaf.new(6, 4, ?[var ?(5, 5), ?(7, 7), ?(9, 9), ?(11, 11), null, null], gen_id);
                 assert right.count == 4;
 
-                let parent = BpTree.Branch.new<Nat, Nat>(6, ?[var ? #leaf(left), ? #leaf(right), null, null, null, null], gen_id);
+                let parent = BpTree.Branch.new<Nat, Nat>(6, null, ?[var ? #leaf(left), ? #leaf(right), null, null, null, null], gen_id);
                 Debug.print("parent: " # debug_show parent.subtree_size);
                 assert parent.subtree_size == 6;
                 assert parent.count == 2;
@@ -151,7 +151,7 @@ suite(
                 let right = BpTree.Leaf.new(6, 6, ?[var ?(13, 13), ?(15, 15), ?(17, 17), ?(19, 19), ?(21, 21), ?(23, 23)], gen_id);
                 assert right.count == 6;
 
-                let parent = BpTree.Branch.new<Nat, Nat>(6, ?[var ? #leaf(left), ? #leaf(middle), ? #leaf(right), null, null, null], gen_id);
+                let parent = BpTree.Branch.new<Nat, Nat>(6, null, ?[var ? #leaf(left), ? #leaf(middle), ? #leaf(right), null, null, null], gen_id);
                 assert parent.count == 3;
                 assert parent.subtree_size == 12;
                 assert Array.freeze(parent.keys) == [?9, ?13, null, null, null];
@@ -185,14 +185,14 @@ suite(
                 let right = BpTree.Leaf.new(6, 2, ?[var ?(5, 5), ?(7, 7), null, null, null, null], gen_id);
                 assert right.count == 2;
 
-                let parent = BpTree.Branch.new<Nat, Nat>(6, ?[var ? #leaf(left), ? #leaf(right), null, null, null, null], gen_id);
+                let parent = BpTree.Branch.new<Nat, Nat>(6, null, ?[var ? #leaf(left), ? #leaf(right), null, null, null, null], gen_id);
                 assert parent.subtree_size == 4;
                 assert parent.count == 2;
                 assert Array.freeze(parent.keys) == [?5, null, null, null, null];
                 assert left.index == 0;
                 assert right.index == 1;
 
-                BpTree.merge_leaf_nodes(left, right);
+                BpTree.Leaf.merge(left, right);
 
                 assert left.count == 4;
 
@@ -448,7 +448,7 @@ func c6() : BpTree.Leaf<Nat, Nat> = new_leaf(6, 60, 66);
 func default_branch() : BpTree.Branch<Nat, Nat> {
     let children : [var ?BpTree.Node<Nat, Nat>] = [var ? #leaf(c0()), ? #leaf(c1()), ? #leaf(c2()), ? #leaf(c3()), ? #leaf(c4()), ? #leaf(c5())];
 
-    BpTree.Branch.new<Nat, Nat>(6, ?children, gen_id);
+    BpTree.Branch.new<Nat, Nat>(6, null, ?children, gen_id);
    
 };
 
@@ -485,10 +485,10 @@ suite(
                 assert validate_indexes<Nat, Nat>(left.children, left.count);
                 assert validate_indexes<Nat, Nat>(right.children, right.count);
 
-                let left_test = BpTree.Branch.new<Nat, Nat>(6, ?[var ? #leaf(c0()), ? #leaf(c1()), ? #leaf(c2()), ? #leaf(c3()), null, null], gen_id);
+                let left_test = BpTree.Branch.new<Nat, Nat>(6, null, ?[var ? #leaf(c0()), ? #leaf(c1()), ? #leaf(c2()), ? #leaf(c3()), null, null], gen_id);
                 assert BpTree.Branch.equal<Nat, Nat>(left, left_test, Nat.compare);
 
-                let right_test = BpTree.Branch.new<Nat, Nat>(6, ?[var ? #leaf(c4()), ? #leaf(c5()), ? #leaf(new_leaf(6, 54, 54 + 3)), null, null, null], gen_id);
+                let right_test = BpTree.Branch.new<Nat, Nat>(6, null, ?[var ? #leaf(c4()), ? #leaf(c5()), ? #leaf(new_leaf(6, 54, 54 + 3)), null, null, null], gen_id);
                 assert BpTree.Branch.equal<Nat, Nat>(right, right_test, Nat.compare);
                
             },
@@ -523,10 +523,10 @@ suite(
                 assert validate_indexes<Nat, Nat>(left.children, left.count);
                 assert validate_indexes<Nat, Nat>(right.children, right.count);
 
-                let left_test = BpTree.Branch.new<Nat, Nat>(6, ?[var ? #leaf(new_leaf(6, 0, 4)), ? #leaf(new_leaf(6, 4, 7)), ? #leaf(c1()), ? #leaf(c2()), null, null], gen_id);
+                let left_test = BpTree.Branch.new<Nat, Nat>(6, null, ?[var ? #leaf(new_leaf(6, 0, 4)), ? #leaf(new_leaf(6, 4, 7)), ? #leaf(c1()), ? #leaf(c2()), null, null], gen_id);
                 assert BpTree.Branch.equal<Nat, Nat>(left, left_test, Nat.compare);
 
-                let right_test = BpTree.Branch.new<Nat, Nat>(6, ?[var ? #leaf(c3()), ? #leaf(c4()), ? #leaf(c5()), null, null, null], gen_id);
+                let right_test = BpTree.Branch.new<Nat, Nat>(6, null, ?[var ? #leaf(c3()), ? #leaf(c4()), ? #leaf(c5()), null, null, null], gen_id);
                 assert BpTree.Branch.equal<Nat, Nat>(right, right_test, Nat.compare);
 
             },
@@ -561,10 +561,10 @@ suite(
                 assert validate_indexes<Nat, Nat>(left.children, left.count);
                 assert validate_indexes<Nat, Nat>(right.children, right.count);
 
-                let left_test = BpTree.Branch.new<Nat, Nat>(6, ?[var ? #leaf(c0()), ? #leaf(new_leaf(6, 10, 14)), ? #leaf(new_leaf(6, 14, 17)), ? #leaf(c2()), null, null], gen_id);
+                let left_test = BpTree.Branch.new<Nat, Nat>(6, null, ?[var ? #leaf(c0()), ? #leaf(new_leaf(6, 10, 14)), ? #leaf(new_leaf(6, 14, 17)), ? #leaf(c2()), null, null], gen_id);
                 assert BpTree.Branch.equal<Nat, Nat>(left, left_test, Nat.compare);
 
-                let right_test = BpTree.Branch.new<Nat, Nat>(6, ?[var ? #leaf(c3()), ? #leaf(c4()), ? #leaf(c5()), null, null, null], gen_id);
+                let right_test = BpTree.Branch.new<Nat, Nat>(6, null, ?[var ? #leaf(c3()), ? #leaf(c4()), ? #leaf(c5()), null, null, null], gen_id);
                 assert BpTree.Branch.equal<Nat, Nat>(right, right_test, Nat.compare);
                
             },
@@ -599,10 +599,10 @@ suite(
                 assert validate_indexes<Nat, Nat>(left.children, left.count);
                 assert validate_indexes<Nat, Nat>(right.children, right.count);
 
-                let left_test = BpTree.Branch.new<Nat, Nat>(6, ?[var ? #leaf(c0()), ? #leaf(c1()), ? #leaf(c2()), ? #leaf(c3()), null, null], gen_id);
+                let left_test = BpTree.Branch.new<Nat, Nat>(6, null, ?[var ? #leaf(c0()), ? #leaf(c1()), ? #leaf(c2()), ? #leaf(c3()), null, null], gen_id);
                 assert BpTree.Branch.equal<Nat, Nat>(left, left_test, Nat.compare);
 
-                let right_test = BpTree.Branch.new<Nat, Nat>(6, ?[var ? #leaf(new_leaf(6, 40, 44)), ? #leaf(new_leaf(6, 44, 47)), ? #leaf(c5()), null, null, null], gen_id);
+                let right_test = BpTree.Branch.new<Nat, Nat>(6, null, ?[var ? #leaf(new_leaf(6, 40, 44)), ? #leaf(new_leaf(6, 44, 47)), ? #leaf(c5()), null, null, null], gen_id);
                 assert BpTree.Branch.equal<Nat, Nat>(right, right_test, Nat.compare);
                
             },
@@ -613,7 +613,7 @@ suite(
             func() {
                 let children : [var ?BpTree.Node<Nat, Nat>] = [var ? #leaf(c0()), ? #leaf(c1()), ? #leaf(c2()), ? #leaf(c3()), ? #leaf(c4()), ? #leaf(c5())];
 
-                let node = BpTree.Branch.new<Nat, Nat>(6, ?children, gen_id);
+                let node = BpTree.Branch.new<Nat, Nat>(6, null, ?children, gen_id);
                 assert node.count == 6;
                 assert node.subtree_size == 6 * 6;
 
@@ -638,10 +638,10 @@ suite(
                 assert validate_indexes<Nat, Nat>(left.children, left.count);
                 assert validate_indexes<Nat, Nat>(right.children, right.count);
 
-                let left_test = BpTree.Branch.new<Nat, Nat>(6, ?[var ? #leaf(c0()), ? #leaf(c1()), ? #leaf(c2()), ? #leaf(new_leaf(6, 24, 24 + 3)), null, null], gen_id);
+                let left_test = BpTree.Branch.new<Nat, Nat>(6, null, ?[var ? #leaf(c0()), ? #leaf(c1()), ? #leaf(c2()), ? #leaf(new_leaf(6, 24, 24 + 3)), null, null], gen_id);
                 assert BpTree.Branch.equal<Nat, Nat>(left, left_test, Nat.compare);
 
-                let right_test = BpTree.Branch.new<Nat, Nat>(6, ?[var ? #leaf(c3()), ? #leaf(c4()), ? #leaf(c5()), null, null, null, null], gen_id);
+                let right_test = BpTree.Branch.new<Nat, Nat>(6, null, ?[var ? #leaf(c3()), ? #leaf(c4()), ? #leaf(c5()), null, null, null, null], gen_id);
                 assert BpTree.Branch.equal<Nat, Nat>(right, right_test, Nat.compare);
                
             },

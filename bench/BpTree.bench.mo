@@ -10,7 +10,7 @@ import Bench "mo:bench";
 import Fuzz "mo:fuzz";
 import BTree "mo:stableheapbtreemap/BTree";
 
-import { BpTree } "../src";
+import { BpTree; MaxBpTree } "../src";
 
 module {
 
@@ -21,13 +21,14 @@ module {
         bench.name("Comparing RBTree, BTree and B+Tree (BpTree)");
         bench.description("Benchmarking the performance with 10k entries");
 
-        bench.rows(["RBTree", "BTree", "B+Tree"]);
-        bench.cols(["insert()", "replace()", "get()", "entries()", "remove()"]);
+        bench.rows(["RBTree", "BTree", "B+Tree", "Max B+Tree"]);
+        bench.cols(["insert()", "replace()", "get()", "entries()", "scan()", "remove()"]);
 
         let limit = 10_000;
 
         let btree = BTree.init<Nat, Nat>(?32);
         let bptree = BpTree.new<Nat, Nat>(?32);
+        let max_bp_tree = MaxBpTree.new<Nat, Nat>(?32);
         let rbtree = RbTree.RBTree<Nat, Nat>(Nat.compare);
 
         let entries = Buffer.Buffer<(Nat, Nat)>(limit);
@@ -37,6 +38,9 @@ module {
 
             entries.add((key, i));
         };
+
+        let sorted = Buffer.clone(entries);
+        sorted.sort(func(a, b) = Nat.compare(a.0, b.0));
 
         bench.runner(
             func(row, col) = switch (row, col) {
@@ -66,6 +70,7 @@ module {
                 case ("RBTree", "entries()") {
                     for (i in rbtree.entries()) { ignore i };
                 };
+                case ("RBTree", "scan()") { };
                 case ("RBTree", "remove()") {
                     for (i in Iter.range(0, limit - 1)) {
                         rbtree.delete(i);
@@ -91,6 +96,17 @@ module {
                 case ("BTree", "entries()") {
                     for (i in BTree.entries(btree)) { ignore i };
                 };
+                case ("BTree", "scan()") {
+                    var i = 0;
+
+                    while (i < limit){
+                        let a = sorted.get(i).0;
+                        let b = sorted.get(i + 99).0;
+
+                        for (kv in BTree.scanLimit(btree, Nat.compare, a, b, #fwd, 100).results.vals()) { ignore kv };
+                        i += 100;
+                    };
+                };
                 case ("BTree", "remove()") {
                     for ((k, v) in entries.vals()) {
                         ignore BTree.delete(btree, Nat.compare, k);
@@ -114,11 +130,58 @@ module {
                     };
                 };
                 case ("B+Tree", "entries()") {
-                    for (i in BpTree.entries(bptree)) { ignore i };
+                    for (kv in BpTree.entries(bptree)) { ignore kv };
+                };
+                case ("B+Tree", "scan()") {
+                    var i = 0;
+
+                    while (i < limit){
+                        let a = sorted.get(i).0;
+                        let b = sorted.get(i + 99).0;
+
+                        for (kv in BpTree.scan(bptree, Nat.compare, a, b)) { ignore kv };
+                        i += 100;
+                    };
                 };
                 case ("B+Tree", "remove()") {
                     for ((k, v) in entries.vals()) {
                         ignore BpTree.remove(bptree, Nat.compare, k);
+                    };
+                };
+
+                case ("Max B+Tree", "insert()") {
+                    for ((key, val) in entries.vals()) {
+                        ignore MaxBpTree.insert(max_bp_tree, Nat.compare, Nat.compare, key, val);
+                    };
+                };
+                case ("Max B+Tree", "replace()") {
+                    for ((key, val) in entries.vals()) {
+                        ignore MaxBpTree.insert(max_bp_tree, Nat.compare, Nat.compare, key, val * 2);
+                    };
+                };
+                case ("Max B+Tree", "get()") {
+                    for (i in Iter.range(0, limit - 1)) {
+                        let key = entries.get(i).0;
+                        ignore MaxBpTree.get(max_bp_tree, Nat.compare, key);
+                    };
+                 };
+                case ("Max B+Tree", "entries()") {
+                    for (kv in MaxBpTree.entries(max_bp_tree)) { ignore kv };
+                };
+                case ("Max B+Tree", "scan()") {
+                    var i = 0;
+
+                    while (i < limit){
+                        let a = sorted.get(i).0;
+                        let b = sorted.get(i + 99).0;
+
+                        for (kv in MaxBpTree.scan(max_bp_tree, Nat.compare, a, b)) { ignore kv };
+                        i += 100;
+                    };
+                };
+                case ("Max B+Tree", "remove()") { 
+                    for ((k, v) in entries.vals()) {
+                        ignore MaxBpTree.remove(max_bp_tree, Nat.compare, Nat.compare, k);
                     };
                 };
 

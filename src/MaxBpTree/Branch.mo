@@ -1,146 +1,68 @@
-import Array "mo:base/Array";
+import Iter "mo:base/Iter";
 import Debug "mo:base/Debug";
-import Option "mo:base/Option";
+import Array "mo:base/Array";
+import Int "mo:base/Int";
+import Nat "mo:base/Nat";
+import Order "mo:base/Order";
 
-import BpTreeBranch "../BpTree/Branch";
+import Itertools "mo:itertools/Iter";
+
 import T "Types";
-import BpTree "../BpTree";
-
-import Utils "../internal/Utils";
 import InternalTypes "../internal/Types";
+import Leaf "Leaf";
+import Utils "../internal/Utils";
+import ArrayMut "../internal/ArrayMut";
+import InternalBranch "../internal/Branch";
 
-module {
+import Common "Common";
+
+module Branch {
+    type Order = Order.Order;
     public type Branch<K, V> = T.Branch<K, V>;
     type Node<K, V> = T.Node<K, V>;
-    type SharedNode<K, V> = T.SharedNode<K, V>;
+    type Leaf<K, V> = T.Leaf<K, V>;
     type CmpFn<K> = InternalTypes.CmpFn<K>;
+    type CommonNodeFields<K, V> = T.CommonNodeFields<K, V>;
+    type MaxField<K, V> = T.MaxField<K, V>;
+    type MaxBpTree<K, V> = T.MaxBpTree<K, V>;
+    type NodeUpdateFieldFn<K, V> = T.NodeUpdateFieldFn<K, V>;
 
     public func new<K, V>(
-        order : Nat,
-        cmp: CmpFn<K>,
+        max_bptree : MaxBpTree<K, V>,
+        opt_keys : ?[var ?K],
         opt_children : ?[var ?Node<K, V>],
+        gen_id: () -> Nat,
+        update_branch_fields: NodeUpdateFieldFn<K, V>,
     ) : Branch<K, V> {
-
-        let self : Branch<K, V> = {
-            var parent = null;
-            var index = 0;
-            var keys = [var];
-            var children = [var];
-            var count = 0;
-            var max = null;
-        };
-
-        let children = switch (opt_children) {
-            case (?children) { children };
-            case (_) {
-                self.keys := Array.init<?K>(order - 1, null);
-                self.children := Array.init<?Node<K, V>>(order, null);
-                return self;
-            };
-        };
-
-        var count = 0;
-
-        var max : K = switch (children[0]) {
-            case (? #leaf(node) or ? #branch(node) : ?SharedNode<K, V>) {
-                node.parent := ?self;
-                node.index := 0;
-                count += 1;
-
-                let ?node_max = node.max else Debug.trap("Branch.new: should have a max value");
-                node_max;
-            };
-            case (_) Debug.trap("Branch.new: should replace the opt_children input with a null value ");
-        };
-
-        let keys = Utils.tabulate_var<K>(
-            order - 1 : Nat,
-            if (count > 1) count - 1 else 0,
-            func(i : Nat) : ?K {
-                switch (children[i + 1]) {
-                    case (? #leaf(node)) {
-                        node.parent := ?self;
-                        node.index := count;
-                        count += 1;
-
-                        let ?node_max = node.max else Debug.trap("Branch.new: should have a max value");
-
-                        if (cmp(node_max, max) == #greater) {
-                            max := node_max;
-                        };
-
-                        switch (node.kvs[0]) {
-                            case (?kv) ?kv.0;
-                            case (_) null;
-                        };
-                    };
-                    case (? #branch(node)) {
-                        node.parent := ?self;
-                        node.index := count;
-                        count += 1;
-
-                        let ?node_max = node.max else Debug.trap("Branch.new: should have a max value");
-
-                        if (cmp(node_max, max) == #greater) {
-                            max := node_max;
-                        };
-
-                        node.keys[0];
-                    };
-                    case (_) null;
-                };
-            },
-        );
-
-        self.keys := keys;
-        self.children := children;
-        self.count := count;
-        self.max := ?max;
-
-        self;
+        InternalBranch.new<K, V, MaxField<K, V>>(max_bptree.order, opt_keys, opt_children, gen_id, Common.default_fields(), ?update_branch_fields);
     };
 
-    // public func newWithKeys<K, V>(cmp: CmpFn<K>, keys : [var ?K], children : [var ?Node<K, V>]) : Branch<K, V> {
-    //     let self : Branch<K, V> = {
-    //         var parent = null;
-    //         var index = 0;
-    //         var keys = keys;
-    //         var children = children;
-    //         var count = 0;
-    //         var max = null;
-    //     };
+    public func split<K, V>(
+        node : Branch<K, V>, 
+        child : Node<K, V>, 
+        child_index : Nat, 
+        first_child_key : K, 
+        gen_id : () -> Nat, 
+        reset_max_field : (MaxField<K, V>) -> (),
+        update_branch_fields: NodeUpdateFieldFn<K, V>,
+    ) : Branch<K, V> {
+        InternalBranch.split<K, V, MaxField<K, V>>(node, child, child_index, first_child_key, gen_id, Common.default_fields(), ?reset_max_field, ?update_branch_fields);
+    };
 
-    //     for (child in children.vals()) {
-    //         switch (child) {
-    //             case (? #leaf(node)) {
-    //                 node.parent := ?self;
-    //                 node.index := self.count;
-    //                 self.count += 1;
+    public func redistribute_keys<K, V>(
+        branch_node : Branch<K, V>,
+        reset_fields : ((MaxField<K, V>) -> ()),
+        update_node_fields : NodeUpdateFieldFn<K, V>,
+    ){
+        InternalBranch.redistribute_keys(branch_node, ?reset_fields, ?update_node_fields);
+    };
 
-    //                 let ?node_max = node.max else Debug.trap("Branch.new: should have a max value");
+    public func merge<K, V>(
+        left: Branch<K, V>, 
+        right: Branch<K, V>,
+        update_node_fields : NodeUpdateFieldFn<K, V>,
+    ){
+        InternalBranch.merge<K, V, MaxField<K, V>>(left, right, ?update_node_fields);
+    };
 
-    //                 switch(cmp(node_max, max)) {
-    //                     case (#greater) max := node_max;
-    //                     case (_) {};
-    //                 };
-    //             };
-    //             case (? #branch(node)) {
-    //                 node.parent := ?self;
-    //                 node.index := self.count;
-    //                 self.count += 1;
-
-    //                 let ?node_max = node.max else Debug.trap("Branch.new: should have a max value");
-
-    //                 switch(cmp(node_max, max)) {
-    //                     case (#greater) max := node_max;
-    //                     case (_) {};
-    //                 };
-    //             };
-    //             case (_) {};
-    //         };
-    //     };
-
-    //     self;
-    // };
-
-}
+};

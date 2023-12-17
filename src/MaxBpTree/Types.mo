@@ -1,46 +1,29 @@
-import BpTree "../BpTree";
-import BpTreeTypes "../BpTree/Types";
+import Order "mo:base/Order";
+import InternalTypes "../internal/Types";
 
 module {
+    type Order = Order.Order;
 
-    public type Branch<K, V> = {
-        var parent : ?Branch<K, V>;
-        var index : Nat;
-        var keys : [var ?K];
-        var children : [var ?Node<K, V>];
-        var count : Nat;
-        var max : ?K;
-    };
+    public type CmpFn<K> = InternalTypes.CmpFn<K>;
 
-    public type Leaf<K, V> = {
-        var parent : ?Branch<K, V>;
-        var index : Nat;
-        kvs : [var ?(K, V)];
-        var count : Nat;
-        var next : ?Leaf<K, V>;
-        var max : ?K;
-    };
-
-    public type Node<K, V> = {
-        #leaf : Leaf<K, V>;
-        #branch : Branch<K, V>;
-    };
-
-    public type MaxBpTree<K, V> = {
-        order : Nat;
-        var root : Node<K, V>;
-        var size : Nat;
+    public type MaxField<K, V> = {
+        var max_key : ?K;
+        var max_val : ?V;
+        var max_index : ?Nat;
     };
     
-    public type SharedNodeFields<K, V> = {
-        var parent : ?Branch<K, V>;
-        var index : Nat;
-        var count : Nat;
-        var max : ?K;
-    };
+    public type MaxBpTree<K, V> = InternalTypes.BpTree<K, V, MaxField<K, V>>;
 
-    public type SharedNode<K, V> = {
-        #leaf : SharedNodeFields<K, V>;
-        #branch : SharedNodeFields<K, V>;
-    };
-}
+    public type Node<K, V> = InternalTypes.Node<K, V, MaxField<K, V>>;
+
+    public type Branch<K, V> = InternalTypes.Branch<K, V, MaxField<K, V>>;
+
+    public type Leaf<K, V> = InternalTypes.Leaf<K, V, MaxField<K, V>>;
+
+    public type CommonFields<K, V> = InternalTypes.CommonFields<K, V, MaxField<K, V>>;
+
+    public type CommonNodeFields<K, V> = InternalTypes.CommonNodeFields<K, V, MaxField<K, V>>;
+
+    public type KvUpdateFieldFn<K, V> = InternalTypes.KvUpdateFieldFn<K, V, MaxField<K, V>>;
+    public type NodeUpdateFieldFn<K, V> = InternalTypes.NodeUpdateFieldFn<K, V, MaxField<K, V>>;
+};
