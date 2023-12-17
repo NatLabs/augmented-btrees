@@ -179,7 +179,11 @@ module {
                         i += 100;
                     };
                 };
-                case ("Max B+Tree", "remove()") { };
+                case ("Max B+Tree", "remove()") { 
+                    for ((k, v) in entries.vals()) {
+                        ignore MaxBpTree.remove(max_bp_tree, Nat.compare, Nat.compare, k);
+                    };
+                };
 
                 case (_) {
                     Debug.trap("Should not reach with row = " # debug_show row # " and col = " # debug_show col);

@@ -89,7 +89,22 @@ module InternalMethods {
         };
     };
 
-    public func get_leaf_node_and_update_branch_path<K, V, Extra>(self : BpTree<K, V, Extra>, cmp : CmpFn<K>, key : K, update : (Branch<K, V, Extra>) -> ()) : Leaf<K, V, Extra> {
+    public func update_partial_branch_path_from_leaf_to_root<K, V, Extra>(self : BpTree<K, V, Extra>, leaf : Leaf<K, V, Extra>, update : (Branch<K, V, Extra>) -> (_continue: Bool)) {
+        var parent = leaf.parent;
+
+        loop {
+            switch (parent) {
+                case (?node) {
+                    if (not update(node)) return;
+                    parent := node.parent;
+                };
+
+                case (_) return;
+            };
+        };
+    };
+
+    public func get_leaf_node_and_update_branch_path<K, V, Extra>(self : BpTree<K, V, Extra>, cmp : CmpFn<K>, key : K, update : (parent: Branch<K, V, Extra>, child_index: Nat) -> ()) : Leaf<K, V, Extra> {
         var curr = ?self.root;
 
         loop {
@@ -97,7 +112,7 @@ module InternalMethods {
                 case (? #branch(node)) {
                     let int_index = ArrayMut.binary_search<K, K>(node.keys, cmp, key, node.count - 1);
                     let node_index = if (int_index >= 0) Int.abs(int_index) + 1 else Int.abs(int_index + 1);
-                    update(node);
+                    update(node, node_index);
 
                     curr := node.children[node_index];
                 };

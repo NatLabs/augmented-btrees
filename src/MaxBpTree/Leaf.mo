@@ -21,10 +21,10 @@ module {
     type MultiCmpFn<A, B> = InternalTypes.MultiCmpFn<A, B>;
     type CmpFn<A> = InternalTypes.CmpFn<A>;
     type MaxField<K, V> = T.MaxField<K, V>;
-    type UpdateLeafFieldsFn<K, V> = T.UpdateLeafFieldsFn<K, V>;
+    type KvUpdateFieldFn<K, V> = T.KvUpdateFieldFn<K, V>;
 
     public func new<K, V>(order : Nat, count : Nat, opt_kvs : ?[var ?(K, V)], gen_id : () -> Nat) : Leaf<K, V> {
-        InternalLeaf.new<K, V, MaxField<K, V>>(order, count, opt_kvs, gen_id, { var max = null }, null);
+        InternalLeaf.new<K, V, MaxField<K, V>>(order, count, opt_kvs, gen_id, Common.default_fields(), null);
     };
 
     public func split<K, V>(
@@ -33,8 +33,9 @@ module {
         elem : (K, V),
         gen_id : () -> Nat,
         reset_max_field : (MaxField<K, V>) -> (),
-        update_leaf_fields: UpdateLeafFieldsFn<K, V>,
+        update_leaf_fields: KvUpdateFieldFn<K, V>,
     ) : Leaf<K, V> {
-        InternalLeaf.split<K, V, MaxField<K, V>>(leaf, elem_index, elem, gen_id, { var max = null }, ?reset_max_field, ?update_leaf_fields);
+        InternalLeaf.split<K, V, MaxField<K, V>>(leaf, elem_index, elem, gen_id, Common.default_fields(), ?reset_max_field, ?update_leaf_fields);
     };
+
 };

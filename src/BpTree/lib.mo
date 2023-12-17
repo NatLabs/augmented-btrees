@@ -179,7 +179,7 @@ module BpTree {
     ///     assert BpTree.insert(bptree, Text.compare, "id", 2) == ?1;
     /// ```
     public func insert<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, key : K, val : V) : ?V {
-        func inc_branch_subtree_size(branch : Branch<K, V>) {
+        func inc_branch_subtree_size(branch : Branch<K, V>, index: Nat) {
             branch.subtree_size += 1;
         };
 
@@ -309,42 +309,6 @@ module BpTree {
         prev_value;
     };
 
-    // merges two leaf nodes into the left node
-    public func merge_leaf_nodes<K, V>(left : Leaf<K, V>, right : Leaf<K, V>) {
-        let min_count = left.kvs.size() / 2;
-
-        var i = 0;
-
-        // merge right into left
-        for (_ in Iter.range(0, right.count - 1)) {
-            let val = right.kvs[i];
-            ArrayMut.insert(left.kvs, left.count + i, val, left.count);
-
-            i += 1;
-        };
-
-        left.count += right.count;
-
-        // update leaf pointers
-        left.next := right.next;
-        switch (left.next) {
-            case (?next) next.prev := ?left;
-            case (_) {};
-        };
-
-        // update parent keys
-        switch (left.parent) {
-            case (null) {};
-            case (?parent) {
-                ignore ArrayMut.remove(parent.keys, right.index - 1 : Nat, parent.count - 1 : Nat);
-                ignore Branch.remove(parent, right.index : Nat, parent.count);
-
-                parent.count -= 1;
-            };
-        };
-
-    };
-
     /// Removes the key-value pair from the tree.
     /// If the key is not in the tree, it returns null.
     /// Otherwise, it returns the value associated with the key.
@@ -362,7 +326,7 @@ module BpTree {
             branch.subtree_size += 1;
         };
 
-        func decrement_branch_subtree_size(branch : Branch<K, V>) {
+        func decrement_branch_subtree_size(branch : Branch<K, V>, index : Nat) {
             branch.subtree_size -= 1;
         };
 
@@ -428,10 +392,6 @@ module BpTree {
         let right_node = if (adj_node.index < leaf_node.index) leaf_node else adj_node;
 
         Leaf.merge(left_node, right_node);
-        // remove merged right node from parent
-        ignore ArrayMut.remove(parent.keys, right_node.index - 1 : Nat, parent.count - 1 : Nat);
-        ignore Branch.remove(parent, right_node.index : Nat, parent.count);
-        parent.count -= 1;
 
         var branch_node = parent;
         let ?__parent = branch_node.parent else {
@@ -529,6 +489,42 @@ module BpTree {
         InternalMethods.max(self);
     };
 
+    /// Removes the minimum key-value pair in the tree and returns it.
+    /// If the tree is empty, it returns null.
+    /// 
+    /// #### Examples
+    /// ```motoko
+    ///     let arr = [('A', 1), ('B', 2), ('C', 3)];
+    ///     let bptree = BpTree.fromArray<Char, Nat>(null, arr, Char.compare);
+    ///
+    ///     assert BpTree.removeMin(bptree, Char.compare) == ?('A', 1);
+    /// ```
+    public func removeMin<K, V>(self : BpTree<K, V>, cmp: CmpFn<K>) : ?(K, V) {
+        let ?(min_key, _) = InternalMethods.min(self) else return null;
+
+        let ?v = remove(self, cmp, min_key) else return null;
+
+        return ?(min_key, v);        
+    };
+
+    /// Removes the maximum key-value pair in the tree and returns it.
+    /// If the tree is empty, it returns null.
+    ///
+    /// #### Examples
+    /// ```motoko
+    ///     let arr = [('A', 1), ('B', 2), ('C', 3)];
+    ///     let bptree = BpTree.fromArray<Char, Nat>(null, arr, Char.compare);
+    ///
+    ///     assert BpTree.removeMax(bptree, Char.compare) == ?('C', 3);
+    /// ```
+    public func removeMax<K, V>(self : BpTree<K, V>, cmp: CmpFn<K>) : ?(K, V) {
+        let ?(max_key, _) = InternalMethods.max(self) else return null;
+
+        let ?v = remove(self, cmp, max_key) else return null;
+
+        return ?(max_key, v);
+    };
+
     /// Returns a double ended iterator over the entries of the tree.
     public func entries<K, V>(bptree : BpTree<K, V>) : DoubleEndedIter<(K, V)> {
         InternalMethods.entries(bptree);
@@ -591,6 +587,7 @@ module BpTree {
     public func scan<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, start : K, end : K) : DoubleEndedIter<(K, V)> {
         InternalMethods.scan(self, cmp, start, end);
     };
+    
 
     public func toLeafNodes<K, V>(self : BpTree<K, V>) : [[?(K, V)]] {
         var node = ?self.root;

@@ -192,7 +192,7 @@ suite(
                 assert left.index == 0;
                 assert right.index == 1;
 
-                BpTree.merge_leaf_nodes(left, right);
+                BpTree.Leaf.merge(left, right);
 
                 assert left.count == 4;
 
