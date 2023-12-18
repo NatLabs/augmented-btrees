@@ -15,7 +15,6 @@ import LeafModule "Leaf";
 import BranchModule "Branch";
 
 import ArrayMut "../internal/ArrayMut";
-import Itertools "mo:itertools/Iter";
 import InternalMethods "../internal/Methods";
 import Utils "../internal/Utils";
 import T "Types";

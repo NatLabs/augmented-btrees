@@ -12,7 +12,6 @@ import Buffer "mo:base/Buffer";
 import BufferDeque "mo:buffer-deque/BufferDeque";
 
 import ArrayMut "../internal/ArrayMut";
-import Itertools "mo:itertools/Iter";
 import Utils "../internal/Utils";
 import T "Types";
 import Cursor "Cursor";
