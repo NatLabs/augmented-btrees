@@ -181,26 +181,20 @@ module Leaf {
         // distribute data between adjacent nodes
         if (adj_node.index < leaf_node.index) {
             // adj_node is before leaf_node
-            // Debug.print("chose left node");
+
             var i = 0;
             ArrayMut.shift_by(leaf_node.kvs, 0, leaf_node.count, data_to_move);
             for (_ in Iter.range(0, data_to_move - 1)) {
                 let opt_kv = ArrayMut.remove(adj_node.kvs, adj_node.count - i - 1 : Nat, adj_node.count);
+
+                // no need to call update_fields as we are the adjacent node is before the leaf node 
+                // which means that all its keys are less than the leaf node's keys
                 leaf_node.kvs[data_to_move - i - 1] := opt_kv;
-
-                switch (opt_update_fields) {
-                    case (?update_fields) {
-                        let ?kv = opt_kv else Debug.trap("Leaf.redistribute_keys: kv is null");
-                        update_fields(leaf_node.fields, leaf_node.count + i, kv.0, kv.1);
-                    };
-                    case (_) {};
-                };
-
+                
                 i += 1;
             };
         } else {
             // adj_node is after leaf_node
-            // Debug.print("chose right node");
 
             var i = 0;
             for (_ in Iter.range(0, data_to_move - 1)) {
@@ -247,23 +241,15 @@ module Leaf {
 
         var i = 0;
 
-        reset_fields(leaf_node.fields);
+        let left_node = if (adj_node.index < leaf_node.index) adj_node else leaf_node;
 
-        while (i < leaf_node.count) {
-            let ?kv = leaf_node.kvs[i] else Debug.trap("Leaf.redistribute_keys: kv is null");
-            update_fields(leaf_node.fields, i, kv.0, kv.1);
+        reset_fields(left_node.fields);
+
+        while (i < left_node.count) {
+            let ?kv = left_node.kvs[i] else Debug.trap("Leaf.redistribute_keys: kv is null");
+            update_fields(left_node.fields, i, kv.0, kv.1);
             i += 1;
         };
-
-        // i := 0;
-
-        // reset_fields(adj_node.fields);
-
-        // while ( i < adj_node.count ) {
-        //     let ?kv = adj_node.kvs[i] else Debug.trap("Leaf.redistribute_keys: kv is null");
-        //     update_fields(adj_node.fields, i, kv.0, kv.1);
-        //     i += 1;
-        // };
 
         let ?update_node_fields = opt_update_node_fields else return;
 
@@ -307,6 +293,9 @@ module Leaf {
 
         let ?parent = left.parent else Debug.trap("Leaf.merge: parent is null");
 
+        // if the max value was in the right node, 
+        // after the merge fn it will be in the left node
+        // so we need to update the parent key with the new max value in the left node
         switch (opt_update_node_fields) {
             case (?update_node_fields) {
                 update_node_fields(parent.fields, left.index, #leaf(left));
@@ -331,10 +320,9 @@ module Leaf {
                     };
                 };
 
-                // updte shifted node's index
+                // update shifted node's index
                 switch (opt_update_node_fields) {
                     case (?update_node_fields) {
-                        let ?child = parent.children[i] else Debug.trap("Leaf.merge: accessed a null value");
                         update_node_fields(parent.fields, i, child);
                     };
                     case (_) {};

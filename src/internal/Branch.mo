@@ -468,6 +468,9 @@ module Branch {
 
                 let new_node_index = data_to_move - i - 1 : Nat;
                 let ?val = Branch.remove(adj_node, j, adj_node.count - i : Nat, null) else Debug.trap("4. redistribute_branch_keys: accessed a null value");
+                
+                // no need to call update_fields as we are the adjacent node is before the leaf node 
+                // which means that all its keys are less than the leaf node's keys
                 Branch.put(branch_node, new_node_index, val);
 
                 switch (val) {
@@ -479,12 +482,6 @@ module Branch {
                     };
                 };
 
-                switch(opt_update_node_fields) {
-                    case (?update_node_fields) {
-                        update_node_fields(branch_node.fields, new_node_index, val);
-                    };
-                    case (_) {};
-                };
 
                 i += 1;
             };
@@ -513,14 +510,6 @@ module Branch {
                     };
                 };
 
-                switch(opt_update_node_fields) {
-                    case (?update_node_fields) {
-                        update_node_fields(branch_node.fields, branch_node.count + i, val);
-                    };
-                    case (_) {};
-                };
-
-
                 i += 1;
             };
 
@@ -541,12 +530,12 @@ module Branch {
         let ?update_node_fields = opt_update_node_fields else return;
 
         var i = 0;
+        let left_node = if (adj_node.index < branch_node.index) adj_node else branch_node;
+        reset_fields(left_node.fields);
 
-        reset_fields(branch_node.fields);
-
-        while (i < branch_node.count) {
-            let ?node = branch_node.children[i] else Debug.trap("Leaf.redistribute_keys: kv is null");
-            update_node_fields(branch_node.fields, i, node);
+        while (i < left_node.count) {
+            let ?node = left_node.children[i] else Debug.trap("Leaf.redistribute_keys: kv is null");
+            update_node_fields(left_node.fields, i, node);
             i += 1;
         };
 

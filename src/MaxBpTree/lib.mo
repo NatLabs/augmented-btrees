@@ -63,6 +63,16 @@ module MaxBpTree {
         InternalMethods.get(self, cmp, key);
     };
 
+    /// Returns the largest key in the tree that is less than or equal to the given key.
+    public func getFloor<K, V>(self : MaxBpTree<K, V>, cmp : CmpFn<K>, key : K) : ?(K, V) {
+        InternalMethods.get_floor<K, V, MaxField<K, V>>(self, cmp, key);
+    };
+
+    /// Returns the smallest key in the tree that is greater than or equal to the given key.
+    public func getCeiling<K, V>(self : MaxBpTree<K, V>, cmp : CmpFn<K>, key : K) : ?(K, V) {
+        InternalMethods.get_ceiling<K, V, MaxField<K, V>>(self, cmp, key);
+    };
+
     /// Inserts the given key-value pair into the tree.
     /// If the key already exists in the tree, it replaces the value and returns the old value.
     /// Otherwise, it returns null.
@@ -74,6 +84,7 @@ module MaxBpTree {
     ///     assert MaxBpTree.insert(max_bp_tree, Text.compare, "id", 1) == null;
     ///     assert MaxBpTree.insert(max_bp_tree, Text.compare, "id", 2) == ?1;
     /// ```
+    // add max-value update during replace                                                                                                                                                                                                  
     public func insert<K, V>(max_bp_tree : MaxBpTree<K, V>, cmp_key : CmpFn<K>, cmp_val : CmpFn<V>, key : K, val : V) : ?V {
 
         let update_leaf_fields = Common.update_leaf_fields<K, V>(cmp_val);
