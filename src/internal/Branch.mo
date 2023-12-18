@@ -5,8 +5,6 @@ import Int "mo:base/Int";
 import Nat "mo:base/Nat";
 import Order "mo:base/Order";
 
-import Itertools "mo:itertools/Iter";
-
 // import T "Types";
 import InternalTypes "Types";
 import InternalMethods "Methods";
@@ -83,8 +81,9 @@ module Branch {
 
         let keys = switch (opt_keys) {
             case (?keys) {
-                for (child in Itertools.skip(children.vals(), 1)) {
-                    switch (child) {
+                label _loop
+                for (i in Iter.range(1, children.size() - 1)) {
+                    switch (children[i]) {
                         case (? #leaf(node)) {
                             node.parent := ?self;
                             node.index := self.count;
@@ -102,7 +101,7 @@ module Branch {
                             update_fields(self.fields, node.index, #branch(node));
 
                         };
-                        case (_) {};
+                        case (_) { break _loop; };
                     };
                 };
                 keys;

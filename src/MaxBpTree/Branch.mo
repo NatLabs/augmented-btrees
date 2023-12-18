@@ -5,8 +5,6 @@ import Int "mo:base/Int";
 import Nat "mo:base/Nat";
 import Order "mo:base/Order";
 
-import Itertools "mo:itertools/Iter";
-
 import T "Types";
 import InternalTypes "../internal/Types";
 import Leaf "Leaf";
