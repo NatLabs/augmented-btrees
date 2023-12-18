@@ -1,8 +1,8 @@
 ## Augmented Btrees
 This library contains implementations of different Btree variants.
 
-- [x] B+ Tree ([BpTree](./src/BpTree/lib.mo))
-- [ ] Max Value B+ Tree ([MaxBpTree](./src/MaxBpTree/lib.mo)) `in-progress`
+- [x] B+ Tree ([BpTree](https://mops.one/augmented-btrees/docs/BpTree/lib#new))
+- [ ] Max Value B+ Tree ([MaxBpTree](https://mops.one/augmented-btrees/docs/MaxBpTree/lib#new)) `in-progress`
 
 ### Usage
 - Import the library 

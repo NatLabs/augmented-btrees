@@ -154,6 +154,16 @@ module BpTree {
         InternalMethods.get(self, cmp, key);
     };
 
+    /// Returns the largest element in the B+Tree that is less than or equal to a given key.
+    public func getFloor<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, key : K) : ?(K, V) {
+        InternalMethods.get_floor(self, cmp, key);
+    };
+
+    /// Returns the smallest element in the B+Tree that is greater than or equal to a given key.
+    public func getCeiling<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, key : K) : ?(K, V) {
+        InternalMethods.get_ceiling(self, cmp, key);
+    };
+
     public func toText<K, V>(self : BpTree<K, V>, key_to_text : (K) -> Text, val_to_text : (V) -> Text) : Text {
         var t = "BpTree { order: " # debug_show self.order # ", size: " # debug_show self.size # ", root: ";
 

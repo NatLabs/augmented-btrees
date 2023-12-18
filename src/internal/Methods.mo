@@ -405,6 +405,42 @@ module InternalMethods {
         null;
     };
 
+    public func get_ceiling<K, V, Extra>(self : BpTree<K, V, Extra>, cmp : CmpFn<K>, key : K) : ?(K, V) {
+        let leaf_node = InternalMethods.get_leaf_node<K, V, Extra>(self, cmp, key);
+
+        let i = ArrayMut.binary_search<K, (K, V)>(leaf_node.kvs, Utils.adapt_cmp(cmp), key, leaf_node.count);
+
+        if (i >= 0) {
+            return leaf_node.kvs[Int.abs(i)];
+        };
+
+        let expected_index = Int.abs(i) - 1 : Nat;
+
+        if (expected_index == leaf_node.count) {
+            let ?next_node = leaf_node.next else return null;
+            return next_node.kvs[0];
+        };
+
+        return leaf_node.kvs[expected_index];
+    };
+
+    public func get_floor<K, V, Extra>(self : BpTree<K, V, Extra>, cmp : CmpFn<K>, key : K) : ?(K, V) {
+        let leaf_node = InternalMethods.get_leaf_node<K, V, Extra>(self, cmp, key);
+
+        let i = ArrayMut.binary_search<K, (K, V)>(leaf_node.kvs, Utils.adapt_cmp(cmp), key, leaf_node.count);
+        
+        if (i >= 0) return leaf_node.kvs[Int.abs(i)];
+        
+        let expected_index = Int.abs(i) - 1 : Nat;
+
+        if (expected_index == 0) {
+            let ?prev_node = leaf_node.prev else return null;
+            return prev_node.kvs[prev_node.count - 1];
+        };
+
+        return leaf_node.kvs[expected_index - 1];
+    };
+
     public func to_array<K, V, Extra>(self : BpTree<K, V, Extra>) : [(K, V)] {
         var node = ?self.root;
         let buffer = Buffer.Buffer<(K, V)>(self.size);
