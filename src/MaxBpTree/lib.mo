@@ -124,6 +124,8 @@ module MaxBpTree {
             let ?kv = leaf_node.kvs[elem_index] else Debug.trap("1. insert: accessed a null value while replacing a key-value pair");
             leaf_node.kvs[elem_index] := ?entry;
 
+            update_leaf_fields(leaf_node.fields, elem_index, key, val);
+
             // undoes the update to subtree count for the nodes on the path to the root when replacing a key-value pair
             InternalMethods.update_branch_path_from_leaf_to_root<K, V, MaxField<K, V>>(max_bp_tree, leaf_node, decrement_branch_subtree_size);
 

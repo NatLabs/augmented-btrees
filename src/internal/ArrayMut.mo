@@ -54,6 +54,21 @@ module {
         item;
     };
 
+    public func linear_search<B, A>(arr: [var ?A], cmp: T.MultiCmpFn<B, A>, search_key: B, arr_len: Nat) : Int {
+        var i = 0;
+        
+        while (i < arr_len) {
+            let ?val = arr[i] else Debug.trap("linear_search: accessed a null value");
+            switch (cmp(search_key, val)) {
+                case (#equal) return i;
+                case (#less) return -(i + 1);
+                case (#greater) i += 1;
+            };
+        };
+
+        return -(i + 1);
+    };
+
     public func binary_search<B, A>(arr : [var ?A], cmp : T.MultiCmpFn<B, A>, search_key : B, arr_len : Nat) : Int {
         if (arr_len == 0) return -1; // should insert at index Int.abs(i + 1)
         var l = 0;
