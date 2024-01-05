@@ -9,6 +9,7 @@ import Buffer "mo:base/Buffer";
 import Bench "mo:bench";
 import Fuzz "mo:fuzz";
 import BTree "mo:stableheapbtreemap/BTree";
+import Map "mo:map/Map";
 
 import { BpTree; MaxBpTree } "../src";
 
@@ -21,11 +22,13 @@ module {
         bench.name("Comparing RBTree, BTree and B+Tree (BpTree)");
         bench.description("Benchmarking the performance with 10k entries");
 
-        bench.rows(["RBTree", "BTree", "B+Tree", "Max B+Tree"]);
+        bench.rows(["Map", "RBTree", "BTree", "B+Tree", "Max B+Tree"]);
         bench.cols(["insert()", "replace()", "get()", "entries()", "scan()", "remove()"]);
 
-        let limit = 10_000;
-
+        let limit = 100_000;
+        
+        let {nhash} = Map;
+        let map = Map.new<Nat, Nat>();
         let btree = BTree.init<Nat, Nat>(?32);
         let bptree = BpTree.new<Nat, Nat>(?32);
         let max_bp_tree = MaxBpTree.new<Nat, Nat>(?32);
@@ -44,6 +47,37 @@ module {
 
         bench.runner(
             func(row, col) = switch (row, col) {
+                case ("Map", "insert()") {
+                    var i = 0;
+
+                    for ((key, val) in entries.vals()) {
+                        ignore Map.put(map, nhash, key, val);
+                        i += 1;
+                    };
+                };
+                case ("Map", "replace()") {
+                    var i = 0;
+
+                    for ((key, val) in entries.vals()) {
+                        ignore Map.put(map, nhash, key, val * 2);
+                        i += 1;
+                    };
+                };
+                case ("Map", "get()") {
+                    for (i in Iter.range(0, limit - 1)) {
+                        let key = entries.get(i).0;
+                        ignore Map.get(map, nhash, key);
+                    };
+                };
+                case ("Map", "entries()") {
+                    for (i in rbtree.entries()) { ignore i };
+                };
+                case ("Map", "scan()") { };
+                case ("Map", "remove()") {
+                    for (i in Iter.range(0, limit - 1)) {
+                        Map.delete(map, nhash, i);
+                    };
+                };
 
                 case ("RBTree", "insert()") {
                     var i = 0;
