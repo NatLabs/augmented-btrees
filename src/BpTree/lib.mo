@@ -153,6 +153,11 @@ module BpTree {
         InternalMethods.get(self, cmp, key);
     };
 
+    /// Checks if the given key exists in the tree.
+    public func has<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, key : K) : Bool {
+        Option.isSome(get(self, cmp, key));
+    };
+
     /// Returns the largest element in the B+Tree that is less than or equal to a given key.
     public func getFloor<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, key : K) : ?(K, V) {
         InternalMethods.get_floor(self, cmp, key);

@@ -5,7 +5,6 @@ import Nat "mo:base/Nat";
 import Nat32 "mo:base/Nat32";
 import Iter "mo:base/Iter";
 import Buffer "mo:base/Buffer";
-import TrieSet "mo:base/TrieSet";
 
 import { test; suite } "mo:test";
 import Fuzz "mo:fuzz";
@@ -86,6 +85,85 @@ func bp_tree_test(order : Nat, random : Buffer.Buffer<Nat>) {
         },
     );
 
+    test("insert() for replacing entries", func() {
+        let bptree = BpTree.fromEntries<Nat, Nat>(?order, map_to_entries(random.vals()), Nat.compare);
+        assert BpTree.size(bptree) == random.size();
+
+        for ((k, v) in map_to_entries(random.vals())){
+            let choice = fuzz.nat.randomRange(0, 1);
+            let new_value = if (choice == 0) (v / 10) else (v * 10);
+            assert ?v == BpTree.insert(bptree, Nat.compare, k, new_value);
+        };
+    });
+
+
+    test(
+        "delete with ascending order",
+        func() {
+            let iter = Iter.map<Nat, (Nat, Nat)>(random.vals(), func(n : Nat) : (Nat, Nat) = (n, n));
+            let rand = Itertools.toBuffer<(Nat, Nat)>(iter);
+            rand.sort(func(a : (Nat, Nat), b : (Nat, Nat)) : Order = Nat.compare(a.0, b.0));
+
+            let bptree = BpTree.fromEntries<Nat, Nat>(?order, rand.vals(), Nat.compare);
+            assert BpTree.size(bptree) == rand.size();
+
+            label _l for ((i, (k, v)) in Itertools.enumerate(rand.vals())) {
+
+                // Debug.print("deleting " # debug_show k # " at index " # debug_show i);
+                let removed = BpTree.remove(bptree, Nat.compare, k);
+                if (?v != removed) {
+                    Debug.print("mismatch: " # debug_show (?v, removed, ?v == removed) # " at index " # debug_show i);
+                    assert false;
+                };
+
+                assert BpTree.size(bptree) == (rand.size() - i - 1 : Nat);
+
+                let root_subtree_size = switch (bptree.root) {
+                    case (#branch(node)) { node.subtree_size };
+                    case (#leaf(node)) { node.count };
+                };
+
+                assert root_subtree_size == (rand.size() - i - 1 : Nat);
+            };
+
+            assert BpTree.size(bptree) == 0;
+        },
+    );
+
+    assert BpTree.size(bptree) == random.size();
+
+    test(
+        "delete with descending order",
+        func() {
+            let iter = Iter.map<Nat, (Nat, Nat)>(random.vals(), func(n : Nat) : (Nat, Nat) = (n, n));
+            let rand = Itertools.toBuffer<(Nat, Nat)>(iter);
+            rand.sort(func(a : (Nat, Nat), b : (Nat, Nat)) : Order = Nat.compare(b.0, a.0));
+            let bptree = BpTree.fromEntries<Nat, Nat>(?order, rand.vals(), Nat.compare);
+            assert BpTree.size(bptree) == rand.size();
+
+            label _l for ((i, n) in Itertools.enumerate(sorted.vals())) {
+
+                // Debug.print("deleting " # debug_show k # " at index " # debug_show i);
+                let removed = BpTree.remove(bptree, Nat.compare, n);
+                if (?n != removed) {
+                    Debug.print("mismatch: " # debug_show (?n, removed, ?n == removed) # " at index " # debug_show i);
+                    assert false;
+                };
+
+                assert BpTree.size(bptree) == (sorted.size() - i - 1 : Nat);
+
+                let root_subtree_size = switch (bptree.root) {
+                    case (#branch(node)) { node.subtree_size };
+                    case (#leaf(node)) { node.count };
+                };
+
+                assert root_subtree_size == (sorted.size() - i - 1 : Nat);
+            };
+
+            assert BpTree.size(bptree) == 0;
+        },
+    );
+
     test(
         "get",
         func() {
@@ -100,47 +178,9 @@ func bp_tree_test(order : Nat, random : Buffer.Buffer<Nat>) {
     );
 
     test(
-        "entries.rev()",
-        func() {
-            let iter = Iter.map<Nat, (Nat, Nat)>(random.vals(), func(n : Nat) : (Nat, Nat) = (n, n));
-            let bptree = BpTree.fromEntries<Nat, Nat>(?order, iter, Nat.compare);
-
-            let rand = Buffer.clone(sorted);
-            Buffer.reverse(rand);
-            assert BpTree.size(bptree) == rand.size();
-
-            let entries = BpTree.entries(bptree);
-            for ((i, (k, v)) in Itertools.enumerate(entries.rev())) {
-                let expected = rand.get(i);
-
-                if (v != expected) {
-                    Debug.print("mismatch: (" # debug_show i # ") ->" # debug_show (v, expected, v == expected));
-                    Debug.print("revEntries " # debug_show Iter.toArray(BpTree.entries(bptree).rev()));
-                    assert false;
-                };
-            };
-
-            while (rand.size() > 1) {
-                let index = fuzz.nat.randomRange(0, rand.size() - 1);
-                let n = rand.remove(index);
-                assert ?n == BpTree.remove(bptree, Nat.compare, n);
-
-                assert Itertools.equal<(Nat, Nat)>(
-                    map_to_entries(rand.vals()),
-                    BpTree.entries(bptree).rev(),
-                    func (a: (Nat, Nat), b: (Nat, Nat)) : Bool = a == b,
-                );
-            };
-
-            assert BpTree.entries(bptree).next() == ?(rand.get(0), rand.get(0));
-        },
-    );
-
-
-    test(
         "getRank",
         func() {
-            
+
             for (i in Itertools.range(0, sorted.size())) {
                 let key = sorted.get(i);
 
@@ -173,72 +213,9 @@ func bp_tree_test(order : Nat, random : Buffer.Buffer<Nat>) {
     );
 
     test(
-        "scan",
-        func() {
-            let sliding_tuples = Itertools.range(0, BpTree.size(bptree))
-            |> Iter.map<Nat, Nat>(_, func(n : Nat) : Nat = n * 100)
-            |> Itertools.takeWhile(_, func(n : Nat) : Bool = n < BpTree.size(bptree))
-            |> Itertools.slidingTuples(_);
-
-            for ((i, j) in sliding_tuples) {
-                let start_key = sorted.get(i);
-                let end_key = sorted.get(j);
-
-                var index = i;
-                
-                for ((k, v) in BpTree.scan(bptree, Nat.compare, start_key, end_key)){
-                    let expected = sorted.get(index);
-
-                    if (not (expected == k)) {
-                        Debug.print("mismatch: " # debug_show (expected, k));
-                        Debug.print("scan " # debug_show Iter.toArray(BpTree.scan(bptree, Nat.compare, start_key, end_key)));
-
-                        let expected_vals = Iter.range(i, j)
-                        |> Iter.map<Nat, Nat>(_, func(n : Nat) : Nat = sorted.get(n));
-                        Debug.print("expected " # debug_show Iter.toArray(expected_vals));
-                        assert false;
-                    };
-
-                    index += 1;
-                };
-            };
-        },
-    );
-
-    test(
-        "range",
-        func() {
-            let iter = Iter.map<Nat, (Nat, Nat)>(random.vals(), func(n : Nat) : (Nat, Nat) = (n, n));
-            let _rand = Iter.toArray<(Nat, Nat)>(Itertools.take(iter, 100));
-
-            let bptree = BpTree.fromEntries<Nat, Nat>(?order, _rand.vals(), Nat.compare);
-            let rand = Array.sort<(Nat, Nat)>(_rand, Utils.tuple_cmp(Nat.compare));
-
-            for (i in Itertools.range(0, BpTree.size(bptree))) {
-
-                for (j in Itertools.range(i + 1, BpTree.size(bptree))) {
-
-                    if (
-                        not Itertools.equal<(Nat, Nat)>(
-                            BpTree.range(bptree, i, j),
-                            Itertools.fromArraySlice(rand, i, j + 1),
-                            func(a : (Nat, Nat), b : (Nat, Nat)) : Bool = a == b,
-                        )
-                    ) {
-                        Debug.print("mismatch: " # debug_show (i, j));
-                        Debug.print("range " # debug_show Iter.toArray(BpTree.range(bptree, i, j)));
-                        Debug.print("expected " # debug_show Iter.toArray(Itertools.fromArraySlice(rand, i, j + 1)));
-                        assert false;
-                    };
-                };
-            };
-        },
-    );
-
-    test(
         "getFloor()",
         func() {
-            
+
             let sorted = Itertools.range(1, limit)
             |> Iter.map<Nat, Nat>(_, func(n : Nat) : Nat = 2 * n)
             |> Itertools.toBuffer<Nat>(_);
@@ -345,95 +322,102 @@ func bp_tree_test(order : Nat, random : Buffer.Buffer<Nat>) {
     );
 
     test(
-        "delete with ascending order",
-        func() {
-            let iter = Iter.map<Nat, (Nat, Nat)>(random.vals(), func(n : Nat) : (Nat, Nat) = (n, n));
-            let rand = Itertools.toBuffer<(Nat, Nat)>(iter);
-            rand.sort(func(a : (Nat, Nat), b : (Nat, Nat)) : Order = Nat.compare(a.0, b.0));
-
-            let bptree = BpTree.fromEntries<Nat, Nat>(?order, rand.vals(), Nat.compare);
-            assert BpTree.size(bptree) == rand.size();
-
-            label _l for ((i, (k, v)) in Itertools.enumerate(rand.vals())) {
-
-                // Debug.print("deleting " # debug_show k # " at index " # debug_show i);
-                let removed = BpTree.remove(bptree, Nat.compare, k);
-                if (?v != removed) {
-                    Debug.print("mismatch: " # debug_show (?v, removed, ?v == removed) # " at index " # debug_show i);
-                    assert false;
-                };
-
-                assert BpTree.size(bptree) == (rand.size() - i - 1 : Nat);
-
-                let root_subtree_size = switch (bptree.root) {
-                    case (#branch(node)) { node.subtree_size };
-                    case (#leaf(node)) { node.count };
-                };
-
-                assert root_subtree_size == (rand.size() - i - 1 : Nat);
-            };
-
-            assert BpTree.size(bptree) == 0;
-        },
-    );
-
-    assert BpTree.size(bptree) == random.size();
-
-    test(
-        "delete with descending order",
-        func() {
-            let iter = Iter.map<Nat, (Nat, Nat)>(random.vals(), func(n : Nat) : (Nat, Nat) = (n, n));
-            let rand = Itertools.toBuffer<(Nat, Nat)>(iter);
-            rand.sort(func(a : (Nat, Nat), b : (Nat, Nat)) : Order = Nat.compare(b.0, a.0));
-            let bptree = BpTree.fromEntries<Nat, Nat>(?order, rand.vals(), Nat.compare);
-            assert BpTree.size(bptree) == rand.size();
-
-            label _l for ((i, n) in Itertools.enumerate(sorted.vals())) {
-
-                // Debug.print("deleting " # debug_show k # " at index " # debug_show i);
-                let removed = BpTree.remove(bptree, Nat.compare, n);
-                if (?n != removed) {
-                    Debug.print("mismatch: " # debug_show (?n, removed, ?n == removed) # " at index " # debug_show i);
-                    assert false;
-                };
-
-                assert BpTree.size(bptree) == (sorted.size() - i - 1 : Nat);
-
-                let root_subtree_size = switch (bptree.root) {
-                    case (#branch(node)) { node.subtree_size };
-                    case (#leaf(node)) { node.count };
-                };
-
-                assert root_subtree_size == (sorted.size() - i - 1 : Nat);
-            };
-
-            assert BpTree.size(bptree) == 0;
-        },
-    );
-
-    assert BpTree.size(bptree) == random.size();
-
-    test(
-        "delete with insertion order",
+        "entries.rev()",
         func() {
             let iter = Iter.map<Nat, (Nat, Nat)>(random.vals(), func(n : Nat) : (Nat, Nat) = (n, n));
             let bptree = BpTree.fromEntries<Nat, Nat>(?order, iter, Nat.compare);
-            assert BpTree.size(bptree) == random.size();
 
-            label _l for ((i, n) in Itertools.enumerate(random.vals())) {
+            let rand = Buffer.clone(sorted);
+            Buffer.reverse(rand);
+            assert BpTree.size(bptree) == rand.size();
 
-                let removed = BpTree.remove(bptree, Nat.compare, n);
-                if (?n != removed) {
-                    Debug.print("mismatch: " # debug_show (?n, removed, ?n == removed) # " at index " # debug_show i);
-                    Debug.print("keys " # debug_show BpTree.toNodeKeys(bptree));
-                    Debug.print("leafs " # debug_show BpTree.toLeafNodes(bptree));
+            let entries = BpTree.entries(bptree);
+            for ((i, (k, v)) in Itertools.enumerate(entries.rev())) {
+                let expected = rand.get(i);
+
+                if (v != expected) {
+                    Debug.print("mismatch: (" # debug_show i # ") ->" # debug_show (v, expected, v == expected));
+                    Debug.print("revEntries " # debug_show Iter.toArray(BpTree.entries(bptree).rev()));
                     assert false;
                 };
-
-                assert BpTree.size(bptree) == (random.size() - i - 1 : Nat);
             };
 
-            assert BpTree.size(bptree) == 0;
+            while (rand.size() > 1) {
+                let index = fuzz.nat.randomRange(0, rand.size() - 1);
+                let n = rand.remove(index);
+                assert ?n == BpTree.remove(bptree, Nat.compare, n);
+
+                assert Itertools.equal<(Nat, Nat)>(
+                    map_to_entries(rand.vals()),
+                    BpTree.entries(bptree).rev(),
+                    func(a : (Nat, Nat), b : (Nat, Nat)) : Bool = a == b,
+                );
+            };
+
+            assert BpTree.entries(bptree).next() == ?(rand.get(0), rand.get(0));
+        },
+    );
+
+    test(
+        "scan",
+        func() {
+            let sliding_tuples = Itertools.range(0, BpTree.size(bptree))
+            |> Iter.map<Nat, Nat>(_, func(n : Nat) : Nat = n * 100)
+            |> Itertools.takeWhile(_, func(n : Nat) : Bool = n < BpTree.size(bptree))
+            |> Itertools.slidingTuples(_);
+
+            for ((i, j) in sliding_tuples) {
+                let start_key = sorted.get(i);
+                let end_key = sorted.get(j);
+
+                var index = i;
+
+                for ((k, v) in BpTree.scan(bptree, Nat.compare, start_key, end_key)) {
+                    let expected = sorted.get(index);
+
+                    if (not (expected == k)) {
+                        Debug.print("mismatch: " # debug_show (expected, k));
+                        Debug.print("scan " # debug_show Iter.toArray(BpTree.scan(bptree, Nat.compare, start_key, end_key)));
+
+                        let expected_vals = Iter.range(i, j)
+                        |> Iter.map<Nat, Nat>(_, func(n : Nat) : Nat = sorted.get(n));
+                        Debug.print("expected " # debug_show Iter.toArray(expected_vals));
+                        assert false;
+                    };
+
+                    index += 1;
+                };
+            };
+        },
+    );
+
+    test(
+        "range",
+        func() {
+            let iter = Iter.map<Nat, (Nat, Nat)>(random.vals(), func(n : Nat) : (Nat, Nat) = (n, n));
+            let _rand = Iter.toArray<(Nat, Nat)>(Itertools.take(iter, 100));
+
+            let bptree = BpTree.fromEntries<Nat, Nat>(?order, _rand.vals(), Nat.compare);
+            let rand = Array.sort<(Nat, Nat)>(_rand, Utils.tuple_cmp(Nat.compare));
+
+            for (i in Itertools.range(0, BpTree.size(bptree))) {
+
+                for (j in Itertools.range(i + 1, BpTree.size(bptree))) {
+
+                    if (
+                        not Itertools.equal<(Nat, Nat)>(
+                            BpTree.range(bptree, i, j),
+                            Itertools.fromArraySlice(rand, i, j + 1),
+                            func(a : (Nat, Nat), b : (Nat, Nat)) : Bool = a == b,
+                        )
+                    ) {
+                        Debug.print("mismatch: " # debug_show (i, j));
+                        Debug.print("range " # debug_show Iter.toArray(BpTree.range(bptree, i, j)));
+                        Debug.print("expected " # debug_show Iter.toArray(Itertools.fromArraySlice(rand, i, j + 1)));
+                        assert false;
+                    };
+                };
+            };
         },
     );
 
