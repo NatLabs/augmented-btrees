@@ -12,7 +12,7 @@ import Itertools "mo:itertools/Iter";
 
 import { BpTree } "../src";
 import Utils "../src/internal/Utils";
-import InternalMethods "../src/internal/Methods";
+import BpTreeMethods "../src/BpTree/Methods";
 
 type Order = Order.Order;
 

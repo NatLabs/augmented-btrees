@@ -25,7 +25,7 @@ module {
         bench.rows(["Map", "RBTree", "BTree", "B+Tree", "Max B+Tree"]);
         bench.cols(["insert()", "replace()", "get()", "entries()", "scan()", "remove()"]);
 
-        let limit = 100_000;
+        let limit = 10_000;
         
         let {nhash} = Map;
         let map = Map.new<Nat, Nat>();

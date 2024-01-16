@@ -16,7 +16,7 @@ import BTree "mo:stableheapbtreemap/BTree";
 
 import Utils "../src/internal/Utils";
 import { MaxBpTree } "../src";
-import InternalMethods "../src/internal/Methods";
+import MaxBpTreeMethods "../src/MaxBpTree/Methods";
 
 type Order = Order.Order;
 
@@ -243,7 +243,7 @@ func max_bp_tree_test(order : Nat, random : Buffer.Buffer<Nat>, sorted : Buffer.
             label for_loop for ((i, v) in Itertools.enumerate(random.vals())) {
 
                 let max = sorted.get(max_index);
-                let leaf_node = InternalMethods.get_leaf_node(max_bp_tree, Nat.compare, max);
+                let leaf_node = MaxBpTreeMethods.get_leaf_node(max_bp_tree, Nat.compare, max);
 
                 assert ?v == MaxBpTree.get(max_bp_tree, Nat.compare, v);
 

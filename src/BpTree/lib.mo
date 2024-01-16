@@ -15,9 +15,9 @@ import LeafModule "Leaf";
 import BranchModule "Branch";
 
 import ArrayMut "../internal/ArrayMut";
-import InternalMethods "../internal/Methods";
 import Utils "../internal/Utils";
 import T "Types";
+import Methods "Methods";
 import Cursor "Cursor";
 import InternalTypes "../internal/Types";
 import DoubleEndedIter "../internal/DoubleEndedIter";
@@ -122,7 +122,7 @@ module BpTree {
     ///     assert BpTree.toArray(bptree) == arr;
     /// ```
     public func toArray<K, V>(self : BpTree<K, V>) : [(K, V)] {
-        InternalMethods.to_array(self);
+        Methods.to_array(self);
     };
 
     /// Returns the size of the B+ tree.
@@ -150,7 +150,7 @@ module BpTree {
     ///     assert BpTree.get(bptree, Char.compare, 'D') == null;
     /// ```
     public func get<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, key : K) : ?V {
-        InternalMethods.get(self, cmp, key);
+        Methods.get(self, cmp, key);
     };
 
     /// Checks if the given key exists in the tree.
@@ -160,12 +160,12 @@ module BpTree {
 
     /// Returns the largest element in the B+Tree that is less than or equal to a given key.
     public func getFloor<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, key : K) : ?(K, V) {
-        InternalMethods.get_floor(self, cmp, key);
+        Methods.get_floor(self, cmp, key);
     };
 
     /// Returns the smallest element in the B+Tree that is greater than or equal to a given key.
     public func getCeiling<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, key : K) : ?(K, V) {
-        InternalMethods.get_ceiling(self, cmp, key);
+        Methods.get_ceiling(self, cmp, key);
     };
 
     public func toText<K, V>(self : BpTree<K, V>, key_to_text : (K) -> Text, val_to_text : (V) -> Text) : Text {
@@ -207,9 +207,9 @@ module BpTree {
             };
         };
 
-        func gen_id() : Nat = InternalMethods.gen_id(self);
+        func gen_id() : Nat = Methods.gen_id(self);
 
-        let leaf_node = InternalMethods.get_leaf_node_and_update_branch_path(self, cmp, key, inc_branch_subtree_size);
+        let leaf_node = Methods.get_leaf_node_and_update_branch_path(self, cmp, key, inc_branch_subtree_size);
         let entry = (key, val);
 
         let int_elem_index = ArrayMut.binary_search<K, (K, V)>(leaf_node.kvs, adapt_cmp(cmp), key, leaf_node.count);
@@ -220,7 +220,7 @@ module BpTree {
             leaf_node.kvs[elem_index] := ?entry;
 
             // undoes the update to subtree count for the nodes on the path to the root when replacing a key-value pair
-            InternalMethods.update_branch_path_from_leaf_to_root(self, leaf_node, decrement_branch_subtree_size);
+            Methods.update_branch_path_from_leaf_to_root(self, leaf_node, decrement_branch_subtree_size);
 
             return ?kv.1;
         } else {
@@ -297,7 +297,7 @@ module BpTree {
 
                 let split_node = Branch.split(parent, right_node, right_index, right_key, gen_id);
 
-                let ?first_key = InternalMethods.extract(split_node.keys, split_node.keys.size() - 1 : Nat) else Debug.trap("4. insert: accessed a null value in first key of branch");
+                let ?first_key = Methods.extract(split_node.keys, split_node.keys.size() - 1 : Nat) else Debug.trap("4. insert: accessed a null value in first key of branch");
                 right_key := first_key;
 
                 left_node := #branch(parent);
@@ -349,11 +349,11 @@ module BpTree {
                 cmp(a, b.0);
             };
         };
-        let leaf_node = InternalMethods.get_leaf_node_and_update_branch_path(self, cmp, key, decrement_branch_subtree_size);
+        let leaf_node = Methods.get_leaf_node_and_update_branch_path(self, cmp, key, decrement_branch_subtree_size);
 
         let int_elem_index = ArrayMut.binary_search<K, (K, V)>(leaf_node.kvs, adapt_cmp(cmp), key, leaf_node.count);
         let elem_index = if (int_elem_index >= 0) Int.abs(int_elem_index) else {
-            InternalMethods.update_branch_path_from_leaf_to_root(self, leaf_node, inc_branch_subtree_size);
+            Methods.update_branch_path_from_leaf_to_root(self, leaf_node, inc_branch_subtree_size);
             return null;
         };
         // remove parent key as well
@@ -486,7 +486,7 @@ module BpTree {
     ///     assert BpTree.min(bptree) == ?('A', 1);
     /// ```
     public func min<K, V>(self : BpTree<K, V>) : ?(K, V) {
-        InternalMethods.min(self);
+        Methods.min(self);
     };
 
     /// Returns the maximum key-value pair in the tree.
@@ -500,7 +500,7 @@ module BpTree {
     ///     assert BpTree.max(bptree) == ?('C', 3);
     /// ```
     public func max<K, V>(self : BpTree<K, V>) : ?(K, V) {
-        InternalMethods.max(self);
+        Methods.max(self);
     };
 
     /// Removes the minimum key-value pair in the tree and returns it.
@@ -514,7 +514,7 @@ module BpTree {
     ///     assert BpTree.removeMin(bptree, Char.compare) == ?('A', 1);
     /// ```
     public func removeMin<K, V>(self : BpTree<K, V>, cmp: CmpFn<K>) : ?(K, V) {
-        let ?(min_key, _) = InternalMethods.min(self) else return null;
+        let ?(min_key, _) = Methods.min(self) else return null;
 
         let ?v = remove(self, cmp, min_key) else return null;
 
@@ -532,7 +532,7 @@ module BpTree {
     ///     assert BpTree.removeMax(bptree, Char.compare) == ?('C', 3);
     /// ```
     public func removeMax<K, V>(self : BpTree<K, V>, cmp: CmpFn<K>) : ?(K, V) {
-        let ?(max_key, _) = InternalMethods.max(self) else return null;
+        let ?(max_key, _) = Methods.max(self) else return null;
 
         let ?v = remove(self, cmp, max_key) else return null;
 
@@ -541,17 +541,17 @@ module BpTree {
 
     /// Returns a double ended iterator over the entries of the tree.
     public func entries<K, V>(bptree : BpTree<K, V>) : DoubleEndedIter<(K, V)> {
-        InternalMethods.entries(bptree);
+        Methods.entries(bptree);
     };
 
     /// Returns a double ended iterator over the keys of the tree.
     public func keys<K, V>(self : BpTree<K, V>) : DoubleEndedIter<K> {
-        InternalMethods.keys(self);
+        Methods.keys(self);
     };
 
     /// Returns a double ended iterator over the values of the tree.
     public func vals<K, V>(self : BpTree<K, V>) : DoubleEndedIter<V> {
-        InternalMethods.vals(self);
+        Methods.vals(self);
     };
 
     /// Returns the rank of the given key in the tree.
@@ -569,7 +569,7 @@ module BpTree {
     ///     assert BpTree.getRank(bptree, Char.compare, 'D') == 3;
     /// ```
     public func getRank<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, key : K) : Nat {
-        InternalMethods.get_rank(self, cmp, key);
+        Methods.get_rank(self, cmp, key);
     };
 
     /// Returns the key-value pair at the given rank.
@@ -584,13 +584,13 @@ module BpTree {
     ///     assert BpTree.getByRank(bptree, 1) == ('B', 2);
     /// ```
     public func getByRank<K, V>(self : BpTree<K, V>, rank : Nat) : (K, V) {
-        InternalMethods.get_by_rank(self, rank);
+        Methods.get_by_rank(self, rank);
     };
 
     /// Returns an iterator over the entries of the tree in the range [start, end].
     /// The range is defined by the ranks of the start and end keys
     public func range<K, V>(self : BpTree<K, V>, start : Nat, end : Nat) : DoubleEndedIter<(K, V)> {
-        InternalMethods.range(self, start, end);
+        Methods.range(self, start, end);
     };
 
     /// Returns an iterator over the entries of the tree in the range [start, end].
@@ -599,7 +599,7 @@ module BpTree {
     /// If the start key does not exist in the tree then the iterator will start from next key greater than start.
     /// If the end key does not exist in the tree then the iterator will end at the last key less than end.
     public func scan<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, start : K, end : K) : DoubleEndedIter<(K, V)> {
-        InternalMethods.scan(self, cmp, start, end);
+        Methods.scan(self, cmp, start, end);
     };
     
 
@@ -607,7 +607,7 @@ module BpTree {
         var node = ?self.root;
         let buffer = Buffer.Buffer<[?(K, V)]>(self.size);
 
-        var leaf_node : ?Leaf<K, V> = ?InternalMethods.get_min_leaf_node(self);
+        var leaf_node : ?Leaf<K, V> = ?Methods.get_min_leaf_node(self);
 
         label _loop loop {
             switch (leaf_node) {
@@ -659,7 +659,7 @@ module BpTree {
 
     /// Returns a cursor pointing to the first element in the tree
     public func cursorAtFirst<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>) : Cursor<K, V> {
-        let leaf_node = InternalMethods.get_min_leaf_node(self);
+        let leaf_node = Methods.get_min_leaf_node(self);
         var i = 0;
 
         Cursor.Cursor(self, cmp, leaf_node, i);
@@ -667,7 +667,7 @@ module BpTree {
 
     /// Returns a cursor pointing to the last element in the tree
     public func cursorAtLast<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>) : Cursor<K, V> {
-        let leaf_node = InternalMethods.get_max_leaf_node(self);
+        let leaf_node = Methods.get_max_leaf_node(self);
         var i = leaf_node.count - 1 : Nat;
 
         Cursor.Cursor(self, cmp, leaf_node, i);
@@ -680,7 +680,7 @@ module BpTree {
     /// Consider using [cursorAtUpperBound](#cursorAtUpperBound) or [cursorAtLowerBound](#cursorAtLowerBound)
     /// if you want to get a cursor that falls back to the upper or lower bound of the given key instead of returning an error
     public func cursorAtKey<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, key : K) : Result<Cursor<K, V>, Text> {
-        let leaf_node = InternalMethods.get_leaf_node(self, cmp, key);
+        let leaf_node = Methods.get_leaf_node(self, cmp, key);
         let i = ArrayMut.binary_search<K, (K, V)>(leaf_node.kvs, Utils.adapt_cmp(cmp), key, leaf_node.count);
 
         if (i < 0) {
@@ -694,7 +694,7 @@ module BpTree {
     /// Returns a cursor pointing to the element that is less than or equal to the given key
     /// In other words, it returns a cursor pointing to an element that is upper bounded by the given key
     public func cursorAtUpperBound<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, key : K) : Cursor<K, V> {
-        var leaf_node = InternalMethods.get_leaf_node(self, cmp, key);
+        var leaf_node = Methods.get_leaf_node(self, cmp, key);
         let i = ArrayMut.binary_search<K, (K, V)>(leaf_node.kvs, Utils.adapt_cmp(cmp), key, leaf_node.count);
 
         let index = if (i < 0) Int.abs(i + 1) else Int.abs(i);
@@ -706,7 +706,7 @@ module BpTree {
     /// Returns a cursor pointing to the element that is greater than or equal to the given key
     /// In other words, it returns a cursor pointing to an element that is lower bounded by the given key
     public func cursorAtLowerBound<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, key : K) : Cursor<K, V> {
-        var leaf_node = InternalMethods.get_leaf_node(self, cmp, key);
+        var leaf_node = Methods.get_leaf_node(self, cmp, key);
         let i = ArrayMut.binary_search<K, (K, V)>(leaf_node.kvs, Utils.adapt_cmp(cmp), key, leaf_node.count);
 
         var index = if (i < 0) (Int.abs(i) - 1 : Nat) else Int.abs(i);

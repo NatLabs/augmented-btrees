@@ -8,8 +8,6 @@ import BpTree "../BpTree";
 
 import Utils "../internal/Utils";
 import InternalTypes "../internal/Types";
-import InternalLeaf "../internal/Leaf";
-import InternalMethods "../internal/Methods";
 
 module Methods {
     public type MaxBpTree<K, V> = T.MaxBpTree<K, V>;
@@ -20,56 +18,46 @@ module Methods {
     type CommonNodeFields<K, V> = T.CommonNodeFields<K, V>;
     type MultiCmpFn<A, B> = InternalTypes.MultiCmpFn<A, B>;
     type CmpFn<A> = InternalTypes.CmpFn<A>;
-    type MaxField<K, V> = T.MaxField<K, V>;
 
-    type KvUpdateFieldFn<K, V> = T.KvUpdateFieldFn<K, V>;
-    type NodeUpdateFieldFn<K, V> = T.NodeUpdateFieldFn<K, V>;
+    type UpdateLeafMaxFn<K, V> = T.UpdateLeafMaxFn<K, V>;
+    type UpdateBranchMaxFn<K, V> = T.UpdateBranchMaxFn<K, V>;
 
-    public func default_fields<K, V>() : MaxField<K, V> {
-        return {
-            var max_key = null;
-            var max_val = null;
-            var max_index = null;
-        };
-    };
+    public func update_leaf_fields<K, V>(cmp_val : CmpFn<V>) : UpdateLeafMaxFn<K, V> {
 
-    public func update_leaf_fields<K, V>(cmp_val : CmpFn<V>) : KvUpdateFieldFn<K, V> {
-
-        func update_fields(fields : MaxField<K, V>, index : Nat, key : K, val : V) {
-            let ?curr_max_val = fields.max_val else {
-                fields.max_key := ?key;
-                fields.max_val := ?val;
-                fields.max_index := ?index;
-
+        func update_fields(leaf : CommonFields<K, V>, index : Nat, key : K, val : V) {
+            let ?max = leaf.max else {
+                leaf.max := ?(key, val, index);
                 return;
             };
 
-            if (cmp_val(val, curr_max_val) != #less) {
-                fields.max_key := ?key;
-                fields.max_val := ?val;
-                fields.max_index := ?index;
+            let max_key = max.0;
+            let max_val = max.1;
+
+            if (cmp_val(val, max_val) != #less) {
+                leaf.max := ?(key, val, index);
             };
         };
     };
 
-    public func update_branch_fields<K, V>(cmp_val : CmpFn<V>) : NodeUpdateFieldFn<K, V> {
+    public func update_branch_fields<K, V>(cmp_val : CmpFn<V>) : UpdateBranchMaxFn<K, V> {
 
-        func update_fields(fields : MaxField<K, V>, index : Nat, node : Node<K, V>) {
-            switch (node) {
-                case (#leaf(node) or #branch(node) : InternalTypes.CommonNodeFields<K, V, MaxField<K, V>>) {
-                    let ?curr_max_val = fields.max_val else {
-                        fields.max_key := node.fields.max_key;
-                        fields.max_val := node.fields.max_val;
-                        fields.max_index := ?index;
+        func update_fields(branch : Branch<K, V>, index : Nat, child_node : Node<K, V>) {
+            switch (child_node) {
+                case (#leaf(child) or #branch(child) : CommonNodeFields<K, V>) {
+                    let ?child_max = child.max else Debug.trap("Branch.new: child.max is null");
+
+                    let ?max = branch.max else {
+                        branch.max := child.max;
                         return;
                     };
 
-                    let ?node_max_val = node.fields.max_val else Debug.trap("Branch.new: node.max is null");
+                    let branch_max_key = max.0;
+                    let branch_max_val = max.1;
 
-                    if (cmp_val(node_max_val, curr_max_val) != #less) {
-                        fields.max_key := node.fields.max_key;
-                        fields.max_val := node.fields.max_val;
-                        fields.max_index := ?index;
+                    let child_max_val = child_max.1;
+
+                    if (cmp_val(child_max_val, branch_max_val) != #less) {
+                        branch.max := child.max;
                     };
                 };
             };
