@@ -128,4 +128,64 @@ module {
             };
         };
     };
+
+    public func binary_search_variant<B, A>(arr : [var ?A], cmp : T.MultiCmpFn<B, A>, search_key : B, arr_len : Nat) : { #Found: Nat; #NotFound: Nat; } {
+        if (arr_len == 0) return #NotFound(0); // should insert at index Int.abs(i + 1)
+        var l = 0;
+
+        // arr_len will always be between 4 and 512
+        var r = arr_len - 1 : Nat;
+
+        while (l < r) {
+            let mid = (l + r) / 2;
+
+            let ?val = arr[mid] else Debug.trap("1. binary_search: accessed a null value");
+
+            switch (cmp(search_key, val)) {
+                case (#less) {
+                    r := mid;
+                };
+                case (#greater) {
+                    l := mid + 1;
+                };
+                case (#equal) {
+                    return #Found(mid);
+                };
+            };
+        };
+
+        let insertion = l;
+
+        // Check if the insertion point is valid
+        // return the insertion point but negative and subtracting 1 indicating that the key was not found
+        // such that the insertion index for the key is Int.abs(insertion) - 1
+        // [0,  1,  2]
+        //  |   |   |
+        // -1, -2, -3
+        switch (arr[insertion]) {
+            case (?val) {
+                switch (cmp(search_key, val)) {
+                    case (#equal) #Found(insertion);
+                    case (#less) #NotFound(insertion);
+                    case (#greater) #NotFound(insertion + 1);
+                };
+            };
+            case (_) {
+                Debug.print("insertion = " # debug_show insertion);
+                Debug.print("arr_len = " # debug_show arr_len);
+                Debug.print(
+                    "arr = " # debug_show Array.map(
+                        Array.freeze(arr),
+                        func(opt_val : ?A) : Text {
+                            switch (opt_val) {
+                                case (?val) "1";
+                                case (_) "0";
+                            };
+                        },
+                    )
+                );
+                Debug.trap("2. binary_search: accessed a null value");
+            };
+        };
+    };
 }
