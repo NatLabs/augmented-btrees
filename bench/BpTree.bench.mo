@@ -16,7 +16,7 @@ import { BpTree; MaxBpTree } "../src";
 module {
 
     public func init() : Bench.Bench {
-        let fuzz = Fuzz.Fuzz();
+        let fuzz = Fuzz.fromSeed(0xdeadbeef);
 
         let bench = Bench.Bench();
         bench.name("Comparing RBTree, BTree and B+Tree (BpTree)");
@@ -38,8 +38,9 @@ module {
 
         for (i in Iter.range(0, limit - 1)) {
             let key = fuzz.nat.randomRange(1, limit ** 3);
+            let val = fuzz.nat.randomRange(1, limit ** 3);
 
-            entries.add((key, i));
+            entries.add((key, val));
         };
 
         let sorted = Buffer.clone(entries);

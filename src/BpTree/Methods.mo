@@ -88,7 +88,7 @@ module Methods {
         };
     };
 
-    public func update_partial_branch_path_from_leaf_to_root<K, V>(self : BpTree<K, V>, leaf : Leaf<K, V>, update : (Branch<K, V>) -> (_continue: Bool)) {
+    public func update_partial_branch_path_from_leaf_to_root<K, V>(self : BpTree<K, V>, leaf : Leaf<K, V>, update : (Branch<K, V>) -> (_continue : Bool)) {
         var parent = leaf.parent;
 
         loop {
@@ -103,7 +103,7 @@ module Methods {
         };
     };
 
-    public func get_leaf_node_and_update_branch_path<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, key : K, update : (parent: Branch<K, V>, child_index: Nat) -> ()) : Leaf<K, V> {
+    public func get_leaf_node_and_update_branch_path<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, key : K, update : (parent : Branch<K, V>, child_index : Nat) -> ()) : Leaf<K, V> {
         var curr = ?self.root;
 
         loop {
@@ -390,17 +390,16 @@ module Methods {
 
     // };
 
-
     public func get<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, key : K) : ?V {
         let leaf_node = get_leaf_node<K, V>(self, cmp, key);
 
-        let i = ArrayMut.binary_search<K, (K, V)>(leaf_node.kvs, Utils.adapt_cmp(cmp), key, leaf_node.count);
+        let int_index = ArrayMut.binary_search<K, (K, V)>(leaf_node.kvs, Utils.adapt_cmp(cmp), key, leaf_node.count);
 
-        if (i >= 0) {
-            let ?kv = leaf_node.kvs[Int.abs(i)] else Debug.trap("1. get: accessed a null value");
+        if (int_index >= 0) {
+            let ?kv = leaf_node.kvs[Int.abs(int_index)] else Debug.trap("1. get: accessed a null value");
             return ?kv.1;
         };
-
+        
         null;
     };
 
@@ -427,9 +426,9 @@ module Methods {
         let leaf_node = get_leaf_node<K, V>(self, cmp, key);
 
         let i = ArrayMut.binary_search<K, (K, V)>(leaf_node.kvs, Utils.adapt_cmp(cmp), key, leaf_node.count);
-        
+
         if (i >= 0) return leaf_node.kvs[Int.abs(i)];
-        
+
         let expected_index = Int.abs(i) - 1 : Nat;
 
         if (expected_index == 0) {
@@ -463,7 +462,7 @@ module Methods {
         Buffer.toArray(buffer);
     };
 
-     public func min<K, V>(self : BpTree<K, V>) : ?(K, V) {
+    public func min<K, V>(self : BpTree<K, V>) : ?(K, V) {
         let leaf_node = get_min_leaf_node(self) else return null;
         leaf_node.kvs[0];
     };
