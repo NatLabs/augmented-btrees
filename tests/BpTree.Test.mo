@@ -14,6 +14,8 @@ import { BpTree } "../src";
 import Utils "../src/internal/Utils";
 import BpTreeMethods "../src/BpTree/Methods";
 
+import {Const = C} "../src/BpTree/Types";
+
 type Order = Order.Order;
 
 let fuzz = Fuzz.fromSeed(0x7f3a3e7e);
@@ -54,8 +56,8 @@ func bp_tree_test(order : Nat, random : Buffer.Buffer<Nat>) {
                 // Debug.print("leafs " # debug_show BpTree.toLeafNodes(bptree));
 
                 let subtree_size = switch (bptree.root) {
-                    case (#branch(node)) { node.subtree_size };
-                    case (#leaf(node)) { node.count };
+                    case (#branch(node)) { node.0[C.SUBTREE_SIZE] };
+                    case (#leaf(node)) { node.0[C.COUNT] };
                 };
 
                 assert subtree_size == i + 1;
@@ -64,8 +66,8 @@ func bp_tree_test(order : Nat, random : Buffer.Buffer<Nat>) {
             assert BpTree.size(bptree) == random.size();
             // validate root subtree_size
             let root_subtree_size = switch (bptree.root) {
-                case (#leaf(node)) node.count;
-                case (#branch(node)) node.subtree_size;
+                case (#leaf(node)) node.0[C.COUNT];
+                case (#branch(node)) node.0[C.SUBTREE_SIZE];
             };
 
             assert root_subtree_size == random.size();
@@ -119,8 +121,8 @@ func bp_tree_test(order : Nat, random : Buffer.Buffer<Nat>) {
                 assert BpTree.size(bptree) == (rand.size() - i - 1 : Nat);
 
                 let root_subtree_size = switch (bptree.root) {
-                    case (#branch(node)) { node.subtree_size };
-                    case (#leaf(node)) { node.count };
+                    case (#branch(node)) { node.0[C.SUBTREE_SIZE] };
+                    case (#leaf(node)) { node.0[C.COUNT] };
                 };
 
                 assert root_subtree_size == (rand.size() - i - 1 : Nat);
@@ -153,8 +155,8 @@ func bp_tree_test(order : Nat, random : Buffer.Buffer<Nat>) {
                 assert BpTree.size(bptree) == (sorted.size() - i - 1 : Nat);
 
                 let root_subtree_size = switch (bptree.root) {
-                    case (#branch(node)) { node.subtree_size };
-                    case (#leaf(node)) { node.count };
+                    case (#branch(node)) { node.0[C.SUBTREE_SIZE] };
+                    case (#leaf(node)) { node.0[C.COUNT] };
                 };
 
                 assert root_subtree_size == (sorted.size() - i - 1 : Nat);

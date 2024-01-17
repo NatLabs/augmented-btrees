@@ -20,7 +20,7 @@ module {
     };
 
     /// Branch nodes store keys and pointers to child nodes.
-    public type Branch<K, V> = {
+    public type Branch1<K, V> = {
         /// Unique id representing the branch as a node.
         id : Nat;
 
@@ -45,10 +45,38 @@ module {
         //  in branch nodes when executing getRank()
         //  might not replace as we can afford to have a getRank() fn that is not the most optimized
         //  -> runs in O((log n) ^ 2) instead of O(log n)
+
+    };
+
+    public type Branch<K, V> = (
+        nats: [var Nat], // [id, index, count, subtree_size]
+        parent: [var ?Branch<K, V>], // parent
+        keys: [var ?K], // [...keys]
+        children: [var ?Node<K, V>], // [...children]
+    );
+
+    public type Leaf<K, V> = (
+        nats: [var Nat], // [id, index, count]
+        parent: [var ?Branch<K, V>], // parent
+        adjacent_nodes: [var ?Leaf<K, V>], // [prev, next]
+        kvs: [var ?(K, V)], // [...kvs]
+    );
+
+    public module Const = {
+        public let ID = 0;
+        public let INDEX = 1;
+        public let COUNT = 2;
+        public let SUBTREE_SIZE = 3;
+
+        public let PARENT = 0;
+
+        public let PREV = 0;
+        public let NEXT = 1;
+
     };
 
     /// Leaf nodes are doubly linked lists of key-value pairs.
-    public type Leaf<K, V> = {
+    public type Leaf1<K, V> = {
         /// Unique id representing the leaf as a node.
         id : Nat;
 

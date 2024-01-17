@@ -18,26 +18,30 @@ module Leaf {
     type BpTree<K, V> = T.BpTree<K, V>;
     type CmpFn<K> = InternalTypes.CmpFn<K>;
     type CommonNodeFields<K, V> = T.CommonNodeFields<K, V>;
+    
+    let { Const = C } = T;
 
     public func new<K, V>(order : Nat, count : Nat, opt_kvs : ?[var ?(K, V)], gen_id : () -> Nat) : Leaf<K, V> {
-        let leaf_node : Leaf<K, V> = {
-            id = gen_id();
-            var parent = null;
-            var index = 0;
-            kvs = switch (opt_kvs) {
-                case (?kvs) kvs;
-                case (_) Array.init<?(K, V)>(order, null);
-            };
-            var count = count;
-            var next = null;
-            var prev = null;
+        let kvs : [var ?(K, V)] = switch (opt_kvs){
+            case (?kvs) kvs;
+            case (_) Array.init(order, null);
         };
+
+        let leaf_node : Leaf<K, V> = (
+            Array.init<Nat>(3, 0),
+            Array.init(1, null),
+            Array.init(2, null),
+            kvs,
+        );
+
+        leaf_node.0[C.ID] := gen_id();
+        leaf_node.0[C.COUNT] := count;
 
         leaf_node;
     };
 
     public func split<K, V>(leaf : Leaf<K, V>, elem_index : Nat, elem : (K, V), gen_id : () -> Nat) : Leaf<K, V> {
-        let arr_len = leaf.count;
+        let arr_len = leaf.0[C.COUNT];
         let median = (arr_len / 2) + 1;
 
         let is_elem_added_to_right = elem_index >= median;
@@ -49,8 +53,8 @@ module Leaf {
 
         var already_inserted = false;
         let right_kvs = Utils.tabulate_var<(K, V)>(
-            leaf.kvs.size(),
-            leaf.count + 1 - median,
+            leaf.3.size(),
+            leaf.0[C.COUNT] + 1 - median,
             func(i : Nat) : ?(K, V) {
 
                 let j = i + median - offset : Nat;
@@ -62,7 +66,7 @@ module Leaf {
                 } else if (j >= arr_len) {
                     null;
                 } else {
-                    Utils.extract(leaf.kvs, j);
+                    Utils.extract(leaf.3, j);
                 };
             },
         );
@@ -70,29 +74,29 @@ module Leaf {
         var j = median - 1 : Nat;
 
         while (j > elem_index) {
-            leaf.kvs[j] := leaf.kvs[j - 1];
+            leaf.3[j] := leaf.3[j - 1];
             j -= 1;
         };
 
         if (j == elem_index) {
-            leaf.kvs[j] := ?elem;
+            leaf.3[j] := ?elem;
         };
 
-        leaf.count := median;
+        leaf.0[C.COUNT] := median;
         let right_cnt = arr_len + 1 - median : Nat;
-        let right_node = Leaf.new(leaf.kvs.size(), right_cnt, ?right_kvs, gen_id);
+        let right_node = Leaf.new(leaf.3.size(), right_cnt, ?right_kvs, gen_id);
 
-        right_node.index := leaf.index + 1;
-        right_node.parent := leaf.parent;
+        right_node.0[C.INDEX] := leaf.0[C.INDEX] + 1;
+        right_node.1[C.PARENT] := leaf.1[C.PARENT];
 
         // update leaf pointers
-        right_node.next := leaf.next;
-        leaf.next := ?right_node;
+        right_node.2[C.NEXT] := leaf.2[C.NEXT];
+        leaf.2[C.NEXT] := ?right_node;
 
-        right_node.prev := ?leaf;
+        right_node.2[C.PREV] := ?leaf;
 
-        switch (right_node.next) {
-            case (?next) next.prev := ?right_node;
+        switch (right_node.2[C.NEXT]) {
+            case (?next) next.2[C.PREV] := ?right_node;
             case (_) {};
         };
 
@@ -100,44 +104,44 @@ module Leaf {
     };
 
     public func redistribute_keys<K, V>(leaf_node : Leaf<K, V>) {
-           let ?parent = leaf_node.parent else return;
+           let ?parent = leaf_node.1[C.PARENT] else return;
 
         var adj_node = leaf_node;
-        if (parent.count > 1) {
-            if (leaf_node.index != 0) {
-                let ? #leaf(left_adj_node) = parent.children[leaf_node.index - 1] else Debug.trap("1. redistribute_leaf_keys: accessed a null value");
+        if (parent.0[C.COUNT] > 1) {
+            if (leaf_node.0[C.INDEX] != 0) {
+                let ? #leaf(left_adj_node) = parent.3[leaf_node.0[C.INDEX] - 1] else Debug.trap("1. redistribute_leaf_keys: accessed a null value");
                 adj_node := left_adj_node;
             };
 
-            if (leaf_node.index != (parent.count - 1 : Nat)) {
-                let ? #leaf(right_adj_node) = parent.children[leaf_node.index + 1] else Debug.trap("2. redistribute_leaf_keys: accessed a null value");
-                if (right_adj_node.count > adj_node.count) {
+            if (leaf_node.0[C.INDEX] != (parent.0[C.COUNT] - 1 : Nat)) {
+                let ? #leaf(right_adj_node) = parent.3[leaf_node.0[C.INDEX] + 1] else Debug.trap("2. redistribute_leaf_keys: accessed a null value");
+                if (right_adj_node.0[C.COUNT] > adj_node.0[C.COUNT]) {
                     adj_node := right_adj_node;
                 };
             };
         };
 
-        if (adj_node.index == leaf_node.index) return; // no adjacent node to distribute data to
+        if (adj_node.0[C.INDEX] == leaf_node.0[C.INDEX]) return; // no adjacent node to distribute data to
 
-        let sum_count = leaf_node.count + adj_node.count;
-        let min_count_for_both_nodes = leaf_node.kvs.size();
+        let sum_count = leaf_node.0[C.COUNT] + adj_node.0[C.COUNT];
+        let min_count_for_both_nodes = leaf_node.3.size();
 
         if (sum_count < min_count_for_both_nodes) return; // not enough entries to distribute
 
-        let data_to_move = (sum_count / 2) - leaf_node.count : Nat;
+        let data_to_move = (sum_count / 2) - leaf_node.0[C.COUNT] : Nat;
 
         // distribute data between adjacent nodes
-        if (adj_node.index < leaf_node.index) {
+        if (adj_node.0[C.INDEX] < leaf_node.0[C.INDEX]) {
             // adj_node is before leaf_node
 
             var i = 0;
-            ArrayMut.shift_by(leaf_node.kvs, 0, leaf_node.count, data_to_move);
+            ArrayMut.shift_by(leaf_node.3, 0, leaf_node.0[C.COUNT], data_to_move);
             for (_ in Iter.range(0, data_to_move - 1)) {
-                let opt_kv = ArrayMut.remove(adj_node.kvs, adj_node.count - i - 1 : Nat, adj_node.count);
+                let opt_kv = ArrayMut.remove(adj_node.3, adj_node.0[C.COUNT] - i - 1 : Nat, adj_node.0[C.COUNT]);
 
                 // no need to call update_fields as we are the adjacent node is before the leaf node 
                 // which means that all its keys are less than the leaf node's keys
-                leaf_node.kvs[data_to_move - i - 1] := opt_kv;
+                leaf_node.3[data_to_move - i - 1] := opt_kv;
                 
                 i += 1;
             };
@@ -146,34 +150,34 @@ module Leaf {
 
             var i = 0;
             for (_ in Iter.range(0, data_to_move - 1)) {
-                let opt_kv = adj_node.kvs[i];
-                ArrayMut.insert(leaf_node.kvs, leaf_node.count + i, opt_kv, leaf_node.count);
+                let opt_kv = adj_node.3[i];
+                ArrayMut.insert(leaf_node.3, leaf_node.0[C.COUNT] + i, opt_kv, leaf_node.0[C.COUNT]);
 
                 i += 1;
             };
 
-            ArrayMut.shift_by(adj_node.kvs, i, adj_node.count, -i);
+            ArrayMut.shift_by(adj_node.3, i, adj_node.0[C.COUNT], -i);
         };
 
-        adj_node.count -= data_to_move;
-        leaf_node.count += data_to_move;
+        adj_node.0[C.COUNT] -= data_to_move;
+        leaf_node.0[C.COUNT] += data_to_move;
 
         // update parent keys
-        if (adj_node.index < leaf_node.index) {
-            // no need to worry about leaf_node.index - 1 being out of bounds because
+        if (adj_node.0[C.INDEX] < leaf_node.0[C.INDEX]) {
+            // no need to worry about leaf_node.0[C.INDEX] - 1 being out of bounds because
             // the adj_node is before the leaf_node, meaning the leaf_node is not the first child
-            let ?leaf_2nd_entry = leaf_node.kvs[0] else Debug.trap("3. redistribute_leaf_keys: accessed a null value");
+            let ?leaf_2nd_entry = leaf_node.3[0] else Debug.trap("3. redistribute_leaf_keys: accessed a null value");
             let leaf_node_key = leaf_2nd_entry.0;
 
-            let key_index = leaf_node.index - 1 : Nat;
-            parent.keys[key_index] := ?leaf_node_key;
+            let key_index = leaf_node.0[C.INDEX] - 1 : Nat;
+            parent.2[key_index] := ?leaf_node_key;
         } else {
             // and vice versa
-            let ?adj_2nd_entry = adj_node.kvs[0] else Debug.trap("4. redistribute_leaf_keys: accessed a null value");
+            let ?adj_2nd_entry = adj_node.3[0] else Debug.trap("4. redistribute_leaf_keys: accessed a null value");
             let adj_node_key = adj_2nd_entry.0;
 
-            let key_index = adj_node.index - 1 : Nat;
-            parent.keys[key_index] := ?adj_node_key;
+            let key_index = adj_node.0[C.INDEX] - 1 : Nat;
+            parent.2[key_index] := ?adj_node_key;
         };
     };
 
@@ -182,61 +186,61 @@ module Leaf {
         var i = 0;
 
         // merge right into left
-        for (_ in Iter.range(0, right.count - 1)) {
-            let opt_kv = right.kvs[i];
-            ArrayMut.insert(left.kvs, left.count + i, opt_kv, left.count);
+        for (_ in Iter.range(0, right.0[C.COUNT] - 1)) {
+            let opt_kv = right.3[i];
+            ArrayMut.insert(left.3, left.0[C.COUNT] + i, opt_kv, left.0[C.COUNT]);
 
             i += 1;
         };
 
-        left.count += right.count;
+        left.0[C.COUNT] += right.0[C.COUNT];
 
         // update leaf pointers
-        left.next := right.next;
-        switch (left.next) {
-            case (?next) next.prev := ?left;
+        left.2[C.NEXT] := right.2[C.NEXT];
+        switch (left.2[C.NEXT]) {
+            case (?next) next.2[C.PREV] := ?left;
             case (_) {};
         };
 
-        let ?parent = left.parent else Debug.trap("Leaf.merge: parent is null");
+        let ?parent = left.1[C.PARENT] else Debug.trap("Leaf.merge: parent is null");
 
 
         // update parent keys
-        ignore ArrayMut.remove(parent.keys, right.index - 1 : Nat, parent.count - 1 : Nat);
+        ignore ArrayMut.remove(parent.2, right.0[C.INDEX] - 1 : Nat, parent.0[C.COUNT] - 1 : Nat);
 
         // remove right from parent
         do {
-            var i = right.index;
-            while (i < (parent.count - 1 : Nat)) {
-                parent.children[i] := parent.children[i + 1];
+            var i = right.0[C.INDEX];
+            while (i < (parent.0[C.COUNT] - 1 : Nat)) {
+                parent.3[i] := parent.3[i + 1];
 
-                let ?child = parent.children[i] else Debug.trap("Leaf.merge: accessed a null value");
+                let ?child = parent.3[i] else Debug.trap("Leaf.merge: accessed a null value");
 
                 switch (child) {
                     case (#leaf(node) or #branch(node) : CommonNodeFields<K, V>) {
-                        node.index := i;
+                        node.0[C.INDEX] := i;
                     };
                 };
 
                 i += 1;
             };
 
-            parent.children[parent.count - 1] := null;
+            parent.3[parent.0[C.COUNT] - 1] := null;
 
-            parent.count -= 1;
+            parent.0[C.COUNT] -= 1;
         }
     };
 
     public func remove<K, V>(leaf : Leaf<K, V>, index : Nat) : ?(K, V) {
-        let removed = ArrayMut.remove(leaf.kvs, index, leaf.count);
+        let removed = ArrayMut.remove(leaf.3, index, leaf.0[C.COUNT]);
 
-        // leaf.count -= 1;
+        // leaf.0[C.COUNT] -= 1;
         removed;
     };
 
     public func equal<K, V>(a : Leaf<K, V>, b : Leaf<K, V>, cmp : CmpFn<K>) : Bool {
-        for (i in Iter.range(0, a.kvs.size() - 1)) {
-            let res = switch (a.kvs[i], b.kvs[i]) {
+        for (i in Iter.range(0, a.3.size() - 1)) {
+            let res = switch (a.3[i], b.3[i]) {
                 case (?v1, ?v2) {
                     cmp(v1.0, v2.0) == #equal;
                 };
@@ -250,10 +254,10 @@ module Leaf {
     };
 
     public func toText<K, V>(self : Leaf<K, V>, key_to_text : (K) -> Text, val_to_text : (V) -> Text) : Text {
-        var t = "leaf { index: " # debug_show self.index # ", count: " # debug_show self.count # ", kvs: ";
+        var t = "leaf { index: " # debug_show self.0[C.INDEX] # ", count: " # debug_show self.0[C.COUNT] # ", kvs: ";
 
         t #= debug_show Array.map(
-            Array.freeze(self.kvs),
+            Array.freeze(self.3),
             func(opt_kv : ?(K, V)) : Text {
                 switch (opt_kv) {
                     case (?kv) "(" # key_to_text(kv.0) # ", " # val_to_text(kv.1) # ")";

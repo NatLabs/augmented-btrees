@@ -1,6 +1,9 @@
 import T "Types";
 
 module Cursor {
+
+    let { Const = C } = T;
+
     public type ImperativeCursor<K, V> = {
         var node : T.Leaf<K, V>;
         var i : Nat;
@@ -15,26 +18,26 @@ module Cursor {
         };
 
         public func key() : ?K {
-            let ?kv = node.kvs[i] else return null;
+            let ?kv = node.3[i] else return null;
             ?kv.0;
         };
 
         public func val() : ?V {
-            let ?kv = node.kvs[i] else return null;
+            let ?kv = node.3[i] else return null;
             ?kv.1;
         };
 
         public func current() : ?(K, V) {
-            if (i >=  node.count){
+            if (i >=  node.0[C.COUNT]){
                 return null;
             };
 
-            return node.kvs[i];
+            return node.3[i];
         };
 
         public func advance() {
-            if (i + 1 >= node.count) {
-                switch (node.next) {
+            if (i + 1 >= node.0[C.COUNT]) {
+                switch (node.2[C.NEXT]) {
                     case (?next) {
                         node := next;
                         i := 0;
@@ -53,7 +56,7 @@ module Cursor {
         //         switch (node.prev) {
         //             case (?prev) {
         //                 node := prev;
-        //                 i := prev.count - 1;
+        //                 i := prev.0[C.COUNT] - 1;
         //             };
         //             case (_) {};
         //         };
@@ -65,10 +68,10 @@ module Cursor {
         // };
 
         public func peekNext() : ?(K, V){
-            if (i + 1 >= node.count){
-                switch (node.next) {
+            if (i + 1 >= node.0[C.COUNT]){
+                switch (node.2[C.NEXT]) {
                     case (?next) {
-                        return next.kvs[0];
+                        return next.3[0];
                     };
                     case (_) {
                         return null;
@@ -76,21 +79,21 @@ module Cursor {
                 };
             };
 
-            return node.kvs[i + 1];
+            return node.3[i + 1];
         };
 
         // public func peekPrev() : ?(K, V){
         //     if (i == 0){
         //         switch (node.prev) {
         //             case (?prev) {
-        //                 return prev.kvs[prev.count - 1];
+        //                 return prev.3[prev.0[C.COUNT] - 1];
         //             };
         //             case (_) {
         //                 return null;
         //             };
         //         };
         //     };
-        //     return node.kvs[i - 1];
+        //     return node.3[i - 1];
         // };
     };
 };
