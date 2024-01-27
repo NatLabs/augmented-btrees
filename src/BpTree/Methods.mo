@@ -105,7 +105,7 @@ module Methods {
         };
     };
 
-    public func get_leaf_node_and_update_branch_path<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, key : K, update : (parent: Branch<K, V>, child_index: Nat) -> ()) : Leaf<K, V> {
+    public func get_leaf_node_and_update_branch_path<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, key : K, update : (parent : Branch<K, V>, child_index : Nat) -> ()) : Leaf<K, V> {
         var curr = ?self.root;
 
         loop {
@@ -392,7 +392,6 @@ module Methods {
 
     // };
 
-
     public func get<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, key : K) : ?V {
         let leaf_node = get_leaf_node<K, V>(self, cmp, key);
 
@@ -402,7 +401,7 @@ module Methods {
             let ?kv = leaf_node.3[Int.abs(i)] else Debug.trap("1. get: accessed a null value");
             return ?kv.1;
         };
-
+        
         null;
     };
 
@@ -465,7 +464,7 @@ module Methods {
         Buffer.toArray(buffer);
     };
 
-     public func min<K, V>(self : BpTree<K, V>) : ?(K, V) {
+    public func min<K, V>(self : BpTree<K, V>) : ?(K, V) {
         let leaf_node = get_min_leaf_node(self) else return null;
         leaf_node.3[0];
     };
