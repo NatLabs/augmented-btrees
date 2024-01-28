@@ -5,82 +5,79 @@ module {
     type Order = Order.Order;
 
     public type CmpFn<K> = InternalTypes.CmpFn<K>;
-
-    public type BpTree<K, V> = InternalTypes.BpTree<K, V, ()>;
-
-    public type Node<K, V> = InternalTypes.Node<K, V, ()>;
-
-    public type Branch<K, V> = InternalTypes.Branch<K, V, ()>;
-
-    public type Leaf<K, V> = InternalTypes.Leaf<K, V, ()>;
-
-    public type CommonFields<K, V> = InternalTypes.CommonFields<K, V, ()>;
-
-    // public type CommonFields<K, V, Extra> = {
-    //     var count : Nat;
-    //     var index : Nat;
-    //     var parent : ?Branch<K, V, Extra>;
-    //     var fields : Extra;
-    // };
-
-    public type CommonNodeFields<K, V> = InternalTypes.CommonNodeFields<K, V, ()>;
-  
-    // public type Node<K, V> = {
-    //     #leaf : Leaf<K, V>;
-    //     #branch : Branch<K, V>;
-    // };
-
-    // /// Branch nodes store keys and pointers to child nodes.
-    // public type Branch<K, V> = {
-    //     /// Unique id representing the branch as a node.
-    //     id : Nat;
-
-    //     /// The parent branch node.
-    //     var parent : ?Branch<K, V>;
-
-    //     /// The index of this branch node in the parent branch node.
-    //     var index : Nat;
-
-    //     /// The keys in this branch node.
-    //     var keys : [var ?K];
-
-    //     /// The child nodes in this branch node.
-    //     var children : [var ?Node<K, V>];
-
-    //     /// The number of child nodes in this branch node.
-    //     var count : Nat;
-
-    //     /// The total number of nodes in the subtree rooted at this branch node.
-    //     var subtree_size : Nat; // optimal approach replaces the subtree_size with prefix sum array to enable binary search
-    //     // in branch nodes when executing getRank()
-    //     // might not replace as we can afford to have a getRank() fn that is not the most optimized
-    //     // -> runs in O((log n) ^ 2) instead of O(log n)
-    // };
-
-    // /// Leaf nodes are doubly linked lists of key-value pairs.
-    // public type Leaf<K, V> = {
-    //     /// Unique id representing the leaf as a node.
-    //     id : Nat;
-
-    //     /// The parent branch node.
-    //     var parent : ?Branch<K, V>;
-
-    //     /// The index of this leaf node in the parent branch node.
-    //     var index : Nat;
-
-    //     /// The key-value pairs in this leaf node.
-    //     kvs : [var ?(K, V)];
-
-    //     /// The number of key-value pairs in this leaf node.
-    //     var count : Nat;
-
-    //     /// The next leaf node in the linked list.
-    //     var next : ?Leaf<K, V>;
-
-    //     /// The previous leaf node in the linked list.
-    //     var prev : ?Leaf<K, V>;
-    // };
-
     
+    public type BpTree<K, V> = {
+        order : Nat;
+        var root : Node<K, V>;
+        var size : Nat;
+        var next_id : Nat;
+    };
+
+    public type Node<K, V> = {
+        #leaf : Leaf<K, V>;
+        #branch : Branch<K, V>;
+    };
+
+    /// Branch nodes store keys and pointers to child nodes.
+    /// The data in each node is grouped together into mutable arrays of similar types stored in a tuple instead of a record.
+    /// This is done to reduce the heap allocations and improve cache locality.
+    /// 
+    /// #### Fields
+    /// - `nats`: [id, index, count, subtree_size]
+    ///     - `id`: Unique id representing the branch as a node.
+    ///     - `index`: The index of this branch node in the parent branch node.
+    ///     - `count`: The number of child nodes in this branch node.
+    ///     - `subtree_size`: The total number of nodes in the subtree rooted at this branch node.
+    /// - `parent`: The parent branch node.
+    /// - `keys`: The keys in this branch node.
+    /// - `children`: The child nodes in this branch node.
+
+    public type Branch<K, V> = (
+        nats: [var Nat], // [id, index, count, subtree_size]
+        parent: [var ?Branch<K, V>], // parent
+        keys: [var ?K], // [...keys]
+        children: [var ?Node<K, V>], // [...children]
+    );
+
+    /// Leaf nodes are doubly linked lists of key-value pairs.
+    ///
+    /// #### Fields
+    /// - `nats`: [id, index, count]
+    ///     - `id`: Unique id representing the leaf as a node.
+    ///     - `index`: The index of this leaf node in the parent branch node.
+    ///     - `count`: The number of key-value pairs in this leaf node.
+    /// - `parent`: The parent branch node.
+    /// - `adjacent_nodes`: [prev, next]
+    ///     - `prev`: The previous leaf node in the linked list.
+    ///     - `next`: The next leaf node in the linked list.
+    /// - `kvs`: The key-value pairs in this leaf node.
+
+    public type Leaf<K, V> = (
+        nats: [var Nat], // [id, index, count]
+        parent: [var ?Branch<K, V>], // parent
+        adjacent_nodes: [var ?Leaf<K, V>], // [prev, next]
+        kvs: [var ?(K, V)], // [...kvs]
+    );
+
+    public module Const = {
+        public let ID = 0;
+        public let INDEX = 1;
+        public let COUNT = 2;
+        public let SUBTREE_SIZE = 3;
+
+        public let PARENT = 0;
+
+        public let PREV = 0;
+        public let NEXT = 1;
+
+    };
+
+    public type CommonFields<K, V> = Leaf<K, V> or Branch<K, V>;
+
+    public type CommonNodeFields<K, V> = {
+        #leaf : CommonFields<K, V>;
+        #branch : CommonFields<K, V>;
+    };
+
 
 };

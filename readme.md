@@ -39,10 +39,10 @@ This library contains implementations of different Btree variants.
     assert BpTree.max(bptree, Char.compare) == ?('E', 4);
 
     // get sorted position of a key
-    assert BpTree.getRank(bptree, Char.compare, 'A') == 0;
+    assert BpTree.getIndex(bptree, Char.compare, 'A') == 0;
 
     // get the key and value at a given position
-    assert BpTree.getByRank(bptree, 0) == ('A', 0);
+    assert BpTree.getFromIndex(bptree, 0) == ('A', 0);
 ```
 
 - Iterating over a B+ Tree
@@ -63,15 +63,15 @@ This library contains implementations of different Btree variants.
     let results2 = BpTree.scan(bptree, Char.compare, 'A', 'C');
     assert Iter.toArray(results2.rev()) == [('C', 2), ('B', 1), ('A', 0)];
 
-    // retrieve elements by their rank
+    // retrieve elements by their index
     let range1 = BpTree.range(bptree, 2, 4);
     assert Iter.toArray(range1) == [('C', 2), ('D', 3), ('E', 4)];
 
     // retrieve the next 3 elements after a given key
-    let rankB = BpTree.getRank(bptree, Char.compare, 'B');
-    assert rankB == 1;
+    let index_of_B = BpTree.getIndex(bptree, Char.compare, 'B');
+    assert index_of_B == 1;
     
-    let range2 = BpTree.range(bptree, rankB + 1, rankB + 3);
+    let range2 = BpTree.range(bptree, index_of_B + 1, indexB + 3);
     assert Iter.toArray(range2) == [('C', 2), ('D', 3), ('E', 4)];
 ```
 
@@ -82,19 +82,22 @@ Benchmarking the performance with 10k entries
 
 **Instructions**
 
+Instructions
+
 |            |    insert() |   replace() |      get() |  entries() |     scan() |    remove() |
 | :--------- | ----------: | ----------: | ---------: | ---------: | ---------: | ----------: |
-| RBTree     | 102_239_215 |  99_685_403 | 42_312_591 | 17_274_017 |      ----- | 177_484_438 |
-| BTree      | 111_950_356 |  81_437_239 | 75_722_656 | 10_682_220 | 23_841_859 | 126_472_969 |
-| B+Tree     | 123_392_156 |  91_655_408 | 80_925_648 |  4_897_351 |  6_631_051 | 130_666_828 |
-| Max B+Tree | 152_630_753 | 104_439_293 | 80_927_112 |  4_898_907 |  6_632_699 | 179_500_644 |	
+| RBTree     | 102_760_231 | 100_751_391 | 43_261_986 | 17_455_239 |      4_794 | 138_125_976 |
+| BTree      | 112_161_650 |  81_750_392 | 76_377_317 | 10_684_662 | 23_773_096 | 127_731_251 |
+| B+Tree     | 115_675_829 |  89_551_271 | 79_441_789 |  4_802_879 |  6_541_589 | 127_821_524 |
+| Max B+Tree | 155_073_391 | 134_448_918 | 81_163_571 |  4_898_717 |  6_647_119 | 192_655_744 |
+			
 
+Heap
 
-**Heap**
-
-|            |    insert() |   replace() |   get() | entries() |    scan() |   remove() |
-| :--------- | ----------: | ----------: | ------: | --------: | --------: | ---------: |
-| RBTree     |   9_073_912 | -22_357_872 |  15_128 | 1_889_084 |     ----- | 16_729_008 |
-| BTree      |   1_226_548 |   1_161_252 | 488_528 |   602_524 | 1_008_684 |  1_962_764 |
-| B+Tree     |     795_368 |     625_460 | 225_456 |    17_340 |    39_600 |    343_780 |
-| Max B+Tree |   2_381_092 |   1_713_668 | 233_664 |    25_548 |    47_808 |  2_465_212 |
+|            |  insert() | replace() |   get() | entries() |    scan() |    remove() |
+| :--------- | --------: | --------: | ------: | --------: | --------: | ----------: |
+| RBTree     | 9_051_876 | 8_268_740 |  13_008 | 1_889_084 |     8_952 |  16_689_008 |
+| BTree      | 1_234_048 | 1_157_052 | 484_648 |   602_324 | 1_014_620 |   1_968_892 |
+| B+Tree     |   772_632 |   613_852 | 213_848 |     9_132 |    31_472 |     344_164 |
+| Max B+Tree | 2_438_292 | 3_079_864 | 230_264 |    25_548 |    47_888 |   2_922_652 |
+	
