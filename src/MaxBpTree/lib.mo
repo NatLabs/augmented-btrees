@@ -187,7 +187,7 @@ module MaxBpTree {
                 label _loop
                 for (i in Iter.range(0, branch.count - 1)) {
                     let ?child = branch.children[i] else Debug.trap("insert (replace entry): accessed a null value");
-                    let #branch(node) or #leaf(node) = child;
+                    let #branch(node) or #leaf(node) : CommonNodeFields<K,V> = child else Debug.trap("insert (replace entry): accessed a null value");
                     update_branch_fields(branch, i, child);
                 };
 
@@ -757,11 +757,11 @@ module MaxBpTree {
     ///     let arr = [('A', 1), ('B', 2), ('C', 3)];
     ///     let max_bp_tree = MaxBpTree.fromArray<Char, Nat>(null, arr, Char.compare, Nat.compare);
     ///
-    ///     assert MaxBpTree.getRank(max_bp_tree, Char.compare, 'B') == 1;
-    ///     assert MaxBpTree.getRank(max_bp_tree, Char.compare, 'D') == 3;
+    ///     assert MaxBpTree.getIndex(max_bp_tree, Char.compare, 'B') == 1;
+    ///     assert MaxBpTree.getIndex(max_bp_tree, Char.compare, 'D') == 3;
     /// ```
-    public func getRank<K, V>(self : MaxBpTree<K, V>, cmp : CmpFn<K>, key : K) : Nat {
-        Methods.get_rank(self, cmp, key);
+    public func getIndex<K, V>(self : MaxBpTree<K, V>, cmp : CmpFn<K>, key : K) : Nat {
+        Methods.get_index(self, cmp, key);
     };
 
     /// Returns the key-value pair at the given rank.
@@ -772,11 +772,11 @@ module MaxBpTree {
     ///     let arr = [('A', 1), ('B', 2), ('C', 3)];
     ///     let max_bp_tree = MaxBpTree.fromArray<Char, Nat>(null, arr, Char.compare, Nat.compare);
     ///
-    ///     assert MaxBpTree.getByRank(max_bp_tree, 0) == ('A', 1);
-    ///     assert MaxBpTree.getByRank(max_bp_tree, 1) == ('B', 2);
+    ///     assert MaxBpTree.getFromIndex(max_bp_tree, 0) == ('A', 1);
+    ///     assert MaxBpTree.getFromIndex(max_bp_tree, 1) == ('B', 2);
     /// ```
-    public func getByRank<K, V>(self : MaxBpTree<K, V>, rank : Nat) : (K, V) {
-        Methods.get_by_rank(self, rank);
+    public func getFromIndex<K, V>(self : MaxBpTree<K, V>, rank : Nat) : (K, V) {
+        Methods.get_from_index(self, rank);
     };
 
     /// Returns an iterator over the entries of the tree in the range [start, end].

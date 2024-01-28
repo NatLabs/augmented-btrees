@@ -249,7 +249,7 @@ module Methods {
     };
 
     // Returns the leaf node and rank of the first element in the leaf node
-    public func get_leaf_node_and_rank<K, V>(self : MaxBpTree<K, V>, cmp : CmpFn<K>, key : K) : (Leaf<K, V>, Nat) {
+    public func get_leaf_node_and_index<K, V>(self : MaxBpTree<K, V>, cmp : CmpFn<K>, key : K) : (Leaf<K, V>, Nat) {
 
         let root = switch (self.root) {
             case (#branch(node)) node;
@@ -264,7 +264,7 @@ module Methods {
             label get_node_loop while (i >= 1) {
                 let child = parent.children[i];
 
-                let ?search_key = parent.keys[i - 1] else Debug.trap("get_leaf_node_and_rank 1: accessed a null value");
+                let ?search_key = parent.keys[i - 1] else Debug.trap("get_leaf_node_and_index 1: accessed a null value");
 
                 switch (child) {
                     case (? #branch(node)) {
@@ -282,7 +282,7 @@ module Methods {
                             return node;
                         };
                     };
-                    case (_) Debug.trap("get_leaf_node_and_rank 2: accessed a null value");
+                    case (_) Debug.trap("get_leaf_node_and_index 2: accessed a null value");
                 };
 
                 i -= 1;
@@ -296,25 +296,25 @@ module Methods {
                     rank -= node.count;
                     return node;
                 };
-                case (_) Debug.trap("get_leaf_node_and_rank 3: accessed a null value");
+                case (_) Debug.trap("get_leaf_node_and_index 3: accessed a null value");
             };
         };
 
         (get_node(root, key), rank);
     };
 
-    public func get_leaf_node_by_rank<K, V>(self : MaxBpTree<K, V>, rank : Nat) : (Leaf<K, V>, Nat) {
+    public func get_leaf_node_by_index<K, V>(self : MaxBpTree<K, V>, rank : Nat) : (Leaf<K, V>, Nat) {
         let root = switch (self.root) {
             case (#branch(node)) node;
             case (#leaf(leaf)) return (leaf, rank);
         };
 
-        var search_rank = rank;
+        var search_index = rank;
 
         func get_node(parent : Branch<K, V>) : Leaf<K, V> {
             var i = parent.count - 1 : Nat;
             var curr = ?parent;
-            var node_rank = parent.subtree_size;
+            var node_index = parent.subtree_size;
 
             label get_node_loop loop {
                 let child = parent.children[i];
@@ -323,24 +323,24 @@ module Methods {
                     case (? #branch(node)) {
                         let subtree = node.subtree_size;
 
-                        node_rank -= subtree;
-                        if (node_rank <= search_rank) {
-                            search_rank -= node_rank;
+                        node_index -= subtree;
+                        if (node_index <= search_index) {
+                            search_index -= node_index;
                             return get_node(node);
                         };
 
                     };
                     case (? #leaf(node)) {
                         let subtree = node.count;
-                        node_rank -= subtree;
+                        node_index -= subtree;
 
-                        if (node_rank <= search_rank) {
-                            search_rank -= node_rank;
+                        if (node_index <= search_index) {
+                            search_index -= node_index;
                             return node;
                         };
 
                     };
-                    case (_) Debug.trap("get_leaf_node_by_rank 1: accessed a null value");
+                    case (_) Debug.trap("get_leaf_node_by_index 1: accessed a null value");
                 };
 
                 assert i > 0;
@@ -348,10 +348,10 @@ module Methods {
                 i -= 1;
             };
 
-            Debug.trap("get_leaf_node_by_rank 3: reached unreachable code");
+            Debug.trap("get_leaf_node_by_index 3: reached unreachable code");
         };
 
-        (get_node(root), search_rank);
+        (get_node(root), search_index);
     };
 
     // // merges two leaf nodes into the left node
@@ -502,8 +502,8 @@ module Methods {
     };
 
     // Returns the rank of the given key in the tree.
-    public func get_rank<K, V>(self : MaxBpTree<K, V>, cmp : CmpFn<K>, key : K) : Nat {
-        let (leaf_node, rank) = Methods.get_leaf_node_and_rank(self, cmp, key);
+    public func get_index<K, V>(self : MaxBpTree<K, V>, cmp : CmpFn<K>, key : K) : Nat {
+        let (leaf_node, rank) = Methods.get_leaf_node_and_index(self, cmp, key);
         let i = ArrayMut.binary_search<K, (K, V)>(leaf_node.kvs, Utils.adapt_cmp(cmp), key, leaf_node.count);
 
         if (i < 0) {
@@ -515,24 +515,24 @@ module Methods {
 
     // Returns the key-value pair at the given rank.
     // Returns null if the rank is greater than the size of the tree.
-    public func get_by_rank<K, V>(self : MaxBpTree<K, V>, rank : Nat) : (K, V) {
-        if (rank >= self.size) return Debug.trap("getByRank: rank is greater than the size of the tree");
-        let (leaf_node, i) = Methods.get_leaf_node_by_rank(self, rank);
+    public func get_from_index<K, V>(self : MaxBpTree<K, V>, rank : Nat) : (K, V) {
+        if (rank >= self.size) return Debug.trap("getFromIndex: rank is greater than the size of the tree");
+        let (leaf_node, i) = Methods.get_leaf_node_by_index(self, rank);
 
         assert i < leaf_node.count;
 
-        let ?entry = leaf_node.kvs[i] else Debug.trap("getByRank: accessed a null value");
+        let ?entry = leaf_node.kvs[i] else Debug.trap("getFromIndex: accessed a null value");
         entry;
     };
 
     // Returns an iterator over the entries of the tree in the range [start, end].
     // The range is defined by the ranks of the start and end keys
     public func range<K, V>(self : MaxBpTree<K, V>, start : Nat, end : Nat) : DoubleEndedIter<(K, V)> {
-        let (start_node, start_node_rank) = Methods.get_leaf_node_by_rank(self, start);
-        let (end_node, end_node_rank) = Methods.get_leaf_node_by_rank(self, end);
+        let (start_node, start_node_index) = Methods.get_leaf_node_by_index(self, start);
+        let (end_node, end_node_index) = Methods.get_leaf_node_by_index(self, end);
 
-        let start_index = start_node_rank : Nat;
-        let end_index = end_node_rank + 1 : Nat; // + 1 because the end index is exclusive
+        let start_index = start_node_index : Nat;
+        let end_index = end_node_index + 1 : Nat; // + 1 because the end index is exclusive
 
         Methods.new_iterator(start_node, start_index, end_node, end_index);
     };

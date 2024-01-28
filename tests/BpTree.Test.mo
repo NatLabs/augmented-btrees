@@ -180,14 +180,14 @@ func bp_tree_test(order : Nat, random : Buffer.Buffer<Nat>) {
     );
 
     test(
-        "getRank",
+        "getIndex",
         func() {
 
             for (i in Itertools.range(0, sorted.size())) {
                 let key = sorted.get(i);
 
                 let expected = i;
-                let rank = BpTree.getRank(bptree, Nat.compare, key);
+                let rank = BpTree.getIndex(bptree, Nat.compare, key);
 
                 if (not (rank == expected)) {
                     Debug.print("mismatch for key:" # debug_show key);
@@ -199,11 +199,11 @@ func bp_tree_test(order : Nat, random : Buffer.Buffer<Nat>) {
     );
 
     test(
-        "getByRank",
+        "getFromIndex",
         func() {
             for (i in Itertools.range(0, sorted.size())) {
                 let expected = sorted.get(i);
-                let received = BpTree.getByRank(bptree, i);
+                let received = BpTree.getFromIndex(bptree, i);
 
                 if (not ((expected, expected) == received)) {
                     Debug.print("mismatch at rank:" # debug_show i);
@@ -374,12 +374,12 @@ func bp_tree_test(order : Nat, random : Buffer.Buffer<Nat>) {
 
                 var index = i;
 
-                for ((k, v) in BpTree.scan(bptree, Nat.compare, start_key, end_key)) {
+                for ((k, v) in BpTree.scan(bptree, Nat.compare, ?start_key, ?end_key)) {
                     let expected = sorted.get(index);
 
                     if (not (expected == k)) {
                         Debug.print("mismatch: " # debug_show (expected, k));
-                        Debug.print("scan " # debug_show Iter.toArray(BpTree.scan(bptree, Nat.compare, start_key, end_key)));
+                        Debug.print("scan " # debug_show Iter.toArray(BpTree.scan(bptree, Nat.compare, ?start_key, ?end_key)));
 
                         let expected_vals = Iter.range(i, j)
                         |> Iter.map<Nat, Nat>(_, func(n : Nat) : Nat = sorted.get(n));

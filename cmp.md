@@ -101,7 +101,7 @@ Heap
 
 #### Using a circular buffer to improve delete() performance
 
-#### Addition of ranking operations: getRank() and getByRank()
+#### Addition of ranking operations: getIndex() and getFromIndex()
 **Instructions**
 
 |            |    insert() |   replace() |      get() |  entries() |     scan() |    remove() |

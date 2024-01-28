@@ -283,11 +283,11 @@ func bptree_tests(order : Nat, random : Buffer.Buffer<Nat>, sorted : Buffer.Buff
     let bptree = MaxBpTree.fromEntries<Nat, Nat>(?order, iter, Nat.compare, Nat.compare);
 
     test(
-        "getRank",
+        "getIndex",
         func() {
             for (i in Itertools.range(0, sorted.size())) {
                 let key = sorted.get(i);
-                let rank = MaxBpTree.getRank(bptree, Nat.compare, key);
+                let rank = MaxBpTree.getIndex(bptree, Nat.compare, key);
 
                 if (not (rank == i)) {
                     Debug.print("mismatch for key:" # debug_show key);
@@ -299,11 +299,11 @@ func bptree_tests(order : Nat, random : Buffer.Buffer<Nat>, sorted : Buffer.Buff
     );
 
     test(
-        "getByRank",
+        "getFromIndex",
         func() {
             for (i in Itertools.range(0, sorted.size())) {
                 let expected = sorted.get(i);
-                let received = MaxBpTree.getByRank(bptree, i);
+                let received = MaxBpTree.getFromIndex(bptree, i);
 
                 if (not ((expected, expected) == received)) {
                     Debug.print("mismatch at rank:" # debug_show i);

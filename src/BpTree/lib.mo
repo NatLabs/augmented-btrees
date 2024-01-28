@@ -555,41 +555,39 @@ module BpTree {
         Methods.vals(self);
     };
 
-    /// Returns the rank of the given key in the tree.
-    /// The rank is 0 indexed so the first element in the tree has rank 0.
+    /// Returns the index of the given key in the tree.
     ///
-    /// If the key does not exist in the tree, then the fn returns the rank.
-    /// of the key if it were to be inserted.
+    /// If the key does not exist in the tree, the function 
+    /// returns the index as if the key was inserted into the tree.
     ///
     /// #### Examples
     /// ```motoko
     ///     let arr = [('A', 1), ('B', 2), ('C', 3)];
     ///     let bptree = BpTree.fromArray<Char, Nat>(null, arr, Char.compare);
     ///
-    ///     assert BpTree.getRank(bptree, Char.compare, 'B') == 1;
-    ///     assert BpTree.getRank(bptree, Char.compare, 'D') == 3;
+    ///     assert BpTree.getIndex(bptree, Char.compare, 'B') == 1;
+    ///     assert BpTree.getIndex(bptree, Char.compare, 'D') == 3;
     /// ```
-    public func getRank<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, key : K) : Nat {
-        Methods.get_rank(self, cmp, key);
+    public func getIndex<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, key : K) : Nat {
+        Methods.get_index(self, cmp, key);
     };
 
-    /// Returns the key-value pair at the given rank.
-    /// Returns null if the rank is greater than the size of the tree.
+    /// Returns the key-value pair at the given index.
+    /// Returns null if the index is greater than the size of the tree.
     ///
     /// #### Examples
     /// ```motoko
     ///     let arr = [('A', 1), ('B', 2), ('C', 3)];
     ///     let bptree = BpTree.fromArray<Char, Nat>(null, arr, Char.compare);
     ///
-    ///     assert BpTree.getByRank(bptree, 0) == ('A', 1);
-    ///     assert BpTree.getByRank(bptree, 1) == ('B', 2);
+    ///     assert BpTree.getFromIndex(bptree, 0) == ('A', 1);
+    ///     assert BpTree.getFromIndex(bptree, 1) == ('B', 2);
     /// ```
-    public func getByRank<K, V>(self : BpTree<K, V>, rank : Nat) : (K, V) {
-        Methods.get_by_rank(self, rank);
+    public func getFromIndex<K, V>(self : BpTree<K, V>, i : Nat) : (K, V) {
+        Methods.get_from_index(self, i);
     };
 
     /// Returns an iterator over the entries of the tree in the range [start, end].
-    /// The range is defined by the ranks of the start and end keys
     public func range<K, V>(self : BpTree<K, V>, start : Nat, end : Nat) : DoubleEndedIter<(K, V)> {
         Methods.range(self, start, end);
     };
@@ -597,9 +595,12 @@ module BpTree {
     /// Returns an iterator over the entries of the tree in the range [start, end].
     /// The iterator is inclusive of start and end.
     ///
-    /// If the start key does not exist in the tree then the iterator will start from next key greater than start.
+    /// If the start key does not exist in the tree then the iterator will start from the next key greater than start.
     /// If the end key does not exist in the tree then the iterator will end at the last key less than end.
-    public func scan<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, start : K, end : K) : DoubleEndedIter<(K, V)> {
+    ///
+    /// If either start or end is null then the iterator will start from the first key or end at the last key respectively.
+    ///
+    public func scan<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, start : ?K, end : ?K) : DoubleEndedIter<(K, V)> {
         Methods.scan(self, cmp, start, end);
     };
     

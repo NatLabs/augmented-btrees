@@ -42,14 +42,13 @@ jobs:
         
       - name: Install mops & mocv
         run: |
-          npm -g i mocv
           npm --yes -g i ic-mops
           mops i
+          mops toolchain init
+          mops toolchain use moc 0.10.4
 
-      - name: Set DFX MOC Path
-        run: |
-          make set-moc-version
-          echo "DFX_MOC_PATH=$(mocv bin)/moc" >> $GITHUB_ENV
+          # set moc path for dfx to use
+          echo "DFX_MOC_PATH=$(mops toolchain bin moc)" >> $GITHUB_ENV
       
       - name: Benchmarks
         id: benchmarks
