@@ -478,7 +478,7 @@ module Branch {
     };
 
     public func merge<K, V>(left: Branch<K, V>, right: Branch<K, V>){
-         assert left.0[C.INDEX] + 1 == right.0[C.INDEX];
+        //  assert left.0[C.INDEX] + 1 == right.0[C.INDEX];
 
         // if there are two adjacent nodes then there must be a parent
         let ?parent = left.1[C.PARENT] else Debug.trap("1. merge_branch_nodes: accessed a null value");

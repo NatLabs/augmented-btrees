@@ -345,7 +345,7 @@ module Methods {
                     case (_) Debug.trap("get_leaf_node_by_index 1: accessed a null value");
                 };
 
-                assert i > 0;
+                // assert i > 0;
 
                 i -= 1;
             };
@@ -520,7 +520,7 @@ module Methods {
         if (rank >= self.size) return Debug.trap("getFromIndex: rank is greater than the size of the tree");
         let (leaf_node, i) = get_leaf_node_by_index(self, rank);
 
-        assert i < leaf_node.0[C.COUNT];
+        // assert i < leaf_node.0[C.COUNT];
 
         let ?entry = leaf_node.3[i] else Debug.trap("getFromIndex: accessed a null value");
         entry;

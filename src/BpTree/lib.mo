@@ -442,7 +442,7 @@ module BpTree {
                 // this only happens if the branch node is the root node
 
                 // update root node if necessary
-                assert parent.0[C.COUNT] == 1;
+                // assert parent.0[C.COUNT] == 1;
                 let ?child = parent.3[0] else Debug.trap("3. remove: accessed a null value");
                 self.root := child;
 

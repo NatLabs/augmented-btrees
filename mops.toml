@@ -1,6 +1,6 @@
 [package]
 name = "augmented-btrees"
-version = "0.1.2"
+version = "0.2.0"
 description = "Contains implementations of BTree variants, most notable the B+Tree"
 repository = "https://github.com/NatLabs/augmented-btrees"
 license = "MIT"
@@ -9,7 +9,7 @@ keywords = [ "b+tree", "data-structure", "sorted", "map", "stable-heap" ]
 [dependencies]
 base = "0.10.2"
 buffer-deque = "0.1.0"
-itertools = "0.2.0"
+itertools = "0.2.1"
 
 [dev-dependencies]
 test = "1.0.1"

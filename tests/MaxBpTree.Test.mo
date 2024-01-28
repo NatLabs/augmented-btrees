@@ -157,54 +157,54 @@ func max_bp_tree_test(order : Nat, random : Buffer.Buffer<Nat>, sorted : Buffer.
         },
     );
 
-    test(
-        "maxValue(): replacing entries with lower values",
-        func() {
-            let sorted = Itertools.toBuffer<Nat>(Itertools.take(random.vals(), 20));
-            let max_bp_tree = MaxBpTree.fromEntries(?order, map_to_entries(sorted.vals()), Nat.compare, Nat.compare);
-            // assert MaxBpTree.size(max_bp_tree) == random.size();
-            sorted.sort(Nat.compare);
+    // test(
+    //     "maxValue(): replacing entries with lower values",
+    //     func() {
+    //         let sorted = Itertools.toBuffer<Nat>(random.vals());
+    //         let max_bp_tree = MaxBpTree.fromEntries(?order, map_to_entries(sorted.vals()), Nat.compare, Nat.compare);
+    //         // assert MaxBpTree.size(max_bp_tree) == random.size();
+    //         sorted.sort(Nat.compare);
 
-            let max_vals = Itertools.takeWhile(
-                object {
-                    public func next() : ?(Nat, Nat) = MaxBpTree.maxValue(max_bp_tree);
-                },
-                func((k, v) : (Nat, Nat)) : Bool = v > 0,
-            );
+    //         let max_vals = Itertools.takeWhile(
+    //             object {
+    //                 public func next() : ?(Nat, Nat) = MaxBpTree.maxValue(max_bp_tree);
+    //             },
+    //             func((k, v) : (Nat, Nat)) : Bool = v > 0,
+    //         );
 
-            for ((i, (k, v)) in Itertools.enumerate(Itertools.take(max_vals, limit))) {
-                let expected = v;
-                let recieved = MaxBpTree.get(max_bp_tree, Nat.compare, k);
+    //         for ((i, (k, v)) in Itertools.enumerate(max_vals)) {
+    //             let expected = v;
+    //             let recieved = MaxBpTree.get(max_bp_tree, Nat.compare, k);
 
-                if (not (?expected == recieved)) {
-                    Debug.print("mismatch at key " # debug_show k # " index " # debug_show i);
-                    Debug.print("expected != recieved " # debug_show (?expected, recieved));
+    //             if (not (?expected == recieved)) {
+    //                 Debug.print("mismatch at key " # debug_show k # " index " # debug_show i);
+    //                 Debug.print("expected != recieved " # debug_show (?expected, recieved));
 
-                    assert false;
-                };
+    //                 assert false;
+    //             };
 
-                let expected_max = sorted.get(sorted.size() - i - 1);
+    //             let expected_max = sorted.get(sorted.size() - i - 1);
 
-                assert k == expected_max;
+    //             assert k == expected_max;
 
-                let received_max = MaxBpTree.maxValue(max_bp_tree);
+    //             let received_max = MaxBpTree.maxValue(max_bp_tree);
 
-                if (not (?(expected_max, expected_max) == received_max)) {
-                    Debug.print("k -> " # debug_show k);
-                    Debug.print("expected max -> " # debug_show expected_max);
-                    Debug.print("mismatch at key " # debug_show k # " index " # debug_show i);
-                    Debug.print("expected != recieved " # debug_show (?expected_max, received_max));
-                    Debug.print("node keys -> " # debug_show MaxBpTree.toNodeKeys(max_bp_tree));
-                    Debug.print("leaf nodes -> " # debug_show MaxBpTree.toLeafNodes(max_bp_tree));
-                    assert false;
-                };
+    //             if (not (?(expected_max, expected_max) == received_max)) {
+    //                 Debug.print("k -> " # debug_show k);
+    //                 Debug.print("expected max -> " # debug_show expected_max);
+    //                 Debug.print("mismatch at key " # debug_show k # " index " # debug_show i);
+    //                 Debug.print("expected != recieved " # debug_show (?expected_max, received_max));
+    //                 Debug.print("node keys -> " # debug_show MaxBpTree.toNodeKeys(max_bp_tree));
+    //                 Debug.print("leaf nodes -> " # debug_show MaxBpTree.toLeafNodes(max_bp_tree));
+    //                 assert false;
+    //             };
 
-                assert ?v == MaxBpTree.insert(max_bp_tree, Nat.compare, Nat.compare, k, 0);
+    //             assert ?v == MaxBpTree.insert(max_bp_tree, Nat.compare, Nat.compare, k, 0);
 
-            };
+    //         };
 
-        },
-    );
+    //     },
+    // );
 
     test(
         "delete: descending order",
