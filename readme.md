@@ -57,10 +57,10 @@ This library contains implementations of different Btree variants.
     assert Iter.toArray(entries.rev()) == [('E', 4), ('D', 3), ('C', 2), ('B', 1), ('A', 0)];
 
     // search for elements bounded by the given keys (the keys are inclusive)
-    let results = BpTree.scan(bptree, Char.compare, 'B', 'D');
+    let results = BpTree.scan(bptree, Char.compare, ?'B', ?'D');
     assert Iter.toArray(results) == [('B', 1), ('C', 2), ('D', 3)];
     
-    let results2 = BpTree.scan(bptree, Char.compare, 'A', 'C');
+    let results2 = BpTree.scan(bptree, Char.compare, ?'A', ?'C');
     assert Iter.toArray(results2.rev()) == [('C', 2), ('B', 1), ('A', 0)];
 
     // retrieve elements by their index
@@ -75,14 +75,13 @@ This library contains implementations of different Btree variants.
     assert Iter.toArray(range2) == [('C', 2), ('D', 3), ('E', 4)];
 ```
 
-#### Benchmarks
-Comparing RBTree, BTree and B+Tree (BpTree)
-
+### Benchmarks
 Benchmarking the performance with 10k entries
 
-**Instructions**
 
-Instructions
+#### Comparing RBTree, BTree and B+Tree (BpTree)
+
+**Instructions**
 
 |            |    insert() |   replace() |      get() |  entries() |     scan() |    remove() |
 | :--------- | ----------: | ----------: | ---------: | ---------: | ---------: | ----------: |
@@ -92,7 +91,7 @@ Instructions
 | Max B+Tree | 155_073_391 | 134_448_918 | 81_163_571 |  4_898_717 |  6_647_119 | 192_655_744 |
 			
 
-Heap
+**Heap**
 
 |            |  insert() | replace() |   get() | entries() |    scan() |    remove() |
 | :--------- | --------: | --------: | ------: | --------: | --------: | ----------: |
@@ -101,3 +100,28 @@ Heap
 | B+Tree     |   772_632 |   613_852 | 213_848 |     9_132 |    31_472 |     344_164 |
 | Max B+Tree | 2_438_292 | 3_079_864 | 230_264 |    25_548 |    47_888 |   2_922_652 |
 	
+
+#### Other B+Tree functions
+
+**Instructions**
+
+|                |      B+Tree |  Max B+Tree |
+| :------------- | ----------: | ----------: |
+| getFromIndex() |  71_925_427 |  79_316_767 |
+| getIndex()     | 203_900_151 | 218_410_671 |
+| getFloor()     |  77_868_282 |  79_589_842 |
+| getCeiling()   |  77_868_925 |  79_590_577 |
+| removeMin()    | 150_790_687 | 211_728_742 |
+| removeMax()    | 116_471_729 | 167_714_299 |
+			
+
+**Heap**
+
+|                |    B+Tree | Max B+Tree |
+| :------------- | --------: | ---------: |
+| getFromIndex() |   345_424 |    345_424 |
+| getIndex()     | 5_195_228 |  5_195_228 |
+| getFloor()     |   230_268 |    230_268 |
+| getCeiling()   |   230_268 |    230_268 |
+| removeMin()    |   529_504 |  2_903_368 |
+| removeMax()    |   525_640 |  2_687_668 |
