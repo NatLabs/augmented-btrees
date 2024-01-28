@@ -16,7 +16,7 @@ import Utils "../internal/Utils";
 import T "Types";
 import Cursor "Cursor";
 import InternalTypes "../internal/Types";
-import DoubleEndedIter "../internal/DoubleEndedIter";
+import RevIter "mo:itertools/RevIter";
 
 module Methods {
 
@@ -27,7 +27,7 @@ module Methods {
     type Result<A, B> = Result.Result<A, B>;
     type BufferDeque<A> = BufferDeque.BufferDeque<A>;
     public type Cursor<K, V> = Cursor.Cursor<K, V>;
-    public type DoubleEndedIter<A> = DoubleEndedIter.DoubleEndedIter<A>;
+    public type RevIter<A> = RevIter.RevIter<A>;
 
     public type BpTree<K, V> = T.BpTree<K, V>;
     public type Node<K, V> = T.Node<K, V>;
@@ -195,7 +195,7 @@ module Methods {
         start_index : Nat,
         end_leaf : Leaf<K, V>,
         end_index : Nat // exclusive
-    ) : DoubleEndedIter<(K, V)> {
+    ) : RevIter<(K, V)> {
 
         var _start_leaf = ?start_leaf;
         var i = start_index;
@@ -247,7 +247,7 @@ module Methods {
             return entry;
         };
 
-        DoubleEndedIter.new(next, nextFromEnd);
+        RevIter.new(next, nextFromEnd);
     };
 
     // Returns the leaf node and rank of the first element in the leaf node
@@ -476,15 +476,15 @@ module Methods {
     };
 
     // Returns a double ended iterator over the entries of the tree.
-    public func entries<K, V>(bptree : BpTree<K, V>) : DoubleEndedIter<(K, V)> {
+    public func entries<K, V>(bptree : BpTree<K, V>) : RevIter<(K, V)> {
         let min_leaf = get_min_leaf_node(bptree);
         let max_leaf = get_max_leaf_node(bptree);
         new_iterator(min_leaf, 0, max_leaf, max_leaf.0[C.COUNT]);
     };
 
     // Returns a double ended iterator over the keys of the tree.
-    public func keys<K, V>(self : BpTree<K, V>) : DoubleEndedIter<K> {
-        DoubleEndedIter.map(
+    public func keys<K, V>(self : BpTree<K, V>) : RevIter<K> {
+        RevIter.map(
             entries(self),
             func(kv : (K, V)) : K {
                 kv.0;
@@ -493,8 +493,8 @@ module Methods {
     };
 
     // Returns a double ended iterator over the values of the tree.
-    public func vals<K, V>(self : BpTree<K, V>) : DoubleEndedIter<V> {
-        DoubleEndedIter.map(
+    public func vals<K, V>(self : BpTree<K, V>) : RevIter<V> {
+        RevIter.map(
             entries(self),
             func(kv : (K, V)) : V {
                 kv.1;
@@ -528,7 +528,7 @@ module Methods {
 
     // Returns an iterator over the entries of the tree in the range [start, end].
     // The range is defined by the ranks of the start and end keys
-    public func range<K, V>(self : BpTree<K, V>, start : Nat, end : Nat) : DoubleEndedIter<(K, V)> {
+    public func range<K, V>(self : BpTree<K, V>, start : Nat, end : Nat) : RevIter<(K, V)> {
         let (start_node, start_node_index) = get_leaf_node_by_index(self, start);
         let (end_node, end_node_index) = get_leaf_node_by_index(self, end);
 
@@ -543,7 +543,7 @@ module Methods {
     //
     // If the start key does not exist in the tree then the iterator will start from next key greater than start.
     // If the end key does not exist in the tree then the iterator will end at the last key less than end.
-    public func scan<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, start : ?K, end : ?K) : DoubleEndedIter<(K, V)> {
+    public func scan<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, start : ?K, end : ?K) : RevIter<(K, V)> {
         let left_node = switch(start){
             case(?key) get_leaf_node(self, cmp, key);
             case(null) get_min_leaf_node(self);

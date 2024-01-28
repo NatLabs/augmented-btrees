@@ -46,7 +46,7 @@ This library contains implementations of different Btree variants.
 ```
 
 - Iterating over a B+ Tree
-    - Each iterator is implemented as a `DoubleEndedIter` and can be iterated in both directions.
+    - Each iterator is implemented as a Reversible Iterator (`RevIter`) and can be iterated in both directions.
     - An iter can be created from a B+ Tree using the `entries()`, `keys()`, `vals()`, `scan()`, or `range()` functions.
     - The iterator can be reversed just by calling the `rev()` function on the iterator.
 

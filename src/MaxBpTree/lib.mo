@@ -15,7 +15,7 @@ import ArrayMut "../internal/ArrayMut";
 
 import Leaf "Leaf";
 import Branch "Branch";
-import DoubleEndedIter "../internal/DoubleEndedIter";
+import RevIter "mo:itertools/RevIter";
 import Common "Common";
 
 module MaxBpTree {
@@ -32,7 +32,7 @@ module MaxBpTree {
 
     type Iter<A> = Iter.Iter<A>;
     type Order = Order.Order;
-    public type DoubleEndedIter<A> = DoubleEndedIter.DoubleEndedIter<A>;
+    public type RevIter<A> = RevIter.RevIter<A>;
 
     public func new<K, V>(_order : ?Nat) : MaxBpTree<K, V> {
         let order = Option.get(_order, 32);
@@ -732,17 +732,17 @@ module MaxBpTree {
 
 
     /// Returns a double ended iterator over the entries of the tree.
-    public func entries<K, V>(max_bp_tree : MaxBpTree<K, V>) : DoubleEndedIter<(K, V)> {
+    public func entries<K, V>(max_bp_tree : MaxBpTree<K, V>) : RevIter<(K, V)> {
         Methods.entries(max_bp_tree);
     };
 
     /// Returns a double ended iterator over the keys of the tree.
-    public func keys<K, V>(self : MaxBpTree<K, V>) : DoubleEndedIter<K> {
+    public func keys<K, V>(self : MaxBpTree<K, V>) : RevIter<K> {
         Methods.keys(self);
     };
 
     /// Returns a double ended iterator over the values of the tree.
-    public func vals<K, V>(self : MaxBpTree<K, V>) : DoubleEndedIter<V> {
+    public func vals<K, V>(self : MaxBpTree<K, V>) : RevIter<V> {
         Methods.vals(self);
     };
 
@@ -781,7 +781,7 @@ module MaxBpTree {
 
     /// Returns an iterator over the entries of the tree in the range [start, end].
     /// The range is defined by the ranks of the start and end keys
-    public func range<K, V>(self : MaxBpTree<K, V>, start : Nat, end : Nat) : DoubleEndedIter<(K, V)> {
+    public func range<K, V>(self : MaxBpTree<K, V>, start : Nat, end : Nat) : RevIter<(K, V)> {
         Methods.range(self, start, end);
     };
 
@@ -790,7 +790,7 @@ module MaxBpTree {
     ///
     /// If the start key does not exist in the tree then the iterator will start from next key greater than start.
     /// If the end key does not exist in the tree then the iterator will end at the last key less than end.
-    public func scan<K, V>(self : MaxBpTree<K, V>, cmp : CmpFn<K>, start : K, end : K) : DoubleEndedIter<(K, V)> {
+    public func scan<K, V>(self : MaxBpTree<K, V>, cmp : CmpFn<K>, start : K, end : K) : RevIter<(K, V)> {
         Methods.scan(self, cmp, start, end);
     };
 
