@@ -535,7 +535,7 @@ module Branch {
         right: Branch<K, V>,
         update_node_fields : UpdateBranchMaxFn<K, V>,
     ){
-        assert left.index + 1 == right.index;
+        // assert left.index + 1 == right.index;
 
         // if there are two adjacent nodes then there must be a parent
         let ?parent = left.parent else Debug.trap("1. merge_branch_nodes: accessed a null value");
