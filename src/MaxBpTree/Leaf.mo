@@ -2,6 +2,7 @@ import Array "mo:base/Array";
 import Debug "mo:base/Debug";
 import Iter "mo:base/Iter";
 import Option "mo:base/Option";
+import Int "mo:base/Int";
 
 import BpTreeLeaf "../BpTree/Leaf";
 import T "Types";
@@ -27,8 +28,7 @@ module Leaf {
     type UpdateBranchMaxFn<K, V> = T.UpdateBranchMaxFn<K, V>;
     type ResetMaxFn<K, V> = T.ResetMaxFn<K, V>;
 
-
-    public func new<K, V>(order : Nat, count : Nat, opt_kvs : ?[var ?(K, V)], gen_id : () -> Nat, update_leaf_fields: UpdateLeafMaxFn<K, V>) : Leaf<K, V> {
+    public func new<K, V>(order : Nat, count : Nat, opt_kvs : ?[var ?(K, V)], gen_id : () -> Nat, cmp_val : CmpFn<V>) : Leaf<K, V> {
 
         let leaf_node : Leaf<K, V> = {
             id = gen_id();
@@ -48,7 +48,7 @@ module Leaf {
 
         while (i < count) {
             let ?kv = leaf_node.kvs[i] else Debug.trap("Leaf.new: kv is null");
-            update_leaf_fields(leaf_node, i, kv.0, kv.1);
+            Common.update_leaf_fields(leaf_node, cmp_val, i, kv.0, kv.1);
             i += 1;
         };
 
@@ -60,8 +60,8 @@ module Leaf {
         elem_index : Nat,
         elem : (K, V),
         gen_id : () -> Nat,
-        reset_max_field : ResetMaxFn<K, V>,
-        update_leaf_fields: UpdateLeafMaxFn<K, V>,
+        cmp_key : CmpFn<K>,
+        cmp_val : CmpFn<V>,
     ) : Leaf<K, V> {
 
         let arr_len = leaf.count;
@@ -107,7 +107,7 @@ module Leaf {
 
         leaf.count := median;
         let right_cnt = arr_len + 1 - median : Nat;
-        let right_node = Leaf.new(leaf.kvs.size(), right_cnt, ?right_kvs, gen_id, update_leaf_fields);
+        let right_node = Leaf.new(leaf.kvs.size(), right_cnt, ?right_kvs, gen_id, cmp_val);
 
         right_node.index := leaf.index + 1;
         right_node.parent := leaf.parent;
@@ -124,21 +124,39 @@ module Leaf {
         };
 
         var i = 0;
-        reset_max_field(leaf);
+        leaf.max := null;
         while (i < leaf.count) {
             let ?kv = leaf.kvs[i] else Debug.trap("Leaf.split: kv is null");
-            update_leaf_fields(leaf, i, kv.0, kv.1);
+            Common.update_leaf_fields(leaf, cmp_val, i, kv.0, kv.1);
             i += 1;
         };
 
         right_node;
     };
 
+    public func shift_by<K, V>(
+        leaf : Leaf<K, V>,
+        start : Nat,
+        end : Nat,
+        offset : Int,
+    ) {
+        ArrayMut.shift_by(leaf.kvs, start, end, offset);
+        switch (leaf.max) {
+            case (?max) {
+                leaf.max := ?(max.0, max.1, Int.abs(max.2 + offset));
+            };
+            case (_) {};
+        };
+    };
+
+    public func put<K, V>(leaf : Leaf<K, V>, index : Nat, kv : (K, V)) {
+        leaf.kvs[index] := ?kv;
+    };
+
     public func redistribute_keys<K, V>(
         leaf_node : Leaf<K, V>,
-        reset_fields : (ResetMaxFn<K, V>),
-        update_fields : UpdateLeafMaxFn<K, V>,
-        update_node_fields : UpdateBranchMaxFn<K, V>,
+        cmp_key : CmpFn<K>,
+        cmp_val : CmpFn<V>,
     ) {
 
         let ?parent = leaf_node.parent else return;
@@ -167,19 +185,37 @@ module Leaf {
 
         let data_to_move = (sum_count / 2) - leaf_node.count : Nat;
 
+        let is_adj_node_equal_to_parent_max = switch (parent.max, adj_node.max) {
+            case (?parent_max, ?adj_max) cmp_key(parent_max.0, adj_max.0) == #equal;
+            case (_, _) false;
+        };
+
         // distribute data between adjacent nodes
         if (adj_node.index < leaf_node.index) {
             // adj_node is before leaf_node
 
             var i = 0;
-            ArrayMut.shift_by(leaf_node.kvs, 0, leaf_node.count, data_to_move);
+            Leaf.shift_by(leaf_node, 0, leaf_node.count, data_to_move);
             for (_ in Iter.range(0, data_to_move - 1)) {
                 let opt_kv = ArrayMut.remove(adj_node.kvs, adj_node.count - i - 1 : Nat, adj_node.count);
+                let ?kv = opt_kv else Debug.trap("Leaf.redistribute_keys: kv is null");
 
-                // no need to call update_fields as we are the adjacent node is before the leaf node 
+                // no need to call update_fields as the adjacent node is before the leaf node
                 // which means that all its keys are less than the leaf node's keys
                 leaf_node.kvs[data_to_move - i - 1] := opt_kv;
-                
+
+                // update max if a greater value was inserted
+                let ?leaf_max = leaf_node.max else Debug.trap("Leaf.redistribute_keys: max is null");
+                if (cmp_val(kv.1, leaf_max.1) == #greater) {
+                    leaf_node.max := ?(kv.0, kv.1, data_to_move - i - 1);
+                };
+
+                // remove max from adj_node if it was moved
+                switch(adj_node.max){
+                    case (?adj_max) if (cmp_key(kv.0, adj_max.0) == #equal) adj_node.max := null;
+                    case (_) {};
+                };
+
                 i += 1;
             };
         } else {
@@ -191,16 +227,38 @@ module Leaf {
                 ArrayMut.insert(leaf_node.kvs, leaf_node.count + i, opt_kv, leaf_node.count);
 
                 let ?kv = opt_kv else Debug.trap("Leaf.redistribute_keys: kv is null");
-                update_fields(leaf_node, leaf_node.count + i, kv.0, kv.1);
+
+                // update max if a greater value was inserted
+                let ?leaf_max = leaf_node.max else Debug.trap("Leaf.redistribute_keys: max is null");
+                if (cmp_val(kv.1, leaf_max.1) == #greater) {
+                    leaf_node.max := ?(kv.0, kv.1, leaf_node.count + i);
+                };
+
+                // remove max from adj_node if it was moved
+                switch(adj_node.max){
+                    case (?adj_max) if (cmp_key(kv.0, adj_max.0) == #equal) adj_node.max := null;
+                    case (_) {};
+                };
 
                 i += 1;
             };
 
-            ArrayMut.shift_by(adj_node.kvs, i, adj_node.count, -i);
+            Leaf.shift_by(adj_node, i, adj_node.count, -i);
         };
 
         adj_node.count -= data_to_move;
         leaf_node.count += data_to_move;
+
+        if (Option.isNull(adj_node.max)) {
+            var i = 0;
+
+            while (i < adj_node.count) {
+                let ?kv = adj_node.kvs[i] else Debug.trap("Leaf.redistribute_keys: kv is null");
+                Common.update_leaf_fields(adj_node, cmp_val, i, kv.0, kv.1);
+                i += 1;
+            };
+
+        };
 
         // update parent keys
         if (adj_node.index < leaf_node.index) {
@@ -220,30 +278,29 @@ module Leaf {
             parent.keys[key_index] := ?adj_node_key;
         };
 
-        var i = 0;
-
-        let left_node = if (adj_node.index < leaf_node.index) adj_node else leaf_node;
-
-        reset_fields(left_node);
-
-        while (i < left_node.count) {
-            let ?kv = left_node.kvs[i] else Debug.trap("Leaf.redistribute_keys: kv is null");
-            update_fields(left_node, i, kv.0, kv.1);
-            i += 1;
+        // update parent max
+        if (is_adj_node_equal_to_parent_max) {
+            switch(parent.max, adj_node.max){
+                case (?parent_max, ?adj_max) {
+                    if (cmp_key(parent_max.0, adj_max.0) != #equal) {
+                        parent.max := ?(parent_max.0, parent_max.1, leaf_node.index);
+                    };
+                };
+                case (_, _) {};
+            };
         };
 
-        update_node_fields(parent, adj_node.index, #leaf(adj_node));
-        update_node_fields(parent, leaf_node.index, #leaf(leaf_node));
     };
 
     // merges two leaf nodes into the left node
     public func merge<K, V>(
         left : Leaf<K, V>,
         right : Leaf<K, V>,
-        update_fields : UpdateLeafMaxFn<K, V>,
-        update_node_fields : UpdateBranchMaxFn<K, V>,
+        cmp_key : CmpFn<K>,
+        cmp_val : CmpFn<V>,
     ) {
         var i = 0;
+        var is_updated = false;
 
         // merge right into left
         for (_ in Iter.range(0, right.count - 1)) {
@@ -251,7 +308,7 @@ module Leaf {
             ArrayMut.insert(left.kvs, left.count + i, opt_kv, left.count);
 
             let ?kv = opt_kv else Debug.trap("Leaf.merge: kv is null");
-            update_fields(left, left.count + i, kv.0, kv.1);
+            Common.update_leaf_fields(left, cmp_val, left.count + i, kv.0, kv.1);
 
             i += 1;
         };
@@ -267,10 +324,14 @@ module Leaf {
 
         let ?parent = left.parent else Debug.trap("Leaf.merge: parent is null");
 
-        // if the max value was in the right node, 
+        // if the max value was in the right node,
         // after the merge fn it will be in the left node
         // so we need to update the parent key with the new max value in the left node
-        update_node_fields(parent, left.index, #leaf(left));
+        let ?right_max = right.max else Debug.trap("Leaf.merge: right max is null");
+        let ?parent_max = parent.max else Debug.trap("Leaf.merge: parent max is null");
+        if (parent_max.2 == right.index) {
+            parent.max := ?(parent_max.0, parent_max.1, left.index);
+        };
 
         // update parent keys
         ignore ArrayMut.remove(parent.keys, right.index - 1 : Nat, parent.count - 1 : Nat);
@@ -289,15 +350,42 @@ module Leaf {
                     };
                 };
 
-                // update shifted node's index
-                    update_node_fields(parent, i, child);
+                // update max with prev index
+                Common.update_branch_fields(parent, cmp_val, i + 1, child);
 
                 i += 1;
             };
 
             parent.children[parent.count - 1] := null;
-
             parent.count -= 1;
+
+            // update the max field index
+            switch(parent.max){
+                case (?max) {
+                    if (max.2 > right.index) {
+                        parent.max := ?(max.0, max.1, max.2 - 1);
+                    }
+                };
+                case (_) {};
+            };
         };
+    };
+
+    public func toText<K, V>(self : Leaf<K, V>, key_to_text : (K) -> Text, val_to_text : (V) -> Text) : Text {
+        var t = "leaf { index: " # debug_show self.index # ", count: " # debug_show self.count # ", kvs: ";
+
+        t #= debug_show Array.map(
+            Array.freeze(self.kvs),
+            func(opt_kv : ?(K, V)) : Text {
+                switch (opt_kv) {
+                    case (?kv) "(" # key_to_text(kv.0) # ", " # val_to_text(kv.1) # ")";
+                    case (_) "null";
+                };
+            },
+        );
+
+        t #= " }";
+
+        t;
     };
 };

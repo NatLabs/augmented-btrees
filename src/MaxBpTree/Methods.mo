@@ -253,7 +253,7 @@ module Methods {
 
         let root = switch (self.root) {
             case (#branch(node)) node;
-            case (#leaf(node)) return (node, node.count);
+            case (#leaf(node)) return (node, 0);
         };
 
         var rank = root.subtree_size;

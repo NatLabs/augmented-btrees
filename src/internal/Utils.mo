@@ -86,4 +86,10 @@ module {
             cmp(a, b)
         };
     };
+
+    public func tuple_cmp_val<V>(cmp: (V, V) -> Order) : ((Any, V), (Any, V)) -> Order {
+        func ((_, a) : (Any, V), (_, b) : (Any, V)): Order {
+            cmp(a, b)
+        };
+    };
 }

@@ -22,43 +22,36 @@ module Methods {
     type UpdateLeafMaxFn<K, V> = T.UpdateLeafMaxFn<K, V>;
     type UpdateBranchMaxFn<K, V> = T.UpdateBranchMaxFn<K, V>;
 
-    public func update_leaf_fields<K, V>(cmp_val : CmpFn<V>) : UpdateLeafMaxFn<K, V> {
+    public func update_leaf_fields<K, V>(leaf : CommonFields<K, V>, cmp_val : CmpFn<V>, index : Nat, key : K, val : V) {
+        let ?max = leaf.max else {
+            leaf.max := ?(key, val, index);
+            return;
+        };
 
-        func update_fields(leaf : CommonFields<K, V>, index : Nat, key : K, val : V) {
-            let ?max = leaf.max else {
-                leaf.max := ?(key, val, index);
-                return;
-            };
+        let max_key = max.0;
+        let max_val = max.1;
 
-            let max_key = max.0;
-            let max_val = max.1;
-
-            if (cmp_val(val, max_val) != #less) {
-                leaf.max := ?(key, val, index);
-            };
+        if (cmp_val(val, max_val) == #greater) {
+            leaf.max := ?(key, val, index);
         };
     };
 
-    public func update_branch_fields<K, V>(cmp_val : CmpFn<V>) : UpdateBranchMaxFn<K, V> {
+    public func update_branch_fields<K, V>(branch : Branch<K, V>, cmp_val : CmpFn<V>, index : Nat, child_node : Node<K, V>) {
+        switch (child_node) {
+            case (#leaf(child) or #branch(child) : CommonNodeFields<K, V>) {
+                let ?child_max = child.max else Debug.trap("Branch.new: child.max is null");
+                let (child_max_key, child_max_val, _) = child_max;
 
-        func update_fields(branch : Branch<K, V>, index : Nat, child_node : Node<K, V>) {
-            switch (child_node) {
-                case (#leaf(child) or #branch(child) : CommonNodeFields<K, V>) {
-                    let ?child_max = child.max else Debug.trap("Branch.new: child.max is null");
+                let ?max = branch.max else {
+                    branch.max := ?(child_max_key, child_max_val, index);
+                    return;
+                };
 
-                    let ?max = branch.max else {
-                        branch.max := child.max;
-                        return;
-                    };
+                let branch_max_key = max.0;
+                let branch_max_val = max.1;
 
-                    let branch_max_key = max.0;
-                    let branch_max_val = max.1;
-
-                    let child_max_val = child_max.1;
-
-                    if (cmp_val(child_max_val, branch_max_val) != #less) {
-                        branch.max := child.max;
-                    };
+                if (cmp_val(child_max_val, branch_max_val) == #greater) {
+                    branch.max := ?(child_max_key, child_max_val, index);
                 };
             };
         };
