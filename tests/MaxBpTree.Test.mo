@@ -19,8 +19,11 @@ import BTree "mo:stableheapbtreemap/BTree";
 import Utils "../src/internal/Utils";
 import { MaxBpTree } "../src";
 import MaxBpTreeMethods "../src/MaxBpTree/Methods";
+import T "../src/MaxBpTree/Types";
 
 type Order = Order.Order;
+
+let { Const = C } = T;
 
 let fuzz = Fuzz.fromSeed(0x7f3a3e7e);
 
@@ -62,8 +65,8 @@ func max_bp_tree_test(order : Nat, random : Buffer.Buffer<(Nat, Nat)>, sorted_by
                 ignore MaxBpTree.insert(max_bp_tree, Nat.compare, Nat.compare, k, v);
 
                 let subtree_size = switch (max_bp_tree.root) {
-                    case (#branch(node)) { node.subtree_size };
-                    case (#leaf(node)) { node.count };
+                    case (#branch(node)) { node.0 [C.SUBTREE_SIZE] };
+                    case (#leaf(node)) { node.0 [C.COUNT] };
                 };
 
                 assert subtree_size == i + 1;
@@ -80,8 +83,8 @@ func max_bp_tree_test(order : Nat, random : Buffer.Buffer<(Nat, Nat)>, sorted_by
             assert MaxBpTree.size(max_bp_tree) == random.size();
 
             let root_subtree_size = switch (max_bp_tree.root) {
-                case (#leaf(node)) node.count;
-                case (#branch(node)) node.subtree_size;
+                case (#leaf(node)) node.0 [C.COUNT];
+                case (#branch(node)) node.0 [C.SUBTREE_SIZE];
             };
 
             assert root_subtree_size == random.size();
@@ -263,10 +266,7 @@ func max_bp_tree_test(order : Nat, random : Buffer.Buffer<(Nat, Nat)>, sorted_by
             assert max_bp_tree.order == order;
 
             label for_loop for ((i, expected) in Itertools.enumerate(sorted_by_val.vals())) {
-                // Debug.print("deleting: " # debug_show (max_k, max_v) # " at index " # debug_show i);
-                // Debug.print("expected vs received: " # debug_show ((max_k, max_v), MaxBpTree.maxValue(max_bp_tree)));
-                // Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bp_tree)));
-                // Debug.print("leaf nodes: " # debug_show (MaxBpTree.toLeafNodes(max_bp_tree)));
+
                 let (max_k, max_v) = expected;
 
                 let ?received = MaxBpTree.maxValue(max_bp_tree) else Debug.trap("max value is null");
@@ -275,7 +275,12 @@ func max_bp_tree_test(order : Nat, random : Buffer.Buffer<(Nat, Nat)>, sorted_by
                 assert MaxBpTree.size(max_bp_tree) == (sorted_by_val.size() - i : Nat);
 
                 let ?removed = MaxBpTree.removeMaxValue(max_bp_tree, Nat.compare, Nat.compare) else Debug.trap("max value is null");
-
+                
+                // Debug.print("deleting: " # debug_show expected # " at index " # debug_show i);
+                // Debug.print("expected vs received: " # debug_show (expected, MaxBpTree.maxValue(max_bp_tree)));
+                // Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bp_tree)));
+                // Debug.print("leaf nodes: " # debug_show (MaxBpTree.toLeafNodes(max_bp_tree)));
+                
                 if (expected.1 != removed.1) {
                     Debug.print("mismatch at index " # debug_show i);
                     Debug.print("expected != recieved: " # debug_show (expected, removed));

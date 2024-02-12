@@ -117,7 +117,7 @@ module Branch {
                             self.0[C.COUNT] += 1;
                             self.0[C.SUBTREE_SIZE] += node.0[C.SUBTREE_SIZE];
 
-                            node/*.2*/.2[0];
+                            node/*.keys*/.2[0];
                         };
                         case (_) return self;
                     };

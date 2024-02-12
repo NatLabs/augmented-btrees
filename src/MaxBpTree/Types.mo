@@ -20,7 +20,7 @@ module {
     };
 
     /// Branch nodes store keys and pointers to child nodes.
-    public type Branch<K, V> = {
+    public type Branch1<K, V> = {
         /// Unique id representing the branch as a node.
         id : Nat;
 
@@ -46,8 +46,16 @@ module {
 
     };
 
+    public type Branch<K, V> = (
+        nats: [var Nat], // [id, index, count, subtree_size, max_index]
+        parent: [var ?Branch<K, V>], // parent
+        keys: [var ?K], // [...2]
+        children: [var ?Node<K, V>], // [...3]
+        max: [var ?(K, V)] // (max_key, max_val)
+    );
+
     /// Leaf nodes are doubly linked lists of key-value pairs.
-    public type Leaf<K, V> = {
+    public type Leaf1<K, V> = {
         /// Unique id representing the leaf as a node.
         id : Nat;
 
@@ -71,6 +79,29 @@ module {
 
         var max: ?(key: K, val: V, index_in_parent: Nat); 
 
+    };
+
+    public type Leaf<K, V> = (
+        nats: [var Nat], // [id, index, count, ----,  max_index]
+        parent: [var ?Branch<K, V>], // parent
+        adjacent_nodes: [var ?Leaf<K, V>], // [prev, next]
+        kvs: [var ?(K, V)], // [...3]
+        max: [var ?(K, V)] // (max_key, max_val)
+    );
+
+    public module Const = {
+        public let ID = 0;
+        public let INDEX = 1;
+        public let COUNT = 2;
+        public let SUBTREE_SIZE = 3;
+        public let MAX_INDEX = 4;
+
+        public let PARENT = 0;
+
+        public let PREV = 0;
+        public let NEXT = 1;
+
+        public let MAX = 0;
     };
 
     public type CommonFields<K, V> = Leaf<K, V> or Branch<K, V>;

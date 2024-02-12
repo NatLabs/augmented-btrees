@@ -8,7 +8,6 @@ import BpTree "../BpTree";
 
 import Utils "../internal/Utils";
 import InternalTypes "../internal/Types";
-
 module Methods {
     public type MaxBpTree<K, V> = T.MaxBpTree<K, V>;
     public type Node<K, V> = T.Node<K, V>;
@@ -22,9 +21,12 @@ module Methods {
     type UpdateLeafMaxFn<K, V> = T.UpdateLeafMaxFn<K, V>;
     type UpdateBranchMaxFn<K, V> = T.UpdateBranchMaxFn<K, V>;
 
+    let {Const = C } = T;
+
     public func update_leaf_fields<K, V>(leaf : CommonFields<K, V>, cmp_val : CmpFn<V>, index : Nat, key : K, val : V) {
-        let ?max = leaf.max else {
-            leaf.max := ?(key, val, index);
+        let ?max = leaf.4[C.MAX] else {
+            leaf.4[C.MAX] := ?(key, val);
+            leaf.0[C.MAX_INDEX] := index;
             return;
         };
 
@@ -32,18 +34,21 @@ module Methods {
         let max_val = max.1;
 
         if (cmp_val(val, max_val) == #greater) {
-            leaf.max := ?(key, val, index);
+            leaf.4[C.MAX] := ?(key, val);
+            leaf.0[C.MAX_INDEX] := index;
         };
     };
 
     public func update_branch_fields<K, V>(branch : Branch<K, V>, cmp_val : CmpFn<V>, index : Nat, child_node : Node<K, V>) {
         switch (child_node) {
             case (#leaf(child) or #branch(child) : CommonNodeFields<K, V>) {
-                let ?child_max = child.max else Debug.trap("update_branch_fields: child.max is null");
-                let (child_max_key, child_max_val, _) = child_max;
+                let ?child_max = child.4[C.MAX] else Debug.trap("update_branch_fields: child max is null");
+                let (child_max_key, child_max_val) = child_max;
 
-                let ?max = branch.max else {
-                    branch.max := ?(child_max_key, child_max_val, index);
+                let ?max = branch.4[C.MAX] else {
+                    branch.4[C.MAX] := ?(child_max_key, child_max_val);
+                    branch.0[C.MAX_INDEX] := index;
+                    
                     return;
                 };
 
@@ -51,7 +56,9 @@ module Methods {
                 let branch_max_val = max.1;
 
                 if (cmp_val(child_max_val, branch_max_val) == #greater) {
-                    branch.max := ?(child_max_key, child_max_val, index);
+                    branch.4[C.MAX] := ?(child_max_key, child_max_val);
+                    branch.0[C.MAX_INDEX] := index;
+
                 };
             };
         };
