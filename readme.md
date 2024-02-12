@@ -46,7 +46,7 @@ This library contains implementations of different Btree variants.
 ```
 
 - Iterating over a B+ Tree
-    - Each iterator is implemented as a `DoubleEndedIter` and can be iterated in both directions.
+    - Each iterator is implemented as a Reversible Iterator (`RevIter`) and can be iterated in both directions.
     - An iter can be created from a B+ Tree using the `entries()`, `keys()`, `vals()`, `scan()`, or `range()` functions.
     - The iterator can be reversed just by calling the `rev()` function on the iterator.
 
@@ -57,10 +57,10 @@ This library contains implementations of different Btree variants.
     assert Iter.toArray(entries.rev()) == [('E', 4), ('D', 3), ('C', 2), ('B', 1), ('A', 0)];
 
     // search for elements bounded by the given keys (the keys are inclusive)
-    let results = BpTree.scan(bptree, Char.compare, 'B', 'D');
+    let results = BpTree.scan(bptree, Char.compare, ?'B', ?'D');
     assert Iter.toArray(results) == [('B', 1), ('C', 2), ('D', 3)];
     
-    let results2 = BpTree.scan(bptree, Char.compare, 'A', 'C');
+    let results2 = BpTree.scan(bptree, Char.compare, ?'A', ?'C');
     assert Iter.toArray(results2.rev()) == [('C', 2), ('B', 1), ('A', 0)];
 
     // retrieve elements by their index
@@ -75,10 +75,11 @@ This library contains implementations of different Btree variants.
     assert Iter.toArray(range2) == [('C', 2), ('D', 3), ('E', 4)];
 ```
 
-#### Benchmarks
-Comparing RBTree, BTree and B+Tree (BpTree)
-
+### Benchmarks
 Benchmarking the performance with 10k entries
+
+
+#### Comparing RBTree, BTree and B+Tree (BpTree)
 
 **Instructions**
 
