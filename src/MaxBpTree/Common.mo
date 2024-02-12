@@ -39,7 +39,7 @@ module Methods {
     public func update_branch_fields<K, V>(branch : Branch<K, V>, cmp_val : CmpFn<V>, index : Nat, child_node : Node<K, V>) {
         switch (child_node) {
             case (#leaf(child) or #branch(child) : CommonNodeFields<K, V>) {
-                let ?child_max = child.max else Debug.trap("Branch.new: child.max is null");
+                let ?child_max = child.max else Debug.trap("update_branch_fields: child.max is null");
                 let (child_max_key, child_max_val, _) = child_max;
 
                 let ?max = branch.max else {

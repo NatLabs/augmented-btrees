@@ -247,7 +247,7 @@ module MaxBpTree {
     };
 
     public func _insert_at_leaf_index(max_bp_tree : MaxBpTree<Nat, Nat>, cmp_key : CmpFn<Nat>, cmp_val : CmpFn<Nat>, leaf_node : Leaf<Nat, Nat>, elem_index : Nat, key : Nat, val : Nat, called_independently : Bool) : ?Nat {
-
+        
         let entry = (key, val);
 
         let prev_value = null;
@@ -364,12 +364,11 @@ module MaxBpTree {
             };
         };
 
-        let children = Array.init<?Node<Nat, Nat>>(max_bp_tree.order, null);
-        children[0] := ?left_node;
-        children[1] := ?right_node;
-
-        let root_node = Branch.new<Nat, Nat>(max_bp_tree.order, null, ?children, gen_id, cmp_val);
+        let root_node = Branch.new<Nat, Nat>(max_bp_tree.order, null, null, gen_id, cmp_val);
         root_node.keys[0] := ?right_key;
+        
+        Branch.add_child(root_node, cmp_val, left_node);
+        Branch.add_child(root_node, cmp_val, right_node);
 
         max_bp_tree.root := #branch(root_node);
         max_bp_tree.size += 1;

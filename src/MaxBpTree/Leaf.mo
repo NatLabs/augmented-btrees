@@ -73,41 +73,66 @@ module Leaf {
         // this variable allows us to retrieve the last element on the left
         // that gets shifted by the inserted elemeent
         var offset = if (is_elem_added_to_right) 0 else 1;
+        let right_cnt = arr_len + 1 - median : Nat;
+        let right_node = Leaf.new<K, V>(leaf.kvs.size(), 0, null, gen_id, cmp_val);
 
         var already_inserted = false;
-        let right_kvs = Utils.tabulate_var<(K, V)>(
-            leaf.kvs.size(),
-            leaf.count + 1 - median,
-            func(i : Nat) : ?(K, V) {
 
-                let j = i + median - offset : Nat;
+        var i = 0;
+        while (i < right_cnt) {
+            let j = i + median - offset : Nat;
 
-                if (j >= median and j == elem_index and not already_inserted) {
-                    offset += 1;
-                    already_inserted := true;
-                    ?elem;
-                } else if (j >= arr_len) {
-                    null;
-                } else {
-                    Utils.extract(leaf.kvs, j);
-                };
-            },
-        );
+            let ?kv = if (j >= median and j == elem_index and not already_inserted) {
+                offset += 1;
+                already_inserted := true;
+                ?elem;
+            } else {
+                Utils.extract(leaf.kvs, j);
+            } else Debug.trap("Leaf.split: kv is null");
+
+            right_node.kvs[i] := ?kv;
+            Common.update_leaf_fields(right_node, cmp_val, i, kv.0, kv.1);
+
+            i += 1;
+        };
+
+        right_node.count := right_cnt;
+
+        let moved_left_max = switch(leaf.max){
+            case (?max){
+                if (max.2 >= 0){
+                    leaf.max := null;
+                    true;
+                }
+                // else if (max.2 >= elem_index){
+                //     leaf.max := ?(max.0, max.1, max.2 + 1);
+                //     false
+                // } 
+                else false;
+            };
+            case (_) Debug.trap("Leaf.split: max is null");
+        };
 
         var j = median - 1 : Nat;
 
-        while (j > elem_index) {
-            leaf.kvs[j] := leaf.kvs[j - 1];
-            j -= 1;
-        };
+        label while_loop while (moved_left_max or j >= elem_index) {
+            if (j > elem_index) {
+                leaf.kvs[j] := leaf.kvs[j - 1];
+            } else if (j == elem_index) {
+                leaf.kvs[j] := ?elem;
+            };
 
-        if (j == elem_index) {
-            leaf.kvs[j] := ?elem;
+            if (moved_left_max) {
+                let ?kv = leaf.kvs[j] else Debug.trap("Leaf.split: kv is null");
+                Common.update_leaf_fields(leaf, cmp_val, j, kv.0, kv.1);
+            }else if (j == elem_index) {
+                Common.update_leaf_fields(leaf, cmp_val, i, elem.0, elem.1);
+            };
+
+            if (j == 0) break while_loop else j -= 1;
         };
 
         leaf.count := median;
-        let right_cnt = arr_len + 1 - median : Nat;
-        let right_node = Leaf.new(leaf.kvs.size(), right_cnt, ?right_kvs, gen_id, cmp_val);
 
         right_node.index := leaf.index + 1;
         right_node.parent := leaf.parent;
@@ -121,14 +146,6 @@ module Leaf {
         switch (right_node.next) {
             case (?next) next.prev := ?right_node;
             case (_) {};
-        };
-
-        var i = 0;
-        leaf.max := null;
-        while (i < leaf.count) {
-            let ?kv = leaf.kvs[i] else Debug.trap("Leaf.split: kv is null");
-            Common.update_leaf_fields(leaf, cmp_val, i, kv.0, kv.1);
-            i += 1;
         };
 
         right_node;

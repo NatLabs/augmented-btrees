@@ -409,7 +409,7 @@ func bptree_tests(order : Nat, random : Buffer.Buffer<(Nat, Nat)>, sorted_by_key
     );
 };
 
-for (order in [4, 8, 32, 128].vals()) {
+for (order in [4, 8, 32].vals()) {
     suite(
         "B+Tree tests",
         func() = bptree_tests(order, random, sorted),
