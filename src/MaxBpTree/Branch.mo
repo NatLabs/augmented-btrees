@@ -19,7 +19,8 @@ module Branch {
     public type Branch<K, V> = T.Branch<K, V>;
     type Node<K, V> = T.Node<K, V>;
     type Leaf<K, V> = T.Leaf<K, V>;
-    type CmpFn<K> = InternalTypes.CmpFn<K>;
+    type CmpFn<A> = T.CmpFn<A>;
+    type MultiCmpFn<A, B> = T.MultiCmpFn<A, B>;
     type CommonNodeFields<K, V> = T.CommonNodeFields<K, V>;
     type MaxBpTree<K, V> = T.MaxBpTree<K, V>;
     type UpdateBranchMaxFn<K, V> = T.UpdateBranchMaxFn<K, V>;
@@ -353,7 +354,7 @@ module Branch {
 
         let is_adj_node_equal_to_parent_max = parent.0[C.MAX_INDEX] == adj_node.0[C.INDEX];
         //  switch (parent.4[C.MAX], adj_node.4[C.MAX]) {
-        //     case (?parent_max, ?adj_max) cmp_key(parent_max.0, adj_max.0) == #equal;
+        //     case (?parent_max, ?adj_max) cmp_key(parent_max.0, adj_max.0) == 0;
         //     case (_, _) false;
         // };
 
@@ -388,7 +389,7 @@ module Branch {
                 // update the branch node max if the inserted value's max is greater than the current max
                 switch(branch_node.4[C.MAX], new_child_node.4[C.MAX]){
                     case (?branch_max, ?child_max) {
-                        if (cmp_val(child_max.1, branch_max.1) == #greater) {
+                        if (cmp_val(child_max.1, branch_max.1) == +1) {
                             branch_node.4[C.MAX] := ?(child_max.0, child_max.1);
                             branch_node.0[C.MAX_INDEX] := new_node_index;
                         };
@@ -434,7 +435,7 @@ module Branch {
                 // update the branch node max if the inserted value's max is greater than the current max
                 switch(branch_node.4[C.MAX], child_node.4[C.MAX]){
                     case (?branch_max, ?child_max) {
-                        if (cmp_val(child_max.1, branch_max.1) == #greater) {
+                        if (cmp_val(child_max.1, branch_max.1) == +1) {
                             branch_node.4[C.MAX] := ?(child_max.0, child_max.1);
                             branch_node.0[C.MAX_INDEX] := branch_node.0[C.COUNT] + i;
                         };
@@ -482,7 +483,7 @@ module Branch {
         if (is_adj_node_equal_to_parent_max) {
             switch(parent.4[C.MAX], adj_node.4[C.MAX]) {
                 case (?parent_max, ?adj_max) {
-                    if (cmp_key(parent_max.0, adj_max.0) != #equal) {
+                    if (cmp_key(parent_max.0, adj_max.0) != 0) {
                         parent.4[C.MAX] := ?(parent_max.0, parent_max.1);
                         parent.0[C.MAX_INDEX] := branch_node.0[C.INDEX];
                     };

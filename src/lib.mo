@@ -1,5 +1,6 @@
 import BpTreeModule "BpTree";
 import MaxBpTreeModule "MaxBpTree";
+import CmpModule "Cmp";
 
 module {
     public let BpTree = BpTreeModule;
@@ -7,4 +8,6 @@ module {
 
     public let MaxBpTree = MaxBpTreeModule;
     public type MaxBpTree<K, V> = MaxBpTreeModule.MaxBpTree<K, V>;
+
+    public let Cmp = CmpModule;
 }

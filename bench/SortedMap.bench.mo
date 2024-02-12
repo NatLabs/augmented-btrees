@@ -11,7 +11,7 @@ import Fuzz "mo:fuzz";
 import BTree "mo:stableheapbtreemap/BTree";
 import Map "mo:map/Map";
 
-import { BpTree; MaxBpTree } "../src";
+import { BpTree; MaxBpTree; Cmp } "../src";
 
 module {
 
@@ -188,18 +188,18 @@ module {
 
                 case ("Max B+Tree", "insert()") {
                     for ((key, val) in entries.vals()) {
-                        ignore MaxBpTree.insert(max_bp_tree, Nat.compare, Nat.compare, key, val);
+                        ignore MaxBpTree.insert(max_bp_tree, Cmp.Nat, Cmp.Nat, key, val);
                     };
                 };
                 case ("Max B+Tree", "replace()") {
                     for ((key, val) in replacements.vals()) {
-                        ignore MaxBpTree.insert(max_bp_tree, Nat.compare, Nat.compare, key, val);
+                        ignore MaxBpTree.insert(max_bp_tree, Cmp.Nat, Cmp.Nat, key, val);
                     };
                 };
                 case ("Max B+Tree", "get()") {
                     for (i in Iter.range(0, limit - 1)) {
                         let key = entries.get(i).0;
-                        ignore MaxBpTree.get(max_bp_tree, Nat.compare, key);
+                        ignore MaxBpTree.get(max_bp_tree, Cmp.Nat, key);
                     };
                  };
                 case ("Max B+Tree", "entries()") {
@@ -212,13 +212,13 @@ module {
                         let a = sorted.get(i).0;
                         let b = sorted.get(i + 99).0;
 
-                        for (kv in MaxBpTree.scan(max_bp_tree, Nat.compare, a, b)) { ignore kv };
+                        for (kv in MaxBpTree.scan(max_bp_tree, Cmp.Nat, a, b)) { ignore kv };
                         i += 100;
                     };
                 };
                 case ("Max B+Tree", "remove()") { 
                     for ((k, v) in entries.vals()) {
-                        ignore MaxBpTree.remove(max_bp_tree, Nat.compare, Nat.compare, k);
+                        ignore MaxBpTree.remove(max_bp_tree, Cmp.Nat, Cmp.Nat, k);
                     };
                 };
 

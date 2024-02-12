@@ -29,8 +29,8 @@ module MaxBpTree {
     public type Branch<K, V> = T.Branch<K, V>;
     public type CommonFields<K, V> = T.CommonFields<K, V>;
     public type CommonNodeFields<K, V> = T.CommonNodeFields<K, V>;
-    type MultiCmpFn<A, B> = InternalTypes.MultiCmpFn<A, B>;
-    type CmpFn<A> = InternalTypes.CmpFn<A>;
+    type MultiCmpFn<A, B> = T.MultiCmpFn<A, B>;
+    type CmpFn<A> = T.CmpFn<A>;
 
     type Iter<A> = Iter.Iter<A>;
     type Order = Order.Order;
@@ -44,7 +44,7 @@ module MaxBpTree {
 
         assert order >= 4 and order <= 512;
 
-        let leaf_node = Leaf.new<K, V>(order, 0, null, func() : Nat = 0, func(_ : V, _ : V) : Order = #equal);
+        let leaf_node = Leaf.new<K, V>(order, 0, null, func() : Nat = 0, func(_ : V, _ : V) : Int8 = 0);
 
         {
             order;
@@ -110,7 +110,7 @@ module MaxBpTree {
             let (max_key, max_val) = max;
             let max_index = branch.0[C.MAX_INDEX];
 
-            if (cmp_key(max_key, key) == #equal and cmp_val(val, max_val) == #less) {
+            if (cmp_key(max_key, key) == 0 and cmp_val(val, max_val) == -1) {
                 branch.4[C.MAX] := ?(key, val);
                 branch.0[C.MAX_INDEX] := child_index;
 
@@ -122,7 +122,7 @@ module MaxBpTree {
                         let #branch(node) or #leaf(node) = child;
                         assert i == node.0[C.INDEX];
                         let ?node_max = node.4[C.MAX] else Debug.trap("insert(inc_branch_subtree_size): should have a max key");
-                        assert cmp_key(node_max.1, max_val) == #equal;
+                        assert cmp_key(node_max.1, max_val) == 0;
                         continue _loop;
                     };
 
@@ -140,7 +140,7 @@ module MaxBpTree {
     };
 
     public func _insert_in_leaf(max_bp_tree : MaxBpTree<Nat, Nat>, cmp_key : CmpFn<Nat>, cmp_val : CmpFn<Nat>, leaf_node : Leaf<Nat, Nat>, key : Nat, val : Nat) : ?Nat {
-        let int_elem_index = ArrayMut.binary_search(leaf_node.3, Utils.adapt_cmp(cmp_key), key, leaf_node.0[C.COUNT]);
+        let int_elem_index = ArrayMut.binary_search_int8(leaf_node.3, Utils.adapt_cmp_int8(cmp_key), key, leaf_node.0[C.COUNT]);
         let elem_index = if (int_elem_index >= 0) Int.abs(int_elem_index) else Int.abs(int_elem_index + 1);
 
         if (int_elem_index >= 0 and int_elem_index < leaf_node.0[C.COUNT]) {
@@ -159,7 +159,7 @@ module MaxBpTree {
         let (max_key, max_val) = max;
         let max_index = leaf_node.0[C.MAX_INDEX];
 
-        if (cmp_key(max_key, key) == #equal and cmp_val(val, max_val) == #less) {
+        if (cmp_key(max_key, key) == 0 and cmp_val(val, max_val) == -1) {
             leaf_node.4[C.MAX] := null;
 
             label _loop for (i in Iter.range(0, leaf_node.0[C.COUNT] - 1)) {
@@ -183,8 +183,8 @@ module MaxBpTree {
             let branch_max_key = max.0;
             let branch_max_val = max.1;
 
-            // let should_continue = cmp_val(new_max_val, branch_max_val) == #greater;
-            let is_greater = cmp_val(new_max_val, branch_max_val) == #greater;
+            // let should_continue = cmp_val(new_max_val, branch_max_val) == +1;
+            let is_greater = cmp_val(new_max_val, branch_max_val) == +1;
 
             if (not is_greater) {
                 new_max := (branch_max_key, branch_max_val);
@@ -224,7 +224,7 @@ module MaxBpTree {
                 let (max_key, max_val) = max;
                 let max_index = branch.0[C.MAX_INDEX];
 
-                if (cmp_key(max_key, key) == #equal and cmp_val(val, max_val) == #less) {
+                if (cmp_key(max_key, key) == 0 and cmp_val(val, max_val) == -1) {
                     branch.4[C.MAX] := null;
 
                     label _loop for (i in Iter.range(0, branch.0[C.COUNT] - 1)) {
@@ -235,7 +235,7 @@ module MaxBpTree {
                             let #branch(node) or #leaf(node) : CommonNodeFields<Nat, Nat> = child;
                             assert i == node.0[C.INDEX];
                             let ?node_max = node.4[C.MAX] else Debug.trap("insert(inc_branch_subtree_size): should have a max key");
-                            assert cmp_key(node_max.1, max_val) == #equal;
+                            assert cmp_key(node_max.1, max_val) == 0;
                             continue _loop;
                         };
 
@@ -326,7 +326,7 @@ module MaxBpTree {
                                 let (node_max_key, node_max_val) = node_max;
 
                                 let cmp_result = cmp_val(node_max_val, parent_max_val);
-                                if (cmp_result == #greater or (cmp_result == #equal and cmp_key(node_max_key, parent_max_key) == #equal)) {
+                                if (cmp_result == +1 or (cmp_result == 0 and cmp_key(node_max_key, parent_max_key) == 0)) {
                                     parent.4[C.MAX] := ?(node_max_key, node_max_val);
                                     parent.0[C.MAX_INDEX] := j;
                                 } else if (parent.0[C.MAX_INDEX] >= right_index) {
@@ -475,7 +475,7 @@ module MaxBpTree {
             let (max_key, max_val) = max;
             let max_index = branch.0[C.MAX_INDEX];
 
-            if (cmp_key(max_key, key) != #equal) return;
+            if (cmp_key(max_key, key) != 0) return;
 
             branch.4[C.MAX] := null;
 
@@ -487,7 +487,7 @@ module MaxBpTree {
                     let #branch(node) or #leaf(node) : CommonNodeFields<Nat, Nat> = child;
                     assert i == node.0[C.INDEX];
                     let ?node_max = node.4[C.MAX] else Debug.trap("insert(update_path_downstream): should have a max key");
-                    assert cmp_key(node_max.1, max_val) == #equal;
+                    assert cmp_key(node_max.1, max_val) == 0;
                     continue _loop;
                 };
 
@@ -497,7 +497,7 @@ module MaxBpTree {
 
         let leaf_node = Methods.get_leaf_node_and_update_branch_path(self, cmp_key, key, update_path_downstream);
 
-        let int_elem_index = ArrayMut.binary_search(leaf_node.3, Utils.adapt_cmp(cmp_key), key, leaf_node.0[C.COUNT]);
+        let int_elem_index = ArrayMut.binary_search_int8(leaf_node.3, Utils.adapt_cmp_int8(cmp_key), key, leaf_node.0[C.COUNT]);
 
         let elem_index = if (int_elem_index >= 0) Int.abs(int_elem_index) else {
             func inc_branch_subtree_size(branch : Branch<Nat, Nat>) {
@@ -549,7 +549,7 @@ module MaxBpTree {
                 let ?max = branch.4[C.MAX] else Debug.trap("insert(update_path_downstream): should have a max value");
                 let (max_key, max_val) = max;
 
-                if (cmp_key(max_key, key) != #equal) return true;
+                if (cmp_key(max_key, key) != 0) return true;
 
                 branch.4[C.MAX] := null;
 
@@ -567,7 +567,7 @@ module MaxBpTree {
             let ?max = branch.4[C.MAX] else Debug.trap("5: insert (replace entry): should have a max value");
             let (branch_max_key, branch_max_val) = max;
 
-            let is_greater = cmp_val(new_max_val, branch_max_val) == #greater;
+            let is_greater = cmp_val(new_max_val, branch_max_val) == +1;
 
             if (not is_greater) {
                 new_max := (branch_max_key, branch_max_val);

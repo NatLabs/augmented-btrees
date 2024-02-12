@@ -15,8 +15,8 @@ module Methods {
     public type Branch<K, V> = T.Branch<K, V>;
     type CommonFields<K, V> = T.CommonFields<K, V>;
     type CommonNodeFields<K, V> = T.CommonNodeFields<K, V>;
-    type MultiCmpFn<A, B> = InternalTypes.MultiCmpFn<A, B>;
-    type CmpFn<A> = InternalTypes.CmpFn<A>;
+    type CmpFn<A> = T.CmpFn<A>;
+    type MultiCmpFn<A, B> = T.MultiCmpFn<A, B>;
 
     type UpdateLeafMaxFn<K, V> = T.UpdateLeafMaxFn<K, V>;
     type UpdateBranchMaxFn<K, V> = T.UpdateBranchMaxFn<K, V>;
@@ -33,7 +33,7 @@ module Methods {
         let max_key = max.0;
         let max_val = max.1;
 
-        if (cmp_val(val, max_val) == #greater) {
+        if (cmp_val(val, max_val) == +1) {
             leaf.4[C.MAX] := ?(key, val);
             leaf.0[C.MAX_INDEX] := index;
         };
@@ -55,7 +55,7 @@ module Methods {
                 let branch_max_key = max.0;
                 let branch_max_val = max.1;
 
-                if (cmp_val(child_max_val, branch_max_val) == #greater) {
+                if (cmp_val(child_max_val, branch_max_val) == +1) {
                     branch.4[C.MAX] := ?(child_max_key, child_max_val);
                     branch.0[C.MAX_INDEX] := index;
 

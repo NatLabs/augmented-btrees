@@ -82,6 +82,12 @@ module {
         };
     };
 
+    public func adapt_cmp_int8<K, V>(cmp : T.Int8CmpFn<K>) : T.Int8MultiCmpFn<K, (K, V)> {
+        func(a : K, b : (K, V)) : Int8 {
+            cmp(a, b.0);
+        };
+    };
+
     public func tuple_cmp<K>(cmp: (K, K) -> Order) : ((K, Any), (K, Any)) -> Order {
         func ((a, _) : (K, Any), (b, _) : (K, Any)): Order {
             cmp(a, b)

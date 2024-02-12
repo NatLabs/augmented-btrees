@@ -17,7 +17,7 @@ import Itertools "mo:itertools/Iter";
 import BTree "mo:stableheapbtreemap/BTree";
 
 import Utils "../src/internal/Utils";
-import { MaxBpTree } "../src";
+import { MaxBpTree; Cmp } "../src";
 import MaxBpTreeMethods "../src/MaxBpTree/Methods";
 import T "../src/MaxBpTree/Types";
 
@@ -62,7 +62,7 @@ func max_bp_tree_test(order : Nat, random : Buffer.Buffer<(Nat, Nat)>, sorted_by
             assert max_bp_tree.order == order;
 
             label for_loop for ((i, (k, v)) in Itertools.enumerate(random.vals())) {
-                ignore MaxBpTree.insert(max_bp_tree, Nat.compare, Nat.compare, k, v);
+                ignore MaxBpTree.insert(max_bp_tree, Cmp.Nat, Cmp.Nat, k, v);
 
                 let subtree_size = switch (max_bp_tree.root) {
                     case (#branch(node)) { node.0 [C.SUBTREE_SIZE] };
@@ -71,7 +71,7 @@ func max_bp_tree_test(order : Nat, random : Buffer.Buffer<(Nat, Nat)>, sorted_by
 
                 assert subtree_size == i + 1;
 
-                if (not MaxBpTreeMethods.validate_max_path(max_bp_tree, Nat.compare)) {
+                if (not MaxBpTreeMethods.validate_max_path(max_bp_tree, Cmp.Nat)) {
                     Debug.print("mismatch at index " # debug_show i);
                     Debug.print("inserting " # debug_show (k, v));
                     Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bp_tree)));
@@ -110,14 +110,14 @@ func max_bp_tree_test(order : Nat, random : Buffer.Buffer<(Nat, Nat)>, sorted_by
             assert max_bp_tree.order == order;
 
             let (init_key, init_val) = random.get(0);
-            ignore MaxBpTree.insert(max_bp_tree, Nat.compare, Nat.compare, init_key, init_val);
+            ignore MaxBpTree.insert(max_bp_tree, Cmp.Nat, Cmp.Nat, init_key, init_val);
             var max = (init_key, init_val);
 
             assert MaxBpTree.maxValue(max_bp_tree) == ?max;
 
             label for_loop for ((i, (k, v)) in Itertools.enumerate(Itertools.skip(random.vals(), 1))) {
 
-                ignore MaxBpTree.insert(max_bp_tree, Nat.compare, Nat.compare, k, v);
+                ignore MaxBpTree.insert(max_bp_tree, Cmp.Nat, Cmp.Nat, k, v);
 
                 if (v > max.1) {
                     max := (k, v);
@@ -144,7 +144,7 @@ func max_bp_tree_test(order : Nat, random : Buffer.Buffer<(Nat, Nat)>, sorted_by
             for ((k, v) in random.vals()) {
                 if (not BTree.has(btree, Nat.compare, v)) {
                     ignore BTree.insert<Nat, Nat>(btree, Nat.compare, v, k);
-                    ignore MaxBpTree.insert(max_bp_tree, Nat.compare, Nat.compare, k, v);
+                    ignore MaxBpTree.insert(max_bp_tree, Cmp.Nat, Cmp.Nat, k, v);
                 };
             };
 
@@ -166,10 +166,10 @@ func max_bp_tree_test(order : Nat, random : Buffer.Buffer<(Nat, Nat)>, sorted_by
                     new_val := gen_val();
                 };
 
-                let recieved_prev_val = MaxBpTree.insert(max_bp_tree, Nat.compare, Nat.compare, key, new_val);
+                let recieved_prev_val = MaxBpTree.insert(max_bp_tree, Cmp.Nat, Cmp.Nat, key, new_val);
                 assert ?prev_val == recieved_prev_val;
 
-                if (not MaxBpTreeMethods.validate_max_path(max_bp_tree, Nat.compare)) {
+                if (not MaxBpTreeMethods.validate_max_path(max_bp_tree, Cmp.Nat)) {
                     Debug.print("mismatch at index " # debug_show i);
                     Debug.print("replacing " # debug_show (key, prev_val) # " with " # debug_show (key, new_val));
                     Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bp_tree)));
@@ -203,7 +203,7 @@ func max_bp_tree_test(order : Nat, random : Buffer.Buffer<(Nat, Nat)>, sorted_by
         "maxValue(): replacing entries with lower values",
         func() {
             let sorted_by_val = Itertools.toBuffer<(Nat, Nat)>(random.vals());
-            let max_bp_tree = MaxBpTree.fromEntries(?order, sorted_by_val.vals(), Nat.compare, Nat.compare);
+            let max_bp_tree = MaxBpTree.fromEntries(?order, sorted_by_val.vals(), Cmp.Nat, Cmp.Nat);
             // assert MaxBpTree.size(max_bp_tree) == random.size();
             sorted_by_val.sort(Utils.tuple_cmp_val(Nat.compare));
 
@@ -216,7 +216,7 @@ func max_bp_tree_test(order : Nat, random : Buffer.Buffer<(Nat, Nat)>, sorted_by
 
             for ((i, (k, v)) in Itertools.enumerate(Itertools.take(max_vals, limit))) {
                 let expected = v;
-                let recieved = MaxBpTree.get(max_bp_tree, Nat.compare, k);
+                let recieved = MaxBpTree.get(max_bp_tree, Cmp.Nat, k);
 
                 if (not (?expected == recieved)) {
                     Debug.print("mismatch at key " # debug_show k # " index " # debug_show i);
@@ -239,9 +239,9 @@ func max_bp_tree_test(order : Nat, random : Buffer.Buffer<(Nat, Nat)>, sorted_by
                     assert false;
                 };
 
-                assert ?v == MaxBpTree.insert(max_bp_tree, Nat.compare, Nat.compare, k, 0);
+                assert ?v == MaxBpTree.insert(max_bp_tree, Cmp.Nat, Cmp.Nat, k, 0);
 
-                if (not MaxBpTreeMethods.validate_max_path(max_bp_tree, Nat.compare)) {
+                if (not MaxBpTreeMethods.validate_max_path(max_bp_tree, Cmp.Nat)) {
                     Debug.print("mismatch at index " # debug_show i);
                     Debug.print("setting value in " # debug_show (k, v) # " to zero");
                     Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bp_tree)));
@@ -262,7 +262,7 @@ func max_bp_tree_test(order : Nat, random : Buffer.Buffer<(Nat, Nat)>, sorted_by
             sorted_by_val.sort(Utils.tuple_cmp_val(Nat.compare));
             Buffer.reverse(sorted_by_val);
 
-            let max_bp_tree = MaxBpTree.fromEntries(?order, random.vals(), Nat.compare, Nat.compare);
+            let max_bp_tree = MaxBpTree.fromEntries(?order, random.vals(), Cmp.Nat, Cmp.Nat);
             assert max_bp_tree.order == order;
 
             label for_loop for ((i, expected) in Itertools.enumerate(sorted_by_val.vals())) {
@@ -274,7 +274,7 @@ func max_bp_tree_test(order : Nat, random : Buffer.Buffer<(Nat, Nat)>, sorted_by
 
                 assert MaxBpTree.size(max_bp_tree) == (sorted_by_val.size() - i : Nat);
 
-                let ?removed = MaxBpTree.removeMaxValue(max_bp_tree, Nat.compare, Nat.compare) else Debug.trap("max value is null");
+                let ?removed = MaxBpTree.removeMaxValue(max_bp_tree, Cmp.Nat, Cmp.Nat) else Debug.trap("max value is null");
                 
                 // Debug.print("deleting: " # debug_show expected # " at index " # debug_show i);
                 // Debug.print("expected vs received: " # debug_show (expected, MaxBpTree.maxValue(max_bp_tree)));
@@ -288,7 +288,7 @@ func max_bp_tree_test(order : Nat, random : Buffer.Buffer<(Nat, Nat)>, sorted_by
                     Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bp_tree)));
                 };
 
-                if (not MaxBpTreeMethods.validate_max_path(max_bp_tree, Nat.compare)) {
+                if (not MaxBpTreeMethods.validate_max_path(max_bp_tree, Cmp.Nat)) {
                     Debug.print("mismatch at index " # debug_show i);
                     Debug.print("removing max " # debug_show (max_k, max_v));
                     Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bp_tree)));
@@ -310,7 +310,7 @@ func max_bp_tree_test(order : Nat, random : Buffer.Buffer<(Nat, Nat)>, sorted_by
             let sorted_by_val = Itertools.toBuffer<(Nat, Nat)>(random.vals());
             sorted_by_val.sort(Utils.tuple_cmp_val(Nat.compare));
 
-            let max_bp_tree = MaxBpTree.fromEntries(?order, random.vals(), Nat.compare, Nat.compare);
+            let max_bp_tree = MaxBpTree.fromEntries(?order, random.vals(), Cmp.Nat, Cmp.Nat);
 
             let removed_map = TrieMap.TrieMap<Nat, Bool>(Nat.equal, Nat32.fromNat);
             var removed_max_entries = 0;
@@ -320,7 +320,7 @@ func max_bp_tree_test(order : Nat, random : Buffer.Buffer<(Nat, Nat)>, sorted_by
             label for_loop for ((i, (k, v)) in Itertools.enumerate(random.vals())) {
                 // Debug.print("removing: ( " # debug_show k # ", " # debug_show v # " ) at index " # debug_show i);
 
-                assert ?v == MaxBpTree.get(max_bp_tree, Nat.compare, k);
+                assert ?v == MaxBpTree.get(max_bp_tree, Cmp.Nat, k);
 
                 let expected = sorted_by_val.get(max_index);
                 let ?recieved = MaxBpTree.maxValue(max_bp_tree) else Debug.trap("max value is null");
@@ -336,9 +336,9 @@ func max_bp_tree_test(order : Nat, random : Buffer.Buffer<(Nat, Nat)>, sorted_by
 
                 assert MaxBpTree.size(max_bp_tree) == (random.size() - i : Nat);
 
-                assert ?v == MaxBpTree.remove(max_bp_tree, Nat.compare, Nat.compare, k);
+                assert ?v == MaxBpTree.remove(max_bp_tree, Cmp.Nat, Cmp.Nat, k);
 
-                if (not MaxBpTreeMethods.validate_max_path(max_bp_tree, Nat.compare)) {
+                if (not MaxBpTreeMethods.validate_max_path(max_bp_tree, Cmp.Nat)) {
                     Debug.print("mismatch at index " # debug_show i);
                     Debug.print("removing " # debug_show (k, v));
                     Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bp_tree)));
@@ -365,14 +365,14 @@ func max_bp_tree_test(order : Nat, random : Buffer.Buffer<(Nat, Nat)>, sorted_by
 };
 
 func bptree_tests(order : Nat, random : Buffer.Buffer<(Nat, Nat)>, sorted_by_key : Buffer.Buffer<(Nat, Nat)>) {
-    let bptree = MaxBpTree.fromEntries(?order, random.vals(), Nat.compare, Nat.compare);
+    let bptree = MaxBpTree.fromEntries(?order, random.vals(), Cmp.Nat, Cmp.Nat);
 
     test(
         "getIndex",
         func() {
             for (i in Itertools.range(0, sorted_by_key.size())) {
                 let (key, _) = sorted_by_key.get(i);
-                let rank = MaxBpTree.getIndex(bptree, Nat.compare, key);
+                let rank = MaxBpTree.getIndex(bptree, Cmp.Nat, key);
 
                 if (not (rank == i)) {
                     Debug.print("sorted_by_key: " # debug_show Buffer.toArray(sorted_by_key));
@@ -405,7 +405,7 @@ func bptree_tests(order : Nat, random : Buffer.Buffer<(Nat, Nat)>, sorted_by_key
         func() {
             let _rand = Iter.toArray<(Nat, Nat)>(Itertools.take(random.vals(), 100));
 
-            let bptree = MaxBpTree.fromEntries(?order, _rand.vals(), Nat.compare, Nat.compare);
+            let bptree = MaxBpTree.fromEntries(?order, _rand.vals(), Cmp.Nat, Cmp.Nat);
             let rand = Array.sort<(Nat, Nat)>(_rand, Utils.tuple_cmp(Nat.compare));
 
             for (i in Itertools.range(0, MaxBpTree.size(bptree))) {
@@ -416,13 +416,13 @@ func bptree_tests(order : Nat, random : Buffer.Buffer<(Nat, Nat)>, sorted_by_key
 
                     if (
                         not Itertools.equal<(Nat, Nat)>(
-                            MaxBpTree.scan(bptree, Nat.compare, start_key, end_key),
+                            MaxBpTree.scan(bptree, Cmp.Nat, start_key, end_key),
                             Itertools.fromArraySlice(rand, i, j + 1),
                             func(a : (Nat, Nat), b : (Nat, Nat)) : Bool = a == b,
                         )
                     ) {
                         Debug.print("mismatch: " # debug_show (i, j));
-                        Debug.print("scan " # debug_show Iter.toArray(MaxBpTree.scan(bptree, Nat.compare, start_key, end_key)));
+                        Debug.print("scan " # debug_show Iter.toArray(MaxBpTree.scan(bptree, Cmp.Nat, start_key, end_key)));
                         Debug.print("expected " # debug_show Iter.toArray(Itertools.fromArraySlice(rand, i, j + 1)));
                         assert false;
                     };
@@ -436,7 +436,7 @@ func bptree_tests(order : Nat, random : Buffer.Buffer<(Nat, Nat)>, sorted_by_key
         func() {
             let _rand = Iter.toArray<(Nat, Nat)>(Itertools.take(random.vals(), 100));
 
-            let bptree = MaxBpTree.fromEntries(?order, _rand.vals(), Nat.compare, Nat.compare);
+            let bptree = MaxBpTree.fromEntries(?order, _rand.vals(), Cmp.Nat, Cmp.Nat);
             let rand = Array.sort<(Nat, Nat)>(_rand, Utils.tuple_cmp(Nat.compare));
 
             for (i in Itertools.range(0, MaxBpTree.size(bptree))) {

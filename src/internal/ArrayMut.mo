@@ -6,10 +6,10 @@ import T "Types";
 
 module {
 
-    public func shift_by<A>(arr: [var ?A], start: Nat, end: Nat, shift: Int) {
+    public func shift_by<A>(arr : [var ?A], start : Nat, end : Nat, shift : Int) {
         if (shift == 0) return;
 
-        if (shift > 0){
+        if (shift > 0) {
             var i = end; // exclusive
             while (i > start) {
                 arr[Int.abs(shift + i - 1)] := arr[i - 1];
@@ -25,10 +25,10 @@ module {
             arr[i] := null;
             i += 1;
         };
-        
+
     };
 
-    public func insert<A>(arr: [var ?A], index: Nat, item: ?A, size: Nat) {
+    public func insert<A>(arr : [var ?A], index : Nat, item : ?A, size : Nat) {
         var i = size;
         while (i > index) {
             arr[i] := arr[i - 1];
@@ -38,7 +38,7 @@ module {
         arr[index] := item;
     };
 
-    public func remove<A>(arr: [var ?A], index: Nat, size: Nat) : ?A {
+    public func remove<A>(arr : [var ?A], index : Nat, size : Nat) : ?A {
         if (size == 0) return null;
 
         var i = index;
@@ -54,9 +54,9 @@ module {
         item;
     };
 
-    public func linear_search<B, A>(arr: [var ?A], cmp: T.MultiCmpFn<B, A>, search_key: B, arr_len: Nat) : Int {
+    public func linear_search<B, A>(arr : [var ?A], cmp : T.MultiCmpFn<B, A>, search_key : B, arr_len : Nat) : Int {
         var i = 0;
-        
+
         while (i < arr_len) {
             let ?val = arr[i] else Debug.trap("linear_search: accessed a null value");
             switch (cmp(search_key, val)) {
@@ -129,8 +129,8 @@ module {
         };
     };
 
-    public func binary_search_variant<B, A>(arr : [var ?A], cmp : T.MultiCmpFn<B, A>, search_key : B, arr_len : Nat) : { #Found: Nat; #NotFound: Nat; } {
-        if (arr_len == 0) return #NotFound(0); // should insert at index Int.abs(i + 1)
+    public func binary_search_int8<B, A>(arr : [var ?A], cmp : T.Int8MultiCmpFn<B, A>, search_key : B, arr_len : Nat) : Int {
+        if (arr_len == 0) return -1; // should insert at index Int.abs(i + 1)
         var l = 0;
 
         // arr_len will always be between 4 and 512
@@ -141,17 +141,16 @@ module {
 
             let ?val = arr[mid] else Debug.trap("1. binary_search: accessed a null value");
 
-            switch (cmp(search_key, val)) {
-                case (#less) {
-                    r := mid;
-                };
-                case (#greater) {
-                    l := mid + 1;
-                };
-                case (#equal) {
-                    return #Found(mid);
-                };
+            let result = cmp(search_key, val);
+            if (result == -1) {
+                r := mid;
+
+            } else if (result == 1) {
+                l := mid + 1;
+            } else {
+                return mid;
             };
+
         };
 
         let insertion = l;
@@ -164,11 +163,11 @@ module {
         // -1, -2, -3
         switch (arr[insertion]) {
             case (?val) {
-                switch (cmp(search_key, val)) {
-                    case (#equal) #Found(insertion);
-                    case (#less) #NotFound(insertion);
-                    case (#greater) #NotFound(insertion + 1);
-                };
+                let result = cmp(search_key, val);
+
+                if (result == 0) insertion
+                else if (result == -1) -(insertion + 1)
+                else  -(insertion + 2);
             };
             case (_) {
                 Debug.print("insertion = " # debug_show insertion);
@@ -188,4 +187,4 @@ module {
             };
         };
     };
-}
+};

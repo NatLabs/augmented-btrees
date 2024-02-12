@@ -22,8 +22,8 @@ module Leaf {
     public type Branch<K, V> = T.Branch<K, V>;
     type CommonFields<K, V> = T.CommonFields<K, V>;
     type CommonNodeFields<K, V> = T.CommonNodeFields<K, V>;
-    type MultiCmpFn<A, B> = InternalTypes.MultiCmpFn<A, B>;
-    type CmpFn<A> = InternalTypes.CmpFn<A>;
+    type CmpFn<A> = T.CmpFn<A>;
+    type MultiCmpFn<A, B> = T.MultiCmpFn<A, B>;
     type UpdateLeafMaxFn<K, V> = T.UpdateLeafMaxFn<K, V>;
     type UpdateBranchMaxFn<K, V> = T.UpdateBranchMaxFn<K, V>;
     type ResetMaxFn<K, V> = T.ResetMaxFn<K, V>;
@@ -265,7 +265,7 @@ module Leaf {
         let is_adj_node_equal_to_parent_max = parent.0[C.MAX_INDEX] == adj_node.0[C.INDEX];
         
         // switch (parent.4[C.MAX], adj_node.4[C.MAX]) {
-        //     case (?parent_max, ?adj_max) cmp_key(parent_max.0, adj_max.0) == #equal;
+        //     case (?parent_max, ?adj_max) cmp_key(parent_max.0, adj_max.0) == 0;
         //     case (_, _) false;
         // };
 
@@ -285,7 +285,7 @@ module Leaf {
 
                 // update max if a greater value was inserted
                 let ?leaf_max = leaf_node.4[C.MAX] else Debug.trap("Leaf.redistribute_keys: max is null");
-                if (cmp_val(kv.1, leaf_max.1) == #greater) {
+                if (cmp_val(kv.1, leaf_max.1) == +1) {
                     leaf_node.4[C.MAX] := ?(kv.0, kv.1);
                     leaf_node.0[C.MAX_INDEX] := data_to_move - i - 1;
                 };
@@ -297,7 +297,7 @@ module Leaf {
                 };
                 
                 // switch(adj_node.4[C.MAX]){
-                //     case (?adj_max) if (cmp_key(kv.0, adj_max.0) == #equal) ;
+                //     case (?adj_max) if (cmp_key(kv.0, adj_max.0) == 0) ;
                 //     case (_) {};
                 // };
 
@@ -315,7 +315,7 @@ module Leaf {
 
                 // update max if a greater value was inserted
                 let ?leaf_max = leaf_node.4[C.MAX] else Debug.trap("Leaf.redistribute_keys: max is null");
-                if (cmp_val(kv.1, leaf_max.1) == #greater) {
+                if (cmp_val(kv.1, leaf_max.1) == +1) {
                     leaf_node.4[C.MAX] := ?(kv.0, kv.1);
                     leaf_node.0[C.MAX_INDEX] := leaf_node.0[C.COUNT] + i;
                 };
@@ -326,7 +326,7 @@ module Leaf {
                 };
 
                 // switch(adj_node.4[C.MAX]){
-                //     case (?adj_max) if (cmp_key(kv.0, adj_max.0) == #equal) adj_node.4[C.MAX] := null;
+                //     case (?adj_max) if (cmp_key(kv.0, adj_max.0) == 0) adj_node.4[C.MAX] := null;
                 //     case (_) {};
                 // };
 
@@ -372,7 +372,7 @@ module Leaf {
         if (is_adj_node_equal_to_parent_max) {
             switch(parent.4[C.MAX], adj_node.4[C.MAX]){
                 case (?parent_max, ?adj_max) {
-                    if (cmp_key(parent_max.0, adj_max.0) != #equal) {
+                    if (cmp_key(parent_max.0, adj_max.0) != 0) {
                         parent.4[C.MAX] := ?(parent_max.0, parent_max.1);
                         parent.0[C.MAX_INDEX] := leaf_node.0[C.INDEX];
                     };

@@ -4,9 +4,9 @@ import InternalTypes "../internal/Types";
 module {
     type Order = Order.Order;
 
-    public type CmpFn<K> = InternalTypes.CmpFn<K>;
+    public type CmpFn<A> = (A, A) -> Int8;
+    public type MultiCmpFn<A, B> = (A, B) -> Int8;
 
-    
     public type MaxBpTree<K, V> = {
         order : Nat;
         var root : Node<K, V>;

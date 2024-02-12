@@ -11,7 +11,7 @@ import Fuzz "mo:fuzz";
 import BTree "mo:stableheapbtreemap/BTree";
 import Map "mo:map/Map";
 
-import { BpTree; MaxBpTree } "../src";
+import { BpTree; MaxBpTree; Cmp } "../src";
 
 module {
 
@@ -43,8 +43,8 @@ module {
             ignore BpTree.insert(bptree, Nat.compare, key, val);
             ignore BpTree.insert(bptree2, Nat.compare, key, val);
             
-            ignore MaxBpTree.insert(max_bp_tree, Nat.compare, Nat.compare, key, val);
-            ignore MaxBpTree.insert(max_bp_tree2, Nat.compare, Nat.compare, key, val);
+            ignore MaxBpTree.insert(max_bp_tree, Cmp.Nat, Cmp.Nat, key, val);
+            ignore MaxBpTree.insert(max_bp_tree2, Cmp.Nat, Cmp.Nat, key, val);
         };
 
         let sorted = Buffer.clone(entries);
@@ -90,27 +90,27 @@ module {
                 };
                 case ("Max B+Tree", "getIndex()") {
                     for ((key, val) in entries.vals()) {
-                        ignore MaxBpTree.getIndex(max_bp_tree, Nat.compare, key);
+                        ignore MaxBpTree.getIndex(max_bp_tree, Cmp.Nat, key);
                     };
                 };
                 case ("Max B+Tree", "getFloor()") {
                     for (kv in entries.vals()) {
-                        ignore MaxBpTree.getFloor(max_bp_tree, Nat.compare, kv.0);
+                        ignore MaxBpTree.getFloor(max_bp_tree, Cmp.Nat, kv.0);
                     };
                 };
                 case ("Max B+Tree", "getCeiling()") {
                     for (kv in entries.vals()) { 
-                        ignore MaxBpTree.getFloor(max_bp_tree, Nat.compare, kv.0);
+                        ignore MaxBpTree.getFloor(max_bp_tree, Cmp.Nat, kv.0);
                      };
                 };
                 case ("Max B+Tree", "removeMin()") {
                     while (MaxBpTree.size(max_bp_tree) > 0){
-                        ignore MaxBpTree.removeMin(max_bp_tree, Nat.compare, Nat.compare);
+                        ignore MaxBpTree.removeMin(max_bp_tree, Cmp.Nat, Cmp.Nat);
                     };
                 };
                 case ("Max B+Tree", "removeMax()") {
                     while (MaxBpTree.size(max_bp_tree2) > 0){
-                        ignore MaxBpTree.removeMax(max_bp_tree2, Nat.compare, Nat.compare);
+                        ignore MaxBpTree.removeMax(max_bp_tree2, Cmp.Nat, Cmp.Nat);
                     };
                 };
 
