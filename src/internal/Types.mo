@@ -8,6 +8,9 @@ module {
     public type CmpFn<A> = (A, A) -> Order;
     public type MultiCmpFn<A, B> = (A, B) -> Order;
 
+    public type Int8CmpFn<A> = (A, A) -> Int8;
+    public type Int8MultiCmpFn<A, B> = (A, B) -> Int8;
+
     type CursorError = {
         #IndexOutOfBounds;
     };

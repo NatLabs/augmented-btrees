@@ -33,6 +33,7 @@ module {
         tmp;
     };
 
+
     public func validate_array_equal_count<T>(arr : [var ?T], count : Nat) : Bool {
         var i = 0;
 
@@ -81,8 +82,20 @@ module {
         };
     };
 
+    public func adapt_cmp_int8<K, V>(cmp : T.Int8CmpFn<K>) : T.Int8MultiCmpFn<K, (K, V)> {
+        func(a : K, b : (K, V)) : Int8 {
+            cmp(a, b.0);
+        };
+    };
+
     public func tuple_cmp<K>(cmp: (K, K) -> Order) : ((K, Any), (K, Any)) -> Order {
         func ((a, _) : (K, Any), (b, _) : (K, Any)): Order {
+            cmp(a, b)
+        };
+    };
+
+    public func tuple_cmp_val<V>(cmp: (V, V) -> Order) : ((Any, V), (Any, V)) -> Order {
+        func ((_, a) : (Any, V), (_, b) : (Any, V)): Order {
             cmp(a, b)
         };
     };
