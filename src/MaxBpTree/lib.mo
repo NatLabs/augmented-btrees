@@ -253,20 +253,9 @@ module MaxBpTree {
         let prev_value = null;
 
         if (leaf_node.count < max_bp_tree.order) {
-            // shift elems to the right and insert the new key-value pair
-            var j = leaf_node.count;
-
-            while (j > elem_index) {
-                leaf_node.kvs[j] := leaf_node.kvs[j - 1];
-                j -= 1;
-            };
-
-            leaf_node.kvs[elem_index] := ?entry;
-            leaf_node.count += 1;
-
+            Leaf.insert(leaf_node, cmp_val, elem_index, entry);
             max_bp_tree.size += 1;
 
-            Common.update_leaf_fields(leaf_node, cmp_val, elem_index, key, val);
             return prev_value;
         };
 
@@ -490,7 +479,10 @@ module MaxBpTree {
 
     public func _remove_from_leaf(self : MaxBpTree<Nat, Nat>, cmp_key : CmpFn<Nat>, cmp_val : CmpFn<Nat>, leaf_node : Leaf<Nat, Nat>, elem_index : Nat, called_independently : Bool) : ?Nat {
 
-        // remove parent key
+        let ?leaf_max = leaf_node.max else Debug.trap("remove: should have a max value");
+        let max_key = leaf_max.0;
+
+        // remove elem
         let ?entry = ArrayMut.remove(leaf_node.kvs, elem_index, leaf_node.count) else Debug.trap("1. remove: accessed a null value");
 
         let key = entry.0;
@@ -498,16 +490,15 @@ module MaxBpTree {
         self.size -= 1;
         leaf_node.count -= 1;
 
-        let ?leaf_max = leaf_node.max else Debug.trap("remove: should have a max value");
-        let max_key = leaf_max.0;
-
-        if (cmp_key(max_key, key) == #equal) {
+        if (leaf_max.2 == elem_index) {
             leaf_node.max := null;
 
             for (i in Iter.range(0, leaf_node.count - 1)) {
                 let ?kv = leaf_node.kvs[i] else Debug.trap("2. remove: accessed a null value");
                 Common.update_leaf_fields(leaf_node, cmp_val, i, kv.0, kv.1);
             };
+        }else if (leaf_max.2 > elem_index){
+            leaf_node.max := ?(leaf_max.0, leaf_max.1, leaf_max.2 - 1);
         };
 
         if (self.size == 0) return ?deleted;
@@ -838,11 +829,13 @@ module MaxBpTree {
     ///     assert MaxBpTree.removeMaxValue(max_bp_tree, Char.compare, Nat.compare) == ?('B', 3);
     /// ```
     public func removeMaxValue(self : MaxBpTree<Nat, Nat>, cmp_key : CmpFn<Nat>, cmp_val : CmpFn<Nat>) : ?(Nat, Nat) {
-        let ?(max_key, _) = MaxBpTree.maxValue(self) else return null;
+        let leaf = Methods.get_max_value_leaf_node(self);
+        let ?max = leaf.max else Debug.trap("removeMaxValue: should have a max value");
 
-        let ?v = remove(self, cmp_key, cmp_val, max_key) else return null;
+        assert leaf.kvs[max.2] == ?(max.0, max.1);
+        ignore _remove_from_leaf(self, cmp_key, cmp_val, leaf, max.2, true);
 
-        return ?(max_key, v);
+        return ?(max.0, max.1);
     };
 
     /// Returns a double ended iterator over the entries of the tree.

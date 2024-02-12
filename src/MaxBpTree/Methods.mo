@@ -155,9 +155,20 @@ module Methods {
         };
     };
 
-    public func cmp_key<K, V>(cmp : CmpFn<K>) : CmpFn<(K, V)> {
-        func(a : (K, V), b : (K, V)) : Order {
-            cmp(a.0, b.0);
+    public func get_max_value_leaf_node<K, V>(self : MaxBpTree<K, V>) : Leaf<K, V> {
+        var node = ?self.root;
+
+        loop {
+            switch (node) {
+                case (? #branch(branch)) {
+                    let ?(_, _, max_index) = branch.max else Debug.trap("get_max_value_leaf_node: accessed a null value");
+                    node := branch.children[max_index];
+                };
+                case (? #leaf(leaf_node)) {
+                    return leaf_node;
+                };
+                case (_) Debug.trap("get_max_leaf_node: accessed a null value");
+            };
         };
     };
 
@@ -555,6 +566,39 @@ module Methods {
         var j = if (end_index >= 0) Int.abs(end_index) + 1 else Int.abs(end_index) - 1 : Nat;
 
         Methods.new_iterator(left_node, i, right_node, j);
+    };
+
+    public func validate_max_path<K, V>(max_bptree : MaxBpTree<K, V>, cmp_val: CmpFn<V>) : Bool {
+
+        if (max_bptree.size == 0) return true;
+        
+        func validate(node : Node<K, V>) : Bool {
+            switch (node) {
+                case (#branch(branch)) {
+                    let ?max = branch.max else Debug.trap("1. validate_max_path: max is null");
+                    let ?#branch(node) or ?#leaf(node) : ?CommonNodeFields<K, V> = branch.children[max.2] else Debug.trap("2. validate_max_path: node is null");
+                    let ?node_max = node.max else Debug.trap("3. validate_max_path: node_max is null");
+
+                    let is_equal = cmp_val(max.1, node_max.1) == #equal;
+                    var are_children_valid = true;
+
+                    for (i in Iter.range(0, branch.count - 1)) {
+                        let ?child = branch.children[i] else Debug.trap("4. validate_max_path: child is null");
+                        are_children_valid := are_children_valid and validate(child);
+                    };
+
+                    is_equal and are_children_valid;
+                };
+                case (#leaf(leaf)) {
+                    let ?max = leaf.max else Debug.trap("leaf 1. validate_max_path: max is null");
+                    let ?elem = leaf.kvs[max.2] else Debug.trap("leaf 2. validate_max_path: elem is null");
+
+                    cmp_val(elem.1, max.1) == #equal;
+                };
+            };
+        };
+
+        validate(max_bptree.root);
     };
 
 };

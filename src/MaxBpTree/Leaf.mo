@@ -55,6 +55,32 @@ module Leaf {
         leaf_node;
     };
 
+    public func insert<K, V>(
+        leaf: Leaf<K, V>,
+        cmp_val: CmpFn<V>,
+        index: Nat,
+        kv: (K, V),
+    ){
+        var i = leaf.count;
+
+        switch(leaf.max){
+            case (?max) if (max.2 >= index) {
+                leaf.max := ?(max.0, max.1, max.2 + 1);
+            };
+            case (_) assert leaf.count == 0;
+        };
+
+        label while_loop while (i > index) {
+            leaf.kvs[i] := leaf.kvs[i - 1];
+            i -= 1;
+        };
+
+        Common.update_leaf_fields(leaf, cmp_val, index, kv.0, kv.1);
+
+        leaf.kvs[i] := ?kv;
+        leaf.count += 1;
+    };
+
     public func split<K, V>(
         leaf : Leaf<K, V>,
         elem_index : Nat,
@@ -126,7 +152,7 @@ module Leaf {
                 let ?kv = leaf.kvs[j] else Debug.trap("Leaf.split: kv is null");
                 Common.update_leaf_fields(leaf, cmp_val, j, kv.0, kv.1);
             }else if (j == elem_index) {
-                Common.update_leaf_fields(leaf, cmp_val, i, elem.0, elem.1);
+                Common.update_leaf_fields(leaf, cmp_val, j, elem.0, elem.1);
             };
 
             if (j == 0) break while_loop else j -= 1;
@@ -168,6 +194,53 @@ module Leaf {
 
     public func put<K, V>(leaf : Leaf<K, V>, index : Nat, kv : (K, V)) {
         leaf.kvs[index] := ?kv;
+    };
+
+    public func remove<K, V>(
+        leaf : Leaf<K, V>,
+        index : Nat,
+        count : Nat,
+        cmp_val : CmpFn<V>,
+    ) : ?(K, V) {
+        let removed = leaf.kvs[index];
+        
+        let ?max = leaf.max else Debug.trap("Leaf.remove: max is null");
+        let is_max_removed = max.2 == index;
+        if (is_max_removed) {
+            leaf.max := null
+        } else if (max.2 > index) {
+            leaf.max := ?(max.0, max.1, max.2 - 1);
+        };
+
+        var i = index;
+        while (i < (count - 1 : Nat)) {
+            leaf.kvs[i] := leaf.kvs[i + 1];
+
+            let ?kv = leaf.kvs[i] else Debug.trap("Leaf.remove: accessed a null value");
+
+            if (is_max_removed){
+                // update with the prev index as it will be updated after the loop
+                Common.update_leaf_fields(leaf, cmp_val, i, kv.0, kv.1);
+            };
+
+            i += 1;
+        };
+
+        leaf.kvs[count - 1] := null;
+
+        if (is_max_removed){
+            var i = 0;
+
+            while ( i < index){
+                let ?kv = leaf.kvs[i] else Debug.trap("Leaf.remove: accessed a null value");
+                Common.update_leaf_fields(leaf, cmp_val, i, kv.0, kv.1);
+                i += 1;
+            };
+        };
+
+        // self.count -=1;
+
+        removed;
     };
 
     public func redistribute_keys<K, V>(

@@ -33,6 +33,7 @@ module {
         tmp;
     };
 
+
     public func validate_array_equal_count<T>(arr : [var ?T], count : Nat) : Bool {
         var i = 0;
 
