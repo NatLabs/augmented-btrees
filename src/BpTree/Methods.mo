@@ -14,7 +14,6 @@ import BufferDeque "mo:buffer-deque/BufferDeque";
 import ArrayMut "../internal/ArrayMut";
 import Utils "../internal/Utils";
 import T "Types";
-import Cursor "Cursor";
 import InternalTypes "../internal/Types";
 import RevIter "mo:itertools/RevIter";
 
@@ -23,10 +22,9 @@ module Methods {
     let {Const = C} = T;
     type Iter<A> = Iter.Iter<A>;
     type Order = Order.Order;
-    type CmpFn<A> = (A, A) -> Order;
+    type CmpFn<A> = T.CmpFn<A>;
     type Result<A, B> = Result.Result<A, B>;
     type BufferDeque<A> = BufferDeque.BufferDeque<A>;
-    public type Cursor<K, V> = Cursor.Cursor<K, V>;
     public type RevIter<A> = RevIter.RevIter<A>;
 
     public type BpTree<K, V> = T.BpTree<K, V>;
@@ -35,7 +33,7 @@ module Methods {
     public type Branch<K, V> = T.Branch<K, V>;
     type CommonFields<K, V> = T.CommonFields<K, V>;
     type CommonNodeFields<K, V> = T.CommonNodeFields<K, V>;
-    type MultiCmpFn<A, B> = (A, B) -> Order;
+    type MultiCmpFn<A, B> = InternalTypes.MultiCmpFn<A, B>;
 
     public func depth<K, V>(bptree : BpTree<K, V>) : Nat {
         var node = ?bptree.root;
@@ -157,12 +155,6 @@ module Methods {
         };
     };
 
-    public func cmp_key<K, V>(cmp : CmpFn<K>) : CmpFn<(K, V)> {
-        func(a : (K, V), b : (K, V)) : Order {
-            cmp(a.0, b.0);
-        };
-    };
-
     public func extract<T>(arr : [var ?T], index : Nat) : ?T {
         let tmp = arr[index];
         arr[index] := null;
@@ -270,7 +262,7 @@ module Methods {
 
                 switch (child) {
                     case (? #branch(node)) {
-                        if (cmp(key, search_key) == #greater) {
+                        if (cmp(key, search_key) == +1) {
                             return get_node(node, key);
                         };
 
@@ -280,7 +272,7 @@ module Methods {
                         // subtract before comparison because we want the rank of the first element in the leaf node
                         rank -= node.0[C.COUNT];
 
-                        if (cmp(key, search_key) == #greater) {
+                        if (cmp(key, search_key) == +1) {
                             return node;
                         };
                     };

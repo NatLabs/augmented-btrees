@@ -152,18 +152,18 @@ module {
 
                 case ("B+Tree", "insert()") {
                     for ((key, val) in entries.vals()) {
-                        ignore BpTree.insert(bptree, Nat.compare, key, val);
+                        ignore BpTree.insert(bptree, Cmp.Nat, key, val);
                     };
                 };
                 case ("B+Tree", "replace()") {
                     for ((key, val) in replacements.vals()) {
-                        ignore BpTree.insert(bptree, Nat.compare, key, val);
+                        ignore BpTree.insert(bptree, Cmp.Nat, key, val);
                     };
                 };
                 case ("B+Tree", "get()") {
                     for (i in Iter.range(0, limit - 1)) {
                         let key = entries.get(i).0;
-                        ignore BpTree.get(bptree, Nat.compare, key);
+                        ignore BpTree.get(bptree, Cmp.Nat, key);
                     };
                 };
                 case ("B+Tree", "entries()") {
@@ -176,13 +176,13 @@ module {
                         let a = sorted.get(i).0;
                         let b = sorted.get(i + 99).0;
 
-                        for (kv in BpTree.scan(bptree, Nat.compare, ?a, ?b)) { ignore kv };
+                        for (kv in BpTree.scan(bptree, Cmp.Nat, ?a, ?b)) { ignore kv };
                         i += 100;
                     };
                 };
                 case ("B+Tree", "remove()") {
                     for ((k, v) in entries.vals()) {
-                        ignore BpTree.remove(bptree, Nat.compare, k);
+                        ignore BpTree.remove(bptree, Cmp.Nat, k);
                     };
                 };
 

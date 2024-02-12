@@ -5,7 +5,7 @@ import Iter "mo:base/Iter";
 import { test; suite } "mo:test";
 import Itertools "mo:itertools/Iter";
 
-import { BpTree } "../src";
+import { BpTree; Cmp } "../src";
 import ArrayMut "../src/internal/ArrayMut";
 import Utils "../src/internal/Utils";
 import {Const = C} "../src/BpTree/Types";
@@ -74,23 +74,23 @@ suite(
                 let arr = [var ?1, ?3, ?5, ?7, null];
                 var count = 4;
 
-                assert 0 == ArrayMut.binary_search(arr, Nat.compare, 1, count);
-                assert 1 == ArrayMut.binary_search(arr, Nat.compare, 3, count);
-                assert 2 == ArrayMut.binary_search(arr, Nat.compare, 5, count);
-                assert 3 == ArrayMut.binary_search(arr, Nat.compare, 7, count);
+                assert 0 == ArrayMut.binary_search(arr, Cmp.Nat, 1, count);
+                assert 1 == ArrayMut.binary_search(arr, Cmp.Nat, 3, count);
+                assert 2 == ArrayMut.binary_search(arr, Cmp.Nat, 5, count);
+                assert 3 == ArrayMut.binary_search(arr, Cmp.Nat, 7, count);
 
-                assert -1 == ArrayMut.binary_search(arr, Nat.compare, 0, count);
-                assert -2 == ArrayMut.binary_search(arr, Nat.compare, 2, count);
-                assert -3 == ArrayMut.binary_search(arr, Nat.compare, 4, count);
-                assert -4 == ArrayMut.binary_search(arr, Nat.compare, 6, count);
-                assert -5 == ArrayMut.binary_search(arr, Nat.compare, 8, count);
+                assert -1 == ArrayMut.binary_search(arr, Cmp.Nat, 0, count);
+                assert -2 == ArrayMut.binary_search(arr, Cmp.Nat, 2, count);
+                assert -3 == ArrayMut.binary_search(arr, Cmp.Nat, 4, count);
+                assert -4 == ArrayMut.binary_search(arr, Cmp.Nat, 6, count);
+                assert -5 == ArrayMut.binary_search(arr, Cmp.Nat, 8, count);
 
                 arr[4] := ?9;
                 count := 5;
 
-                assert 4 == ArrayMut.binary_search(arr, Nat.compare, 9, count);
-                assert -5 == ArrayMut.binary_search(arr, Nat.compare, 8, count);
-                assert -6 == ArrayMut.binary_search(arr, Nat.compare, 10, count);
+                assert 4 == ArrayMut.binary_search(arr, Cmp.Nat, 9, count);
+                assert -5 == ArrayMut.binary_search(arr, Cmp.Nat, 8, count);
+                assert -6 == ArrayMut.binary_search(arr, Cmp.Nat, 10, count);
 
                 arr[4] := null;
                 arr[3] := null;
@@ -98,9 +98,9 @@ suite(
                 arr[1] := null;
                 count := 1;
 
-                assert 0 == ArrayMut.binary_search(arr, Nat.compare, 1, count);
-                assert -1 == ArrayMut.binary_search(arr, Nat.compare, 0, count);
-                assert -2 == ArrayMut.binary_search(arr, Nat.compare, 10, count);
+                assert 0 == ArrayMut.binary_search(arr, Cmp.Nat, 1, count);
+                assert -1 == ArrayMut.binary_search(arr, Cmp.Nat, 0, count);
+                assert -2 == ArrayMut.binary_search(arr, Cmp.Nat, 10, count);
 
             },
         );
@@ -466,7 +466,7 @@ suite(
                 let bptree : BpTree.BpTree<Nat, Nat> = to_bptree(6, node);
                 assert BpTree.size(bptree) == 36;
 
-                ignore BpTree.insert(bptree, Nat.compare, 60, 60);
+                ignore BpTree.insert(bptree, Cmp.Nat, 60, 60);
                 assert BpTree.size(bptree) == 37;
 
                 let left = node;
@@ -487,10 +487,10 @@ suite(
                 assert validate_indexes<Nat, Nat>(right.3, right.0[C.COUNT]);
 
                 let left_test = BpTree.Branch.new<Nat, Nat>(6, null, ?[var ? #leaf(c0()), ? #leaf(c1()), ? #leaf(c2()), ? #leaf(c3()), null, null], gen_id);
-                assert BpTree.Branch.equal<Nat, Nat>(left, left_test, Nat.compare);
+                assert BpTree.Branch.equal<Nat, Nat>(left, left_test, Cmp.Nat);
 
                 let right_test = BpTree.Branch.new<Nat, Nat>(6, null, ?[var ? #leaf(c4()), ? #leaf(c5()), ? #leaf(new_leaf(6, 54, 54 + 3)), null, null, null], gen_id);
-                assert BpTree.Branch.equal<Nat, Nat>(right, right_test, Nat.compare);
+                assert BpTree.Branch.equal<Nat, Nat>(right, right_test, Cmp.Nat);
                
             },
         );
@@ -506,7 +506,7 @@ suite(
                 let bptree : BpTree.BpTree<Nat, Nat> = to_bptree(6, node);
                 assert BpTree.size(bptree) == 6 * 6;
 
-                ignore BpTree.insert(bptree, Nat.compare, 0, 0);
+                ignore BpTree.insert(bptree, Cmp.Nat, 0, 0);
                 let left = node;
                 let ?parent = left.1[C.PARENT];
                 let ? #branch(right) = parent.3[left.0[C.INDEX] + 1];
@@ -525,10 +525,10 @@ suite(
                 assert validate_indexes<Nat, Nat>(right.3, right.0[C.COUNT]);
 
                 let left_test = BpTree.Branch.new<Nat, Nat>(6, null, ?[var ? #leaf(new_leaf(6, 0, 4)), ? #leaf(new_leaf(6, 4, 7)), ? #leaf(c1()), ? #leaf(c2()), null, null], gen_id);
-                assert BpTree.Branch.equal<Nat, Nat>(left, left_test, Nat.compare);
+                assert BpTree.Branch.equal<Nat, Nat>(left, left_test, Cmp.Nat);
 
                 let right_test = BpTree.Branch.new<Nat, Nat>(6, null, ?[var ? #leaf(c3()), ? #leaf(c4()), ? #leaf(c5()), null, null, null], gen_id);
-                assert BpTree.Branch.equal<Nat, Nat>(right, right_test, Nat.compare);
+                assert BpTree.Branch.equal<Nat, Nat>(right, right_test, Cmp.Nat);
 
             },
         );
@@ -544,7 +544,7 @@ suite(
                 let bptree : BpTree.BpTree<Nat, Nat> = to_bptree(6, node);
                 assert BpTree.size(bptree) == 6 * 6;
 
-                ignore BpTree.insert(bptree, Nat.compare, 16, 16);
+                ignore BpTree.insert(bptree, Cmp.Nat, 16, 16);
                 let left = node;
                 let ?parent = left.1[C.PARENT];
                 let ? #branch(right) = parent.3[left.0[C.INDEX] + 1];
@@ -563,10 +563,10 @@ suite(
                 assert validate_indexes<Nat, Nat>(right.3, right.0[C.COUNT]);
 
                 let left_test = BpTree.Branch.new<Nat, Nat>(6, null, ?[var ? #leaf(c0()), ? #leaf(new_leaf(6, 10, 14)), ? #leaf(new_leaf(6, 14, 17)), ? #leaf(c2()), null, null], gen_id);
-                assert BpTree.Branch.equal<Nat, Nat>(left, left_test, Nat.compare);
+                assert BpTree.Branch.equal<Nat, Nat>(left, left_test, Cmp.Nat);
 
                 let right_test = BpTree.Branch.new<Nat, Nat>(6, null, ?[var ? #leaf(c3()), ? #leaf(c4()), ? #leaf(c5()), null, null, null], gen_id);
-                assert BpTree.Branch.equal<Nat, Nat>(right, right_test, Nat.compare);
+                assert BpTree.Branch.equal<Nat, Nat>(right, right_test, Cmp.Nat);
                
             },
         );
@@ -582,7 +582,7 @@ suite(
                 let bptree : BpTree.BpTree<Nat, Nat> = to_bptree(6, node);
                 assert BpTree.size(bptree) == 6 * 6;
 
-                ignore BpTree.insert(bptree, Nat.compare, 46, 46);
+                ignore BpTree.insert(bptree, Cmp.Nat, 46, 46);
                 let left = node;
                 let ?parent = left.1[C.PARENT];
                 let ? #branch(right) = parent.3[left.0[C.INDEX] + 1];
@@ -601,10 +601,10 @@ suite(
                 assert validate_indexes<Nat, Nat>(right.3, right.0[C.COUNT]);
 
                 let left_test = BpTree.Branch.new<Nat, Nat>(6, null, ?[var ? #leaf(c0()), ? #leaf(c1()), ? #leaf(c2()), ? #leaf(c3()), null, null], gen_id);
-                assert BpTree.Branch.equal<Nat, Nat>(left, left_test, Nat.compare);
+                assert BpTree.Branch.equal<Nat, Nat>(left, left_test, Cmp.Nat);
 
                 let right_test = BpTree.Branch.new<Nat, Nat>(6, null, ?[var ? #leaf(new_leaf(6, 40, 44)), ? #leaf(new_leaf(6, 44, 47)), ? #leaf(c5()), null, null, null], gen_id);
-                assert BpTree.Branch.equal<Nat, Nat>(right, right_test, Nat.compare);
+                assert BpTree.Branch.equal<Nat, Nat>(right, right_test, Cmp.Nat);
                
             },
         );
@@ -621,7 +621,7 @@ suite(
                 let bptree : BpTree.BpTree<Nat, Nat> = to_bptree(6, node);
                 assert BpTree.size(bptree) == 6 * 6;
 
-                ignore BpTree.insert(bptree, Nat.compare, 26, 26);
+                ignore BpTree.insert(bptree, Cmp.Nat, 26, 26);
                 let left = node;
                 let ?parent = left.1[C.PARENT];
                 let ? #branch(right) = parent.3[left.0[C.INDEX] + 1];
@@ -640,10 +640,10 @@ suite(
                 assert validate_indexes<Nat, Nat>(right.3, right.0[C.COUNT]);
 
                 let left_test = BpTree.Branch.new<Nat, Nat>(6, null, ?[var ? #leaf(c0()), ? #leaf(c1()), ? #leaf(c2()), ? #leaf(new_leaf(6, 24, 24 + 3)), null, null], gen_id);
-                assert BpTree.Branch.equal<Nat, Nat>(left, left_test, Nat.compare);
+                assert BpTree.Branch.equal<Nat, Nat>(left, left_test, Cmp.Nat);
 
                 let right_test = BpTree.Branch.new<Nat, Nat>(6, null, ?[var ? #leaf(c3()), ? #leaf(c4()), ? #leaf(c5()), null, null, null, null], gen_id);
-                assert BpTree.Branch.equal<Nat, Nat>(right, right_test, Nat.compare);
+                assert BpTree.Branch.equal<Nat, Nat>(right, right_test, Cmp.Nat);
                
             },
         );
@@ -680,10 +680,10 @@ suite(
 //                 assert validate_indexes<Nat, Nat>(right.3, right.0[C.COUNT]);
 
 //                 let left_test = BpTree.Branch.new<, gen_idNat, Nat>(5, ?[var ? #leaf(c0()), ? #leaf(c1()), ? #leaf(c2()), null, null]);
-//                 assert BpTree.Branch.equal<Nat, Nat>(left, left_test, Nat.compare);
+//                 assert BpTree.Branch.equal<Nat, Nat>(left, left_test, Cmp.Nat);
 
 //                 let right_test = BpTree.Branch.new<, gen_idNat, Nat>(5, ?[var ? #leaf(c3()), ? #leaf(c4()), ? #leaf(c5()), null, null]);
-//                 assert BpTree.Branch.equal<Nat, Nat>(right, right_test, Nat.compare);
+//                 assert BpTree.Branch.equal<Nat, Nat>(right, right_test, Cmp.Nat);
 //             }
 //         );
 //     }
@@ -716,7 +716,7 @@ suite(
 //                     var size = branch.0[C.SUBTREE_SIZE];
 //                 };
 
-//                 ignore BpTree.insert(bptree, Nat.compare, 228, 228);
+//                 ignore BpTree.insert(bptree, Cmp.Nat, 228, 228);
 
 //                 // let right = BpTree.Branch.split(branch, #branch(c6()), 6, 36);
 //                 let left = branch;
@@ -735,10 +735,10 @@ suite(
 //                 assert validate_indexes<Nat, Nat>(right.3, right.0[C.COUNT]);
 
 //                 let left_test = BpTree.Branch.new<, gen_idNat, Nat>(6, ?[var ? #branch(c0()), ? #branch(c1()), ? #branch(c2()), ? #branch(c3()), null, null]);
-//                 assert BpTree.Branch.equal<Nat, Nat>(left, left_test, Nat.compare);
+//                 assert BpTree.Branch.equal<Nat, Nat>(left, left_test, Cmp.Nat);
 
 //                 let right_test = BpTree.Branch.new<, gen_idNat, Nat>(6, ?[var ? #branch(c4()), ? #branch(c5()), ? #branch(c6()), null, null, null]);
-//                 assert BpTree.Branch.equal<Nat, Nat>(right, right_test, Nat.compare);
+//                 assert BpTree.Branch.equal<Nat, Nat>(right, right_test, Cmp.Nat);
 
 //             }
 //         );
@@ -770,10 +770,10 @@ suite(
 //                 assert validate_indexes<Nat, Nat>(right.3, right.0[C.COUNT]);
 
 //                 let left_test = BpTree.Branch.new<, gen_idNat, Nat>(6, ?[var ? #branch(c0()), ? #branch(c1()), ? #branch(c2()), ? #branch(c3()), null, null]);
-//                 assert BpTree.Branch.equal<Nat, Nat>(left, left_test, Nat.compare);
+//                 assert BpTree.Branch.equal<Nat, Nat>(left, left_test, Cmp.Nat);
 
 //                 let right_test = BpTree.Branch.new<, gen_idNat, Nat>(6, ?[var ? #branch(c4()), ? #branch(c5()), ? #branch(c6()), null, null, null]);
-//                 assert BpTree.Branch.equal<Nat, Nat>(right, right_test, Nat.compare);
+//                 assert BpTree.Branch.equal<Nat, Nat>(right, right_test, Cmp.Nat);
 //             },
 //         );
 
@@ -804,10 +804,10 @@ suite(
 //                 assert validate_indexes<Nat, Nat>(right.3, right.0[C.COUNT]);
 
 //                 let left_test = BpTree.Branch.new<, gen_idNat, Nat>(6, ?[var ? #branch(c0()), ? #branch(c1()), ? #branch(c2()), ? #branch(c3()), null, null]);
-//                 assert BpTree.Branch.equal<Nat, Nat>(left, left_test, Nat.compare);
+//                 assert BpTree.Branch.equal<Nat, Nat>(left, left_test, Cmp.Nat);
 
 //                 let right_test = BpTree.Branch.new<, gen_idNat, Nat>(6, ?[var ? #branch(c4()), ? #branch(c5()), ? #branch(c6()), null, null, null]);
-//                 assert BpTree.Branch.equal<Nat, Nat>(right, right_test, Nat.compare);
+//                 assert BpTree.Branch.equal<Nat, Nat>(right, right_test, Cmp.Nat);
 //             },
 //         );
 
@@ -833,10 +833,10 @@ suite(
 //                 assert validate_indexes<Nat, Nat>(right.3, right.0[C.COUNT]);
 
 //                 let left_test = BpTree.Branch.new<, gen_idNat, Nat>(6, ?[var ? #branch(c0()), ? #branch(c1()), ? #branch(c2()), ? #branch(c3()), null, null]);
-//                 assert BpTree.Branch.equal<Nat, Nat>(left, left_test, Nat.compare);
+//                 assert BpTree.Branch.equal<Nat, Nat>(left, left_test, Cmp.Nat);
 
 //                 let right_test = BpTree.Branch.new<, gen_idNat, Nat>(6, ?[var ? #branch(c4()), ? #branch(c5()), ? #branch(c6()), null, null, null]);
-//                 assert BpTree.Branch.equal<Nat, Nat>(right, right_test, Nat.compare);
+//                 assert BpTree.Branch.equal<Nat, Nat>(right, right_test, Cmp.Nat);
 //             },
 //         );
 
@@ -862,10 +862,10 @@ suite(
 //                 assert validate_indexes<Nat, Nat>(right.3, right.0[C.COUNT]);
 
 //                 let left_test = BpTree.Branch.new<, gen_idNat, Nat>(6, ?[var ? #branch(c0()), ? #branch(c1()), ? #branch(c2()), ? #branch(c3()), null, null]);
-//                 assert BpTree.Branch.equal<Nat, Nat>(left, left_test, Nat.compare);
+//                 assert BpTree.Branch.equal<Nat, Nat>(left, left_test, Cmp.Nat);
 
 //                 let right_test = BpTree.Branch.new<, gen_idNat, Nat>(6, ?[var ? #branch(c4()), ? #branch(c5()), ? #branch(c6()), null, null, null]);
-//                 assert BpTree.Branch.equal<Nat, Nat>(right, right_test, Nat.compare);
+//                 assert BpTree.Branch.equal<Nat, Nat>(right, right_test, Cmp.Nat);
 //             },
 //         );
 //     }

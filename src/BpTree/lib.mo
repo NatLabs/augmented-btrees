@@ -18,14 +18,13 @@ import ArrayMut "../internal/ArrayMut";
 import Utils "../internal/Utils";
 import T "Types";
 import Methods "Methods";
-import Cursor "Cursor";
 import InternalTypes "../internal/Types";
 import RevIter "mo:itertools/RevIter";
 
 module BpTree {
     type Iter<A> = Iter.Iter<A>;
     type Order = Order.Order;
-    type CmpFn<A> = (A, A) -> Order;
+    type CmpFn<A> = T.CmpFn<A>;
     type Result<A, B> = Result.Result<A, B>;
     type BufferDeque<A> = BufferDeque.BufferDeque<A>;
     // public type Cursor<K, V> = Cursor.Cursor<K, V>;
@@ -40,7 +39,7 @@ module BpTree {
     public type Branch<K, V> = T.Branch<K, V>;
     type CommonFields<K, V> = T.CommonFields<K, V>;
     type CommonNodeFields<K, V> = T.CommonNodeFields<K, V>;
-    type MultiCmpFn<A, B> = (A, B) -> Order;
+    type MultiCmpFn<A, B> = InternalTypes.MultiCmpFn<A, B>;
 
     let {Const = C} = T;
     // public func new2<K, V>(): T.BpTreeV2<K, V> {
@@ -202,18 +201,12 @@ module BpTree {
             branch.0[C.SUBTREE_SIZE] -= 1;
         };
 
-        func adapt_cmp<K, V>(cmp : T.CmpFn<K>) : InternalTypes.MultiCmpFn<K, (K, V)> {
-            func(a : K, b : (K, V)) : Order {
-                cmp(a, b.0);
-            };
-        };
-
         func gen_id() : Nat = Methods.gen_id(self);
 
         let leaf_node = Methods.get_leaf_node_and_update_branch_path(self, cmp, key, inc_branch_subtree_size);
         let entry = (key, val);
 
-        let int_elem_index = ArrayMut.binary_search<K, (K, V)>(leaf_node.3, adapt_cmp(cmp), key, leaf_node.0[C.COUNT]);
+        let int_elem_index = ArrayMut.binary_search<K, (K, V)>(leaf_node.3, Utils.adapt_cmp(cmp), key, leaf_node.0[C.COUNT]);
         let elem_index = if (int_elem_index >= 0) Int.abs(int_elem_index) else Int.abs(int_elem_index + 1);
 
         let prev_value = if (int_elem_index >= 0) {
@@ -345,14 +338,9 @@ module BpTree {
             branch.0[C.SUBTREE_SIZE] -= 1;
         };
 
-        func adapt_cmp<K, V>(cmp : T.CmpFn<K>) : InternalTypes.MultiCmpFn<K, (K, V)> {
-            func(a : K, b : (K, V)) : Order {
-                cmp(a, b.0);
-            };
-        };
         let leaf_node = Methods.get_leaf_node_and_update_branch_path(self, cmp, key, decrement_branch_subtree_size);
 
-        let int_elem_index = ArrayMut.binary_search<K, (K, V)>(leaf_node.3, adapt_cmp(cmp), key, leaf_node.0[C.COUNT]);
+        let int_elem_index = ArrayMut.binary_search<K, (K, V)>(leaf_node.3, Utils.adapt_cmp(cmp), key, leaf_node.0[C.COUNT]);
         let elem_index = if (int_elem_index >= 0) Int.abs(int_elem_index) else {
             Methods.update_branch_path_from_leaf_to_root(self, leaf_node, inc_branch_subtree_size);
             return null;

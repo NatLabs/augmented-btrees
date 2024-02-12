@@ -69,7 +69,7 @@ module {
             let ?a = arr[i] else return true;
             let ?b = arr[i + 1] else return true;
 
-            if (cmp(a, b) == #greater) return false;
+            if (cmp(a, b) == +1) return false;
             i += 1;
         };
 
@@ -77,12 +77,6 @@ module {
     };
 
     public func adapt_cmp<K, V>(cmp : T.CmpFn<K>) : T.MultiCmpFn<K, (K, V)> {
-        func(a : K, b : (K, V)) : Order {
-            cmp(a, b.0);
-        };
-    };
-
-    public func adapt_cmp_int8<K, V>(cmp : T.Int8CmpFn<K>) : T.Int8MultiCmpFn<K, (K, V)> {
         func(a : K, b : (K, V)) : Int8 {
             cmp(a, b.0);
         };

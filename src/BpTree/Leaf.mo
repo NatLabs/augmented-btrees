@@ -242,7 +242,7 @@ module Leaf {
         for (i in Iter.range(0, a.3.size() - 1)) {
             let res = switch (a.3[i], b.3[i]) {
                 case (?v1, ?v2) {
-                    cmp(v1.0, v2.0) == #equal;
+                    cmp(v1.0, v2.0) == 0;
                 };
                 case (_) false;
             };
