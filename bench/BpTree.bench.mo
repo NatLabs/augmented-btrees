@@ -40,8 +40,8 @@ module {
             let val = fuzz.nat.randomRange(1, limit ** 3);
 
             entries.add((key, val));
-            ignore BpTree.insert(bptree, Nat.compare, key, val);
-            ignore BpTree.insert(bptree2, Nat.compare, key, val);
+            ignore BpTree.insert(bptree, Cmp.Nat, key, val);
+            ignore BpTree.insert(bptree2, Cmp.Nat, key, val);
             
             ignore MaxBpTree.insert(max_bp_tree, Cmp.Nat, Cmp.Nat, key, val);
             ignore MaxBpTree.insert(max_bp_tree2, Cmp.Nat, Cmp.Nat, key, val);
@@ -59,27 +59,27 @@ module {
                 };
                 case ("B+Tree", "getIndex()") {
                     for ((key, val) in entries.vals()) {
-                        ignore BpTree.getIndex(bptree, Nat.compare, key);
+                        ignore BpTree.getIndex(bptree, Cmp.Nat, key);
                     };
                 };
                 case ("B+Tree", "getFloor()") {
                     for (kv in entries.vals()) {
-                        ignore BpTree.getFloor(bptree, Nat.compare, kv.0);
+                        ignore BpTree.getFloor(bptree, Cmp.Nat, kv.0);
                     };
                 };
                 case ("B+Tree", "getCeiling()") {
                     for (kv in entries.vals()) { 
-                        ignore BpTree.getFloor(bptree, Nat.compare, kv.0);
+                        ignore BpTree.getFloor(bptree, Cmp.Nat, kv.0);
                      };
                 };
                 case ("B+Tree", "removeMin()") {
                     while (BpTree.size(bptree) > 0){
-                        ignore BpTree.removeMin(bptree, Nat.compare);
+                        ignore BpTree.removeMin(bptree, Cmp.Nat);
                     };
                 };
                 case ("B+Tree", "removeMax()") {
                     while (BpTree.size(bptree2) > 0){
-                        ignore BpTree.removeMax(bptree2, Nat.compare);
+                        ignore BpTree.removeMax(bptree2, Cmp.Nat);
                     };
                 };
 

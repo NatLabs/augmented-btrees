@@ -62,7 +62,7 @@ module Methods {
         loop {
             switch (curr) {
                 case (? #branch(node)) {
-                    let int_index = ArrayMut.binary_search_int8<K, K>(node.2, cmp, key, node.0[C.COUNT] - 1);
+                    let int_index = ArrayMut.binary_search<K, K>(node.2, cmp, key, node.0[C.COUNT] - 1);
                     let node_index = if (int_index >= 0) Int.abs(int_index) + 1 else Int.abs(int_index + 1);
                     curr := node.3[node_index];
                 };
@@ -128,7 +128,7 @@ module Methods {
         loop {
             switch (curr) {
                 case (? #branch(node)) {
-                    let int_index = ArrayMut.binary_search_int8<K, K>(node.2, cmp, key, node.0[C.COUNT] - 1);
+                    let int_index = ArrayMut.binary_search<K, K>(node.2, cmp, key, node.0[C.COUNT] - 1);
                     let node_index = if (int_index >= 0) Int.abs(int_index) + 1 else Int.abs(int_index + 1);
                     update(node, node_index);
 
@@ -424,7 +424,7 @@ module Methods {
     public func get<K, V>(self : MaxBpTree<K, V>, cmp : CmpFn<K>, key : K) : ?V {
         let leaf_node = Methods.get_leaf_node<K, V>(self, cmp, key);
 
-        let i = ArrayMut.binary_search_int8<K, (K, V)>(leaf_node.3, Utils.adapt_cmp_int8(cmp), key, leaf_node.0[C.COUNT]);
+        let i = ArrayMut.binary_search<K, (K, V)>(leaf_node.3, Utils.adapt_cmp(cmp), key, leaf_node.0[C.COUNT]);
 
         if (i >= 0) {
             let ?kv = leaf_node.3[Int.abs(i)] else Debug.trap("1. get: accessed a null value");
@@ -437,7 +437,7 @@ module Methods {
     public func get_ceiling<K, V>(self : MaxBpTree<K, V>, cmp : CmpFn<K>, key : K) : ?(K, V) {
         let leaf_node = Methods.get_leaf_node<K, V>(self, cmp, key);
 
-        let i = ArrayMut.binary_search_int8<K, (K, V)>(leaf_node.3, Utils.adapt_cmp_int8(cmp), key, leaf_node.0[C.COUNT]);
+        let i = ArrayMut.binary_search<K, (K, V)>(leaf_node.3, Utils.adapt_cmp(cmp), key, leaf_node.0[C.COUNT]);
 
         if (i >= 0) {
             return leaf_node.3[Int.abs(i)];
@@ -456,7 +456,7 @@ module Methods {
     public func get_floor<K, V>(self : MaxBpTree<K, V>, cmp : CmpFn<K>, key : K) : ?(K, V) {
         let leaf_node = Methods.get_leaf_node<K, V>(self, cmp, key);
 
-        let i = ArrayMut.binary_search_int8<K, (K, V)>(leaf_node.3, Utils.adapt_cmp_int8(cmp), key, leaf_node.0[C.COUNT]);
+        let i = ArrayMut.binary_search<K, (K, V)>(leaf_node.3, Utils.adapt_cmp(cmp), key, leaf_node.0[C.COUNT]);
         
         if (i >= 0) return leaf_node.3[Int.abs(i)];
         
@@ -534,7 +534,7 @@ module Methods {
     // Returns the rank of the given key in the tree.
     public func get_index<K, V>(self : MaxBpTree<K, V>, cmp : CmpFn<K>, key : K) : Nat {
         let (leaf_node, rank) = Methods.get_leaf_node_and_index(self, cmp, key);
-        let i = ArrayMut.binary_search_int8<K, (K, V)>(leaf_node.3, Utils.adapt_cmp_int8(cmp), key, leaf_node.0[C.COUNT]);
+        let i = ArrayMut.binary_search<K, (K, V)>(leaf_node.3, Utils.adapt_cmp(cmp), key, leaf_node.0[C.COUNT]);
 
         if (i < 0) {
             return rank + (Int.abs(i) - 1 : Nat);
@@ -574,14 +574,14 @@ module Methods {
     // If the end key does not exist in the tree then the iterator will end at the last key less than end.
     public func scan<K, V>(self : MaxBpTree<K, V>, cmp : CmpFn<K>, start : K, end : K) : RevIter<(K, V)> {
         let left_node = Methods.get_leaf_node(self, cmp, start);
-        let start_index = ArrayMut.binary_search_int8<K, (K, V)>(left_node.3, Utils.adapt_cmp_int8(cmp), start, left_node.0[C.COUNT]);
+        let start_index = ArrayMut.binary_search<K, (K, V)>(left_node.3, Utils.adapt_cmp(cmp), start, left_node.0[C.COUNT]);
 
         // if start_index is negative then the element was not found
         // moreover if start_index is negative then abs(i) - 1 is the index of the first element greater than start
         var i = if (start_index >= 0) Int.abs(start_index) else Int.abs(start_index) - 1 : Nat;
 
         let right_node = Methods.get_leaf_node(self, cmp, end);
-        let end_index = ArrayMut.binary_search_int8<K, (K, V)>(right_node.3, Utils.adapt_cmp_int8(cmp), end, right_node.0[C.COUNT]);
+        let end_index = ArrayMut.binary_search<K, (K, V)>(right_node.3, Utils.adapt_cmp(cmp), end, right_node.0[C.COUNT]);
         var j = if (end_index >= 0) Int.abs(end_index) + 1 else Int.abs(end_index) - 1 : Nat;
 
         Methods.new_iterator(left_node, i, right_node, j);

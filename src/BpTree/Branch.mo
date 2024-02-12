@@ -508,7 +508,7 @@ module Branch {
         for (i in Iter.range(0, a.2.size() - 2)) {
             let res = switch (a.2[i], b.2[i]) {
                 case (?v1, ?v2) {
-                    cmp(v1, v2) == #equal;
+                    cmp(v1, v2) == 0;
                 };
                 case (null, null) true;
                 case (_) false;
