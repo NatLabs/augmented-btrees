@@ -119,7 +119,7 @@ module MaxBpTree {
                     let ?child = branch.3[i] else Debug.trap("insert(inc_branch_subtree_size): accessed a null value");
 
                     if (i == max_index) {
-                        let #branch(node) or #leaf(node) = child;
+                        let #branch(node) or #leaf(node) : CommonNodeFields<Nat, Nat> = child;
                         assert i == node.0[C.INDEX];
                         let ?node_max = node.4[C.MAX] else Debug.trap("insert(inc_branch_subtree_size): should have a max key");
                         assert cmp_key(node_max.1, max_val) == 0;

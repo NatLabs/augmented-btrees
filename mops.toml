@@ -7,7 +7,7 @@ license = "MIT"
 keywords = [ "b+tree", "data-structure", "sorted", "map", "stable-heap" ]
 
 [dependencies]
-base = "0.10.4"
+base = "0.10.2"
 buffer-deque = "0.1.0"
 
 [dev-dependencies]
