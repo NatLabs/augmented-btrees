@@ -60,10 +60,10 @@ module MaxBpTree {
     /// #### Examples
     /// ```motoko
     ///     let arr = [('A', 1), ('B', 2), ('C', 3)];
-    ///     let max_bp_tree = MaxBpTree.fromArray<Char, Nat>(null, arr, Char.compare, Nat.compare);
+    ///     let max_bp_tree = MaxBpTree.fromArray<Char, Nat>(null, arr, Cmp.Char, Cmp.Nat);
     ///
-    ///     assert MaxBpTree.get(max_bp_tree, Char.compare, 'A') == 1;
-    ///     assert MaxBpTree.get(max_bp_tree, Char.compare, 'D') == null;
+    ///     assert MaxBpTree.get(max_bp_tree, Cmp.Char, 'A') == 1;
+    ///     assert MaxBpTree.get(max_bp_tree, Cmp.Char, 'D') == null;
     /// ```
     public func get<K, V>(self : MaxBpTree<K, V>, cmp : CmpFn<K>, key : K) : ?V {
         Methods.get(self, cmp, key);
@@ -458,10 +458,10 @@ module MaxBpTree {
     /// #### Examples
     /// ```motoko
     ///     let arr = [('A', 1), ('B', 2), ('C', 3)];
-    ///     let bptree = MaxBpTree.fromArray<Char, Nat>(null, arr, Char.compare, Nat.compare);
+    ///     let bptree = MaxBpTree.fromArray<Char, Nat>(null, arr, Cmp.Char, Cmp.Nat);
     ///
-    ///     assert MaxBpTree.remove(bptree, Char.compare, Nat.compare, 'A') == ?1;
-    ///     assert MaxBpTree.remove(bptree, Char.compare, Nat.compare, 'D') == null;
+    ///     assert MaxBpTree.remove(bptree, Cmp.Char, Cmp.Nat, 'A') == ?1;
+    ///     assert MaxBpTree.remove(bptree, Cmp.Char, Cmp.Nat, 'D') == null;
     /// ```
     public func remove<K, V>(self : MaxBpTree<K, V>, cmp_key : CmpFn<K>, cmp_val : CmpFn<V>, key : K) : ?V {
         if (self.size == 0) return null;
@@ -708,7 +708,7 @@ module MaxBpTree {
     /// #### Examples
     /// ```motoko
     ///     let entries = [('A', 1), ('B', 2), ('C', 3)].vals();
-    ///     let max_bp_tree = Methods.fromEntries<Char, Nat>(null, entries, Char.compare);
+    ///     let max_bp_tree = Methods.fromEntries<Char, Nat>(null, entries, Cmp.Char);
     /// ```
 
     public func fromEntries<K, V>(order : ?Nat, entries : Iter<(K, V)>, cmp_key : CmpFn<K>, cmp_val : CmpFn<V>) : MaxBpTree<K, V> {
@@ -731,7 +731,7 @@ module MaxBpTree {
     /// #### Examples
     /// ```motoko
     ///    let arr = [('A', 1), ('B', 2), ('C', 3)];
-    ///    let max_bp_tree = MaxBpTree.fromArray<Char, Nat>(null, arr, Char.compare, Nat.compare);
+    ///    let max_bp_tree = MaxBpTree.fromArray<Char, Nat>(null, arr, Cmp.Char, Cmp.Nat);
     /// ```
     // public func fromArray<K, V>(order : ?Nat, arr : [(K, V)], cmp_key : CmpFn<K>, cmp_val: CmpFn<V>) : MaxBpTree<K, V> {
     //     let max_bp_tree = MaxBpTree.new<K, V>(order);
@@ -749,7 +749,7 @@ module MaxBpTree {
     /// #### Examples
     /// ```motoko
     ///     let arr = [('A', 1), ('B', 2), ('C', 3)];
-    ///     let max_bp_tree = MaxBpTree.fromArray<Char, Nat>(null, arr, Char.compare, Nat.compare);
+    ///     let max_bp_tree = MaxBpTree.fromArray<Char, Nat>(null, arr, Cmp.Char, Cmp.Nat);
     ///     assert MaxBpTree.toArray(max_bp_tree) == arr;
     /// ```
     public func toArray<K, V>(self : MaxBpTree<K, V>) : [(K, V)] {
@@ -761,7 +761,7 @@ module MaxBpTree {
     /// #### Examples
     /// ```motoko
     ///     let arr = [('A', 1), ('B', 2), ('C', 3)];
-    ///     let max_bp_tree = MaxBpTree.fromArray<Char, Nat>(null, arr, Char.compare, Nat.compare);
+    ///     let max_bp_tree = MaxBpTree.fromArray<Char, Nat>(null, arr, Cmp.Char, Cmp.Nat);
     ///
     ///     assert MaxBpTree.size(max_bp_tree) == 3;
     /// ```
@@ -775,7 +775,7 @@ module MaxBpTree {
     /// #### Examples
     /// ```motoko
     ///     let arr = [('A', 1), ('B', 2), ('C', 3)];
-    ///     let max_bp_tree = MaxBpTree.fromArray<Char, Nat>(null, arr, Char.compare, Nat.compare);
+    ///     let max_bp_tree = MaxBpTree.fromArray<Char, Nat>(null, arr, Cmp.Char, Cmp.Nat);
     ///
     ///     assert MaxBpTree.maxValue(max_bp_tree) == ?('C', 3);
     /// ```
@@ -793,7 +793,7 @@ module MaxBpTree {
     /// #### Examples
     /// ```motoko
     ///     let arr = [('A', 1), ('B', 2), ('C', 3)];
-    ///     let max_bp_tree = MaxBpTree.fromArray<Char, Nat>(null, arr, Char.compare, Nat.compare);
+    ///     let max_bp_tree = MaxBpTree.fromArray<Char, Nat>(null, arr, Cmp.Char, Cmp.Nat);
     ///
     ///     assert MaxBpTree.min(max_bp_tree) == ?('A', 1);
     /// ```
@@ -807,7 +807,7 @@ module MaxBpTree {
     /// #### Examples
     /// ```motoko
     ///     let arr = [('A', 1), ('B', 2), ('C', 3)];
-    ///     let max_bp_tree = MaxBpTree.fromArray<Char, Nat>(null, arr, Char.compare, Nat.compare);
+    ///     let max_bp_tree = MaxBpTree.fromArray<Char, Nat>(null, arr, Cmp.Char, Cmp.Nat);
     ///
     ///     assert MaxBpTree.max(max_bp_tree) == ?('C', 3);
     /// ```
@@ -821,9 +821,9 @@ module MaxBpTree {
     /// #### Examples
     /// ```motoko
     ///     let arr = [('A', 1), ('B', 2), ('C', 3)];
-    ///     let bptree = MaxBpTree.fromArray<Char, Nat>(null, arr, Char.compare, Nat.compare);
+    ///     let bptree = MaxBpTree.fromArray<Char, Nat>(null, arr, Cmp.Char, Cmp.Nat);
     ///
-    ///     assert MaxBpTree.removeMin(bptree, Char.compare) == ?('A', 1);
+    ///     assert MaxBpTree.removeMin(bptree, Cmp.Char) == ?('A', 1);
     /// ```
     public func removeMin<K, V>(self : MaxBpTree<K, V>, cmp_key : CmpFn<K>, cmp_val : CmpFn<V>) : ?(K, V) {
         let ?(min_key, _) = Methods.min(self) else return null;
@@ -839,9 +839,9 @@ module MaxBpTree {
     /// #### Examples
     /// ```motoko
     ///     let arr = [('A', 1), ('B', 2), ('C', 3)];
-    ///     let bptree = MaxBpTree.fromArray<Char, Nat>(null, arr, Char.compare, Nat.compare);
+    ///     let bptree = MaxBpTree.fromArray<Char, Nat>(null, arr, Cmp.Char, Cmp.Nat);
     ///
-    ///     assert MaxBpTree.removeMax(bptree, Char.compare, Nat.compare) == ?('C', 3);
+    ///     assert MaxBpTree.removeMax(bptree, Cmp.Char, Cmp.Nat) == ?('C', 3);
     /// ```
     public func removeMax<K, V>(self : MaxBpTree<K, V>, cmp_key : CmpFn<K>, cmp_val : CmpFn<V>) : ?(K, V) {
         let ?(max_key, _) = Methods.max(self) else return null;
@@ -857,9 +857,9 @@ module MaxBpTree {
     /// #### Examples
     /// ```motoko
     ///     let arr = [('A', 1), ('B', 3), ('C', 2)];
-    ///     let max_bp_tree = MaxBpTree.fromArray<Char, Nat>(null, arr, Char.compare, Nat.compare);
+    ///     let max_bp_tree = MaxBpTree.fromArray<Char, Nat>(null, arr, Cmp.Char, Cmp.Nat);
     ///
-    ///     assert MaxBpTree.removeMaxValue(max_bp_tree, Char.compare, Nat.compare) == ?('B', 3);
+    ///     assert MaxBpTree.removeMaxValue(max_bp_tree, Cmp.Char, Cmp.Nat) == ?('B', 3);
     /// ```
     public func removeMaxValue<K, V>(self : MaxBpTree<K, V>, cmp_key : CmpFn<K>, cmp_val : CmpFn<V>) : ?(K, V) {
         let leaf = Methods.get_max_value_leaf_node(self);
@@ -895,10 +895,10 @@ module MaxBpTree {
     /// #### Examples
     /// ```motoko
     ///     let arr = [('A', 1), ('B', 2), ('C', 3)];
-    ///     let max_bp_tree = MaxBpTree.fromArray<Char, Nat>(null, arr, Char.compare, Nat.compare);
+    ///     let max_bp_tree = MaxBpTree.fromArray<Char, Nat>(null, arr, Cmp.Char, Cmp.Nat);
     ///
-    ///     assert MaxBpTree.getIndex(max_bp_tree, Char.compare, 'B') == 1;
-    ///     assert MaxBpTree.getIndex(max_bp_tree, Char.compare, 'D') == 3;
+    ///     assert MaxBpTree.getIndex(max_bp_tree, Cmp.Char, 'B') == 1;
+    ///     assert MaxBpTree.getIndex(max_bp_tree, Cmp.Char, 'D') == 3;
     /// ```
     public func getIndex<K, V>(self : MaxBpTree<K, V>, cmp : CmpFn<K>, key : K) : Nat {
         Methods.get_index(self, cmp, key);
@@ -910,7 +910,7 @@ module MaxBpTree {
     /// #### Examples
     /// ```motoko
     ///     let arr = [('A', 1), ('B', 2), ('C', 3)];
-    ///     let max_bp_tree = MaxBpTree.fromArray<Char, Nat>(null, arr, Char.compare, Nat.compare);
+    ///     let max_bp_tree = MaxBpTree.fromArray<Char, Nat>(null, arr, Cmp.Char, Cmp.Nat);
     ///
     ///     assert MaxBpTree.getFromIndex(max_bp_tree, 0) == ('A', 1);
     ///     assert MaxBpTree.getFromIndex(max_bp_tree, 1) == ('B', 2);

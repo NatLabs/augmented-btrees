@@ -596,6 +596,7 @@ module Methods {
                 case (#branch(branch)) {
                     let ?max = branch.4[C.MAX] else Debug.trap("1. validate_max_path: max is null");
                     let max_index = branch.0[C.MAX_INDEX];
+                    // let subtree_size = branch.0[C.SUBTREE_SIZE];
 
                     assert max_index < branch.0[C.COUNT];
                     let ?#branch(node) or ?#leaf(node) : ?CommonNodeFields<Nat, Nat> = branch.3[max_index] else Debug.trap("2. validate_max_path: node is null");
@@ -603,7 +604,7 @@ module Methods {
 
                     let is_equal = cmp_val(max.1, node_max.1) == 0;
                     var are_children_valid = true;
-
+                    
                     for (i in Iter.range(0, branch.0[C.COUNT] - 1)) {
                         let ?child = branch.3[i] else Debug.trap("4. validate_max_path: child is null");
                         are_children_valid := are_children_valid and validate(child);

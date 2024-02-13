@@ -20,72 +20,20 @@ module {
     };
 
     /// Branch nodes store keys and pointers to child nodes.
-    public type Branch1<K, V> = {
-        /// Unique id representing the branch as a node.
-        id : Nat;
-
-        /// The parent branch node.
-        var parent : ?Branch<K, V>;
-
-        /// The index of this branch node in the parent branch node.
-        var index : Nat;
-
-        /// The keys in this branch node.
-        var keys : [var ?K];
-
-        /// The child nodes in this branch node.
-        var children : [var ?Node<K, V>];
-
-        /// The number of child nodes in this branch node.
-        var count : Nat;
-
-        /// The total number of nodes in the subtree rooted at this branch node.
-        var subtree_size : Nat; 
-
-        var max: ?(key: K, val: V, index_in_parent: Nat); 
-
-    };
-
     public type Branch<K, V> = (
         nats: [var Nat], // [id, index, count, subtree_size, max_index]
         parent: [var ?Branch<K, V>], // parent
-        keys: [var ?K], // [...2]
-        children: [var ?Node<K, V>], // [...3]
+        keys: [var ?K], // [...keys]
+        children: [var ?Node<K, V>], // [...child nodes]
         max: [var ?(K, V)] // (max_key, max_val)
     );
 
     /// Leaf nodes are doubly linked lists of key-value pairs.
-    public type Leaf1<K, V> = {
-        /// Unique id representing the leaf as a node.
-        id : Nat;
-
-        /// The parent branch node.
-        var parent : ?Branch<K, V>;
-
-        /// The index of this leaf node in the parent branch node.
-        var index : Nat;
-
-        /// The key-value pairs in this leaf node.
-        kvs : [var ?(K, V)];
-
-        /// The number of key-value pairs in this leaf node.
-        var count : Nat;
-
-        /// The next leaf node in the linked list.
-        var next : ?Leaf<K, V>;
-
-        /// The previous leaf node in the linked list.
-        var prev : ?Leaf<K, V>;
-
-        var max: ?(key: K, val: V, index_in_parent: Nat); 
-
-    };
-
     public type Leaf<K, V> = (
         nats: [var Nat], // [id, index, count, ----,  max_index]
         parent: [var ?Branch<K, V>], // parent
         adjacent_nodes: [var ?Leaf<K, V>], // [prev, next]
-        kvs: [var ?(K, V)], // [...3]
+        kvs: [var ?(K, V)], // [...key-value pairs]
         max: [var ?(K, V)] // (max_key, max_val)
     );
 
