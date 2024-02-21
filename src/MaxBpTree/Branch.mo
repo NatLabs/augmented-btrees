@@ -366,13 +366,15 @@ module Branch {
             ArrayMut.shift_by(branch_node.2, 0, branch_node.0[C.COUNT] - 1 : Nat, data_to_move : Nat);
             Branch.shift_by(branch_node, 0, branch_node.0[C.COUNT] : Nat, data_to_move : Nat);
             var i = 0;
-            for (_ in Iter.range(0, data_to_move - 1)) {
+            while (i < data_to_move ) {
                 let j = adj_node.0[C.COUNT] - i - 1 : Nat;
                 branch_node.2[data_to_move - i - 1] := median_key;
                 let ?mk = ArrayMut.remove(adj_node.2, j - 1 : Nat, adj_node.0[C.COUNT] - 1 : Nat) else Debug.trap("4. redistribute_branch_keys: accessed a null value");
                 median_key := ?mk;
 
                 let new_node_index = data_to_move - i - 1 : Nat;
+                assert j < adj_node.3.size();
+
                 let ?val = Utils.extract(adj_node.3, j) else Debug.trap("4. redistribute_branch_keys: accessed a null value");
                 
                 let #leaf(new_child_node) or #branch(new_child_node) : CommonNodeFields<K, V> = val;
@@ -416,9 +418,9 @@ module Branch {
             // adj_node is after branch_node
             var j = branch_node.0[C.COUNT] : Nat;
             var median_key = parent.2[branch_node.0[C.INDEX]];
+            
             var i = 0;
-
-            for (_ in Iter.range(0, data_to_move - 1)) {
+            while (i < data_to_move) {
                 ArrayMut.insert(branch_node.2, branch_node.0[C.COUNT] + i - 1 : Nat, median_key, branch_node.0[C.COUNT] - 1 : Nat);
                 median_key := adj_node.2[i];
 
@@ -507,7 +509,8 @@ module Branch {
         var median_key = parent.2[right.0[C.INDEX] - 1];
         let right_subtree_size = right.0[C.SUBTREE_SIZE];
         // merge right into left
-        for (i in Iter.range(0, right.0[C.COUNT] - 1)) {
+        var i = 0;
+        while (i < right.0[C.COUNT]) {
             ArrayMut.insert(left.2, left.0[C.COUNT] + i - 1 : Nat, median_key, left.0[C.COUNT] - 1 : Nat);
             median_key := right.2[i];
 
@@ -515,7 +518,7 @@ module Branch {
             Branch.insert(left, left.0[C.COUNT] + i, child);
 
             Common.update_branch_fields(left, cmp_val, left.0[C.COUNT] + i, child);
-
+            i += 1;
         };
 
         left.0[C.COUNT] += right.0[C.COUNT];

@@ -27,7 +27,6 @@ module BpTree {
     type CmpFn<A> = T.CmpFn<A>;
     type Result<A, B> = Result.Result<A, B>;
     type BufferDeque<A> = BufferDeque.BufferDeque<A>;
-    // public type Cursor<K, V> = Cursor.Cursor<K, V>;
     public type RevIter<A> = RevIter.RevIter<A>;
 
     public let Leaf = LeafModule;
@@ -46,9 +45,11 @@ module BpTree {
     //     new<K, V>();
     // };
 
+    let ALLOWED_ORDERS: [Nat] = [4, 8, 16, 32, 64, 128, 256, 512];
+
     /// Create a new B+ tree with the given order.
     /// The order is the maximum number of children a node can have.
-    /// The order must be between 4 and 512 inclusive.
+    /// The order must be one of 4, 8, 16, 32, 64, 128, 256 and 512.
     ///
     /// #### Examples
     /// ```motoko
@@ -57,7 +58,9 @@ module BpTree {
     public func new<K, V>(_order : ?Nat) : BpTree<K, V> {
         let order = Option.get(_order, 32);
 
-        assert order >= 4 and order <= 512;
+        assert Option.isSome(
+            Array.find(ALLOWED_ORDERS, func(n: Nat): Bool = n == order)
+        );
 
         {
             order;
@@ -291,7 +294,7 @@ module BpTree {
 
                 let split_node = Branch.split(parent, right_node, right_index, right_key, gen_id);
 
-                let ?first_key = Methods.extract(split_node.2, split_node.2.size() - 1 : Nat) else Debug.trap("4. insert: accessed a null value in first key of branch");
+                let ?first_key = Utils.extract(split_node.2, split_node.2.size() - 1 : Nat) else Debug.trap("4. insert: accessed a null value in first key of branch");
                 right_key := first_key;
 
                 left_node := #branch(parent);
@@ -304,12 +307,11 @@ module BpTree {
             };
         };
 
-        let children = Array.init<?Node<K, V>>(self.order, null);
-        children[0] := ?left_node;
-        children[1] := ?right_node;
-
-        let root_node = Branch.new<K, V>(self.order, null, ?children, gen_id);
+        let root_node = Branch.new<K, V>(self.order, null, null, gen_id);
         root_node.2[0] := ?right_key;
+
+        Branch.add_child(root_node, left_node);
+        Branch.add_child(root_node, right_node);
 
         self.root := #branch(root_node);
         self.size += 1;
@@ -503,11 +505,11 @@ module BpTree {
     ///     assert BpTree.removeMin(bptree, Cmp.Char) == ?('A', 1);
     /// ```
     public func removeMin<K, V>(self : BpTree<K, V>, cmp: CmpFn<K>) : ?(K, V) {
-        let ?(min_key, _) = Methods.min(self) else return null;
+        let ?min = Methods.min(self) else return null;
 
-        let ?v = remove(self, cmp, min_key) else return null;
-
-        return ?(min_key, v);        
+        let ?v = remove(self, cmp, min.0) else return null;
+        
+        return ?min;        
     };
 
     /// Removes the maximum key-value pair in the tree and returns it.
@@ -521,24 +523,24 @@ module BpTree {
     ///     assert BpTree.removeMax(bptree, Cmp.Char) == ?('C', 3);
     /// ```
     public func removeMax<K, V>(self : BpTree<K, V>, cmp: CmpFn<K>) : ?(K, V) {
-        let ?(max_key, _) = Methods.max(self) else return null;
+        let ?max = Methods.max(self) else return null;
 
-        let ?v = remove(self, cmp, max_key) else return null;
+        let ?v = remove(self, cmp, max.0) else return null;
 
-        return ?(max_key, v);
+        return ?max;
     };
 
-    /// Returns a double ended iterator over the entries of the tree.
+    /// Returns a reversible iterator over the entries of the tree.
     public func entries<K, V>(bptree : BpTree<K, V>) : RevIter<(K, V)> {
         Methods.entries(bptree);
     };
 
-    /// Returns a double ended iterator over the keys of the tree.
+    /// Returns a reversible iterator over the keys of the tree.
     public func keys<K, V>(self : BpTree<K, V>) : RevIter<K> {
         Methods.keys(self);
     };
 
-    /// Returns a double ended iterator over the values of the tree.
+    /// Returns a reversible iterator over the values of the tree.
     public func vals<K, V>(self : BpTree<K, V>) : RevIter<V> {
         Methods.vals(self);
     };
@@ -575,7 +577,8 @@ module BpTree {
         Methods.get_from_index(self, i);
     };
 
-    /// Returns an iterator over the entries of the tree in the range [start, end].
+    /// Returns an iterator over the entries of the tree in the range [start, end).
+    /// The iterator is inclusive of start and exclusive of end.
     public func range<K, V>(self : BpTree<K, V>, start : Nat, end : Nat) : RevIter<(K, V)> {
         Methods.range(self, start, end);
     };
@@ -590,6 +593,35 @@ module BpTree {
     ///
     public func scan<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, start : ?K, end : ?K) : RevIter<(K, V)> {
         Methods.scan(self, cmp, start, end);
+    };
+
+    public func clear<K, V>(self: BpTree<K, V>){
+
+        let leaf = switch(self.root){
+            case (#leaf(leaf)) leaf;
+            case (#branch(branch)) Methods.get_min_leaf_node(self);
+        };
+
+        var cnt = leaf.0[C.COUNT];
+
+        leaf.0[C.ID] := 0;
+        leaf.0[C.INDEX] := 0;
+        leaf.0[C.COUNT] := 0;
+
+        leaf.1[C.PARENT] := null;
+
+        leaf.2[C.PREV] := null;
+        leaf.2[C.NEXT] := null;
+
+        while (cnt > 0) {
+            leaf.3[cnt - 1] := null;
+            cnt -= 1;
+        };
+
+        self.root := #leaf(leaf);
+        self.size := 0;
+
+        self.next_id := 1;
     };
     
 
@@ -644,74 +676,5 @@ module BpTree {
 
         Buffer.toArray(buffer);
     };
-
-    // //Cursor.Cursor<K, V>
-
-    // /// Returns a cursor pointing to the first element in the tree
-    // public func cursorAtFirst<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>) : Cursor<K, V> {
-    //     let leaf_node = Methods.get_min_leaf_node(self);
-    //     var i = 0;
-
-    //     Cursor.Cursor(self, cmp, leaf_node, i);
-    // };
-
-    // /// Returns a cursor pointing to the last element in the tree
-    // public func cursorAtLast<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>) : Cursor<K, V> {
-    //     let leaf_node = Methods.get_max_leaf_node(self);
-    //     var i = leaf_node.0[C.COUNT] - 1 : Nat;
-
-    //     Cursor.Cursor(self, cmp, leaf_node, i);
-    // };
-
-    // /// Returns a cursor pointing to the given key.
-    // /// This function returns a Result because it is not guaranteed that the key exists in the tree.
-    // /// The function returns #ok(cursor) if the key exists and #err("key not found") otherwise.
-    // ///
-    // /// Consider using [cursorAtUpperBound](#cursorAtUpperBound) or [cursorAtLowerBound](#cursorAtLowerBound)
-    // /// if you want to get a cursor that falls back to the upper or lower bound of the given key instead of returning an error
-    // public func cursorAtKey<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, key : K) : Result<Cursor<K, V>, Text> {
-    //     let leaf_node = Methods.get_leaf_node(self, cmp, key);
-    //     let i = ArrayMut.binary_search<K, (K, V)>(leaf_node.3, Utils.adapt_cmp(cmp), key, leaf_node.0[C.COUNT]);
-
-    //     if (i < 0) {
-    //         return #err("key not found");
-    //     };
-
-    //     let cursor = Cursor.Cursor<K, V>(self, cmp, leaf_node, Int.abs(i));
-    //     #ok(cursor);
-    // };
-
-    // /// Returns a cursor pointing to the element that is less than or equal to the given key
-    // /// In other words, it returns a cursor pointing to an element that is upper bounded by the given key
-    // public func cursorAtUpperBound<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, key : K) : Cursor<K, V> {
-    //     var leaf_node = Methods.get_leaf_node(self, cmp, key);
-    //     let i = ArrayMut.binary_search<K, (K, V)>(leaf_node.3, Utils.adapt_cmp(cmp), key, leaf_node.0[C.COUNT]);
-
-    //     let index = if (i < 0) Int.abs(i + 1) else Int.abs(i);
-
-    //     // add function to move to the previous element
-    //     Cursor.Cursor<K, V>(self, cmp, leaf_node, index);
-    // };
-
-    // /// Returns a cursor pointing to the element that is greater than or equal to the given key
-    // /// In other words, it returns a cursor pointing to an element that is lower bounded by the given key
-    // public func cursorAtLowerBound<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, key : K) : Cursor<K, V> {
-    //     var leaf_node = Methods.get_leaf_node(self, cmp, key);
-    //     let i = ArrayMut.binary_search<K, (K, V)>(leaf_node.3, Utils.adapt_cmp(cmp), key, leaf_node.0[C.COUNT]);
-
-    //     var index = if (i < 0) (Int.abs(i) - 1 : Nat) else Int.abs(i);
-
-    //     if (index == leaf_node.0[C.COUNT]) {
-    //         switch (leaf_node.2[C.NEXT]) {
-    //             case (?next) {
-    //                 leaf_node := next;
-    //                 index := 0;
-    //             };
-    //             case (_) {};
-    //         };
-    //     };
-
-    //     Cursor.Cursor<K, V>(self, cmp, leaf_node, index);
-    // };
 
 };

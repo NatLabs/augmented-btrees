@@ -6,6 +6,7 @@ module {
 
     public type CmpFn<A> = (A, A) -> Int8;
     public type MultiCmpFn<A, B> = (A, B) -> Int8;
+    public type LeafEntry<K, V> = (Leaf<K, V>, Nat, (K, V));
 
     public type MaxBpTree<K, V> = {
         order : Nat;

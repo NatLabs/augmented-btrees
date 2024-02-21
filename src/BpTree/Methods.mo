@@ -155,12 +155,6 @@ module Methods {
         };
     };
 
-    public func extract<T>(arr : [var ?T], index : Nat) : ?T {
-        let tmp = arr[index];
-        arr[index] := null;
-        tmp;
-    };
-
     public func gen_id<K, V>(bptree : BpTree<K, V>) : Nat {
         let id = bptree.next_id;
         bptree.next_id += 1;
@@ -467,14 +461,14 @@ module Methods {
         leaf_node.3[leaf_node.0[C.COUNT] - 1];
     };
 
-    // Returns a double ended iterator over the entries of the tree.
+    // Returns a reversible iterator over the entries of the tree.
     public func entries<K, V>(bptree : BpTree<K, V>) : RevIter<(K, V)> {
         let min_leaf = get_min_leaf_node(bptree);
         let max_leaf = get_max_leaf_node(bptree);
         new_iterator(min_leaf, 0, max_leaf, max_leaf.0[C.COUNT]);
     };
 
-    // Returns a double ended iterator over the keys of the tree.
+    // Returns a reversible iterator over the keys of the tree.
     public func keys<K, V>(self : BpTree<K, V>) : RevIter<K> {
         RevIter.map(
             entries(self),
@@ -484,7 +478,7 @@ module Methods {
         );
     };
 
-    // Returns a double ended iterator over the values of the tree.
+    // Returns a reversible iterator over the values of the tree.
     public func vals<K, V>(self : BpTree<K, V>) : RevIter<V> {
         RevIter.map(
             entries(self),

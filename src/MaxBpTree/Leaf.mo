@@ -66,7 +66,7 @@ module Leaf {
             i -= 1;
         };
 
-        Common.update_leaf_fields(leaf, cmp_val, index, kv.0, kv.1);
+        Common.update_leaf_with_kv_pair(leaf, cmp_val, index, kv);
 
         leaf.3[i] := ?kv;
         leaf.0[C.COUNT] += 1;
@@ -108,7 +108,7 @@ module Leaf {
             } else Debug.trap("Leaf.split: kv is null");
 
             right_node.3[i] := ?kv;
-            Common.update_leaf_fields(right_node, cmp_val, i, kv.0, kv.1);
+            Common.update_leaf_with_kv_pair(right_node, cmp_val, i, kv);
 
             i += 1;
         };
@@ -138,9 +138,9 @@ module Leaf {
 
             if (moved_left_max) {
                 let ?kv = leaf.3[j] else Debug.trap("Leaf.split: kv is null");
-                Common.update_leaf_fields(leaf, cmp_val, j, kv.0, kv.1);
+                Common.update_leaf_with_kv_pair(leaf, cmp_val, j, kv);
             }else if (j == elem_index) {
-                Common.update_leaf_fields(leaf, cmp_val, j, elem.0, elem.1);
+                Common.update_leaf_with_kv_pair(leaf, cmp_val, j, elem);
             };
 
             if (j == 0) break while_loop else j -= 1;
@@ -180,7 +180,7 @@ module Leaf {
         leaf.3[index] := ?kv;
     };
 
-    public func remove<K, V>(
+    public func remove_and_calc_max<K, V>(
         leaf : Leaf<K, V>,
         index : Nat,
         count : Nat,
@@ -188,18 +188,23 @@ module Leaf {
     ) : ?(K, V) {
         let removed = leaf.3[index];
         
-        let max_index = leaf.0[C.MAX_INDEX];
+        var i = 0;
 
-        let is_max_removed = max_index == index;
+        let is_max_removed = leaf.0[C.MAX_INDEX] == index;
         if (is_max_removed) {
             leaf.4[C.MAX] := null;
-        } else if (max_index > index) {
-            let ?max = leaf.4[C.MAX] else Debug.trap("Leaf.remove: max is null");
-            leaf.4[C.MAX] := ?(max.0, max.1);
+
+            while ( i < index){
+                let ?kv = leaf.3[i] else Debug.trap("Leaf.remove: accessed a null value");
+                Common.update_leaf_with_kv_pair(leaf, cmp_val, i, kv);
+                i += 1;
+            };
+        } else if (leaf.0[C.MAX_INDEX] > index) {
             leaf.0[C.MAX_INDEX] -= 1;
         };
 
-        var i = index;
+        // assert i == index;
+
         while (i < (count - 1 : Nat)) {
             leaf.3[i] := leaf.3[i + 1];
 
@@ -207,23 +212,13 @@ module Leaf {
 
             if (is_max_removed){
                 // update with the prev index as it will be updated after the loop
-                Common.update_leaf_fields(leaf, cmp_val, i, kv.0, kv.1);
+                Common.update_leaf_with_kv_pair(leaf, cmp_val, i, kv);
             };
 
             i += 1;
         };
 
         leaf.3[count - 1] := null;
-
-        if (is_max_removed){
-            var i = 0;
-
-            while ( i < index){
-                let ?kv = leaf.3[i] else Debug.trap("Leaf.remove: accessed a null value");
-                Common.update_leaf_fields(leaf, cmp_val, i, kv.0, kv.1);
-                i += 1;
-            };
-        };
 
         // self.0[C.COUNT] -=1;
 
@@ -275,7 +270,7 @@ module Leaf {
 
             var i = 0;
             Leaf.shift_by(leaf_node, 0, leaf_node.0[C.COUNT], data_to_move);
-            for (_ in Iter.range(0, data_to_move - 1)) {
+            while (i < data_to_move) {
                 let opt_kv = ArrayMut.remove(adj_node.3, adj_node.0[C.COUNT] - i - 1 : Nat, adj_node.0[C.COUNT]);
                 let ?kv = opt_kv else Debug.trap("Leaf.redistribute_keys: kv is null");
 
@@ -307,7 +302,7 @@ module Leaf {
             // adj_node is after leaf_node
 
             var i = 0;
-            for (_ in Iter.range(0, data_to_move - 1)) {
+            while (i < data_to_move) {
                 let opt_kv = adj_node.3[i];
                 ArrayMut.insert(leaf_node.3, leaf_node.0[C.COUNT] + i, opt_kv, leaf_node.0[C.COUNT]);
 
@@ -344,7 +339,7 @@ module Leaf {
 
             while (i < adj_node.0[C.COUNT]) {
                 let ?kv = adj_node.3[i] else Debug.trap("Leaf.redistribute_keys: kv is null");
-                Common.update_leaf_fields(adj_node, cmp_val, i, kv.0, kv.1);
+                Common.update_leaf_with_kv_pair(adj_node, cmp_val, i, kv);
                 i += 1;
             };
 
@@ -394,12 +389,12 @@ module Leaf {
         var is_updated = false;
 
         // merge right into left
-        for (_ in Iter.range(0, right.0[C.COUNT] - 1)) {
+        while (i < right.0[C.COUNT]) {
             let opt_kv = right.3[i];
             ArrayMut.insert(left.3, left.0[C.COUNT] + i, opt_kv, left.0[C.COUNT]);
 
             let ?kv = opt_kv else Debug.trap("Leaf.merge: kv is null");
-            Common.update_leaf_fields(left, cmp_val, left.0[C.COUNT] + i, kv.0, kv.1);
+            Common.update_leaf_with_kv_pair(left, cmp_val, left.0[C.COUNT] + i, kv);
 
             i += 1;
         };
