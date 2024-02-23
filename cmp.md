@@ -101,6 +101,8 @@ Heap
 
 #### Using a circular buffer to improve delete() performance
 
+worse performance because of the internal operations required to find the real index each element
+
 #### Addition of ranking operations: getIndex() and getFromIndex()
 **Instructions**
 

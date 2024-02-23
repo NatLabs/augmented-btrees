@@ -14,7 +14,7 @@ import { BpTree; Cmp } "../src";
 import Utils "../src/internal/Utils";
 import BpTreeMethods "../src/BpTree/Methods";
 
-import {Const = C} "../src/BpTree/Types";
+import { Const = C } "../src/BpTree/Types";
 
 type Order = Order.Order;
 
@@ -42,7 +42,7 @@ func bp_tree_test(order : Nat, random : Buffer.Buffer<Nat>) {
     sorted.sort(Nat.compare);
 
     let iter = Iter.map<Nat, (Nat, Nat)>(random.vals(), func(n : Nat) : (Nat, Nat) = (n, n));
-    let bptree = BpTree.fromEntries<Nat, Nat>(?order, iter, Cmp.Nat);
+    let bptree = BpTree.fromEntries<Nat, Nat>(iter, Cmp.Nat, ?order);
 
     test(
         "insert random",
@@ -56,8 +56,8 @@ func bp_tree_test(order : Nat, random : Buffer.Buffer<Nat>) {
                 // Debug.print("leafs " # debug_show BpTree.toLeafNodes(bptree));
 
                 let subtree_size = switch (bptree.root) {
-                    case (#branch(node)) { node.0[C.SUBTREE_SIZE] };
-                    case (#leaf(node)) { node.0[C.COUNT] };
+                    case (#branch(node)) { node.0 [C.SUBTREE_SIZE] };
+                    case (#leaf(node)) { node.0 [C.COUNT] };
                 };
 
                 assert subtree_size == i + 1;
@@ -66,8 +66,8 @@ func bp_tree_test(order : Nat, random : Buffer.Buffer<Nat>) {
             assert BpTree.size(bptree) == random.size();
             // validate root subtree_size
             let root_subtree_size = switch (bptree.root) {
-                case (#leaf(node)) node.0[C.COUNT];
-                case (#branch(node)) node.0[C.SUBTREE_SIZE];
+                case (#leaf(node)) node.0 [C.COUNT];
+                case (#branch(node)) node.0 [C.SUBTREE_SIZE];
             };
 
             assert root_subtree_size == random.size();
@@ -87,17 +87,19 @@ func bp_tree_test(order : Nat, random : Buffer.Buffer<Nat>) {
         },
     );
 
-    test("insert() for replacing entries", func() {
-        let bptree = BpTree.fromEntries<Nat, Nat>(?order, map_to_entries(random.vals()), Cmp.Nat);
-        assert BpTree.size(bptree) == random.size();
+    test(
+        "insert() for replacing entries",
+        func() {
+            let bptree = BpTree.fromEntries<Nat, Nat>(map_to_entries(random.vals()), Cmp.Nat, ?order);
+            assert BpTree.size(bptree) == random.size();
 
-        for ((k, v) in map_to_entries(random.vals())){
-            let choice = fuzz.nat.randomRange(0, 1);
-            let new_value = if (choice == 0) (v / 10) else (v * 10);
-            assert ?v == BpTree.insert(bptree, Cmp.Nat, k, new_value);
-        };
-    });
-
+            for ((k, v) in map_to_entries(random.vals())) {
+                let choice = fuzz.nat.randomRange(0, 1);
+                let new_value = if (choice == 0) (v / 10) else (v * 10);
+                assert ?v == BpTree.insert(bptree, Cmp.Nat, k, new_value);
+            };
+        },
+    );
 
     test(
         "delete with ascending order",
@@ -106,7 +108,7 @@ func bp_tree_test(order : Nat, random : Buffer.Buffer<Nat>) {
             let rand = Itertools.toBuffer<(Nat, Nat)>(iter);
             rand.sort(func(a : (Nat, Nat), b : (Nat, Nat)) : Order = Nat.compare(a.0, b.0));
 
-            let bptree = BpTree.fromEntries<Nat, Nat>(?order, rand.vals(), Cmp.Nat);
+            let bptree = BpTree.fromEntries<Nat, Nat>(rand.vals(), Cmp.Nat, ?order);
             assert BpTree.size(bptree) == rand.size();
 
             label _l for ((i, (k, v)) in Itertools.enumerate(rand.vals())) {
@@ -121,8 +123,8 @@ func bp_tree_test(order : Nat, random : Buffer.Buffer<Nat>) {
                 assert BpTree.size(bptree) == (rand.size() - i - 1 : Nat);
 
                 let root_subtree_size = switch (bptree.root) {
-                    case (#branch(node)) { node.0[C.SUBTREE_SIZE] };
-                    case (#leaf(node)) { node.0[C.COUNT] };
+                    case (#branch(node)) { node.0 [C.SUBTREE_SIZE] };
+                    case (#leaf(node)) { node.0 [C.COUNT] };
                 };
 
                 assert root_subtree_size == (rand.size() - i - 1 : Nat);
@@ -140,7 +142,7 @@ func bp_tree_test(order : Nat, random : Buffer.Buffer<Nat>) {
             let iter = Iter.map<Nat, (Nat, Nat)>(random.vals(), func(n : Nat) : (Nat, Nat) = (n, n));
             let rand = Itertools.toBuffer<(Nat, Nat)>(iter);
             rand.sort(func(a : (Nat, Nat), b : (Nat, Nat)) : Order = Nat.compare(b.0, a.0));
-            let bptree = BpTree.fromEntries<Nat, Nat>(?order, rand.vals(), Cmp.Nat);
+            let bptree = BpTree.fromEntries<Nat, Nat>(rand.vals(), Cmp.Nat, ?order);
             assert BpTree.size(bptree) == rand.size();
 
             label _l for ((i, n) in Itertools.enumerate(sorted.vals())) {
@@ -155,8 +157,8 @@ func bp_tree_test(order : Nat, random : Buffer.Buffer<Nat>) {
                 assert BpTree.size(bptree) == (sorted.size() - i - 1 : Nat);
 
                 let root_subtree_size = switch (bptree.root) {
-                    case (#branch(node)) { node.0[C.SUBTREE_SIZE] };
-                    case (#leaf(node)) { node.0[C.COUNT] };
+                    case (#branch(node)) { node.0 [C.SUBTREE_SIZE] };
+                    case (#leaf(node)) { node.0 [C.COUNT] };
                 };
 
                 assert root_subtree_size == (sorted.size() - i - 1 : Nat);
@@ -223,7 +225,7 @@ func bp_tree_test(order : Nat, random : Buffer.Buffer<Nat>) {
             |> Itertools.toBuffer<Nat>(_);
 
             let bptree = Iter.map<Nat, (Nat, Nat)>(sorted.vals(), func(n : Nat) : (Nat, Nat) = (n, n))
-            |> BpTree.fromEntries<Nat, Nat>(?order, _, Cmp.Nat);
+            |> BpTree.fromEntries<Nat, Nat>(_, Cmp.Nat, ?order);
 
             for (i in Itertools.range(0, sorted.size())) {
                 var key = sorted.get(i);
@@ -277,7 +279,7 @@ func bp_tree_test(order : Nat, random : Buffer.Buffer<Nat>) {
             |> Itertools.toBuffer<Nat>(_);
 
             let bptree = Iter.map<Nat, (Nat, Nat)>(sorted.vals(), func(n : Nat) : (Nat, Nat) = (n, n))
-            |> BpTree.fromEntries<Nat, Nat>(?order, _, Cmp.Nat);
+            |> BpTree.fromEntries<Nat, Nat>(_, Cmp.Nat, ?order);
 
             for (i in Itertools.range(0, sorted.size())) {
                 var key = sorted.get(i);
@@ -327,7 +329,7 @@ func bp_tree_test(order : Nat, random : Buffer.Buffer<Nat>) {
         "entries.rev()",
         func() {
             let iter = Iter.map<Nat, (Nat, Nat)>(random.vals(), func(n : Nat) : (Nat, Nat) = (n, n));
-            let bptree = BpTree.fromEntries<Nat, Nat>(?order, iter, Cmp.Nat);
+            let bptree = BpTree.fromEntries<Nat, Nat>(iter, Cmp.Nat, ?order);
 
             let rand = Buffer.clone(sorted);
             Buffer.reverse(rand);
@@ -399,7 +401,7 @@ func bp_tree_test(order : Nat, random : Buffer.Buffer<Nat>) {
             let iter = Iter.map<Nat, (Nat, Nat)>(random.vals(), func(n : Nat) : (Nat, Nat) = (n, n));
             let _rand = Iter.toArray<(Nat, Nat)>(Itertools.take(iter, 100));
 
-            let bptree = BpTree.fromEntries<Nat, Nat>(?order, _rand.vals(), Cmp.Nat);
+            let bptree = BpTree.fromEntries<Nat, Nat>(_rand.vals(), Cmp.Nat, ?order);
             let rand = Array.sort<(Nat, Nat)>(_rand, Utils.tuple_cmp(Nat.compare));
 
             for (i in Itertools.range(0, BpTree.size(bptree))) {

@@ -5,62 +5,77 @@ This library contains implementations of different Btree variants.
 - [ ] Max Value B+ Tree ([MaxBpTree](https://mops.one/augmented-btrees/docs/MaxBpTree/lib#new)) `in-progress`
 
 ### Usage
-- Import the library 
+- **Import the library **
   
 ```motoko
-    import { BpTree } "mo:augmented-btrees";
+    import { BpTree; MaxBpTree; Cmp } "mo:augmented-btrees";
 ```
 
-- Create a new B+ Tree 
-    - When creating a new B+ Tree, you can specify the order of the tree. The order of the tree is the maximum number of children a node can have. The order must be between 4 and 512. The default order is 32.
+- **Creating a new B+ Tree**
+    - You can specify the `order` of the tree. The `order` of the tree is the maximum number of entries a single leaf node can store. The order can be any number in this range [4, 8, 16, 32, 64, 128, 256, 516]. The default order is 32.
 
 ```motoko
     let bptree = BpTree.new(?32);
 ```
 
-- Examples of operations on a B+ Tree
+- **Comparator Function**
+  - This library replaces the default comparator function found in motoko's base module lib with a `Cmp` module for better performance. The default comparator returns an `Order` type which has a higher overhead than the `Int8` type returned the functions in the `Cmp` module.
+  - The `Cmp` module contains functions for all the primitive types in motoko.
+  - Here's is an example creating a B+Tree that stores and compares `Char` keys.
+    ```motoko
+        import { BpTree; Cmp } "mo:augmented-btrees";
+        
+        let arr = [('A', 0), ('B', 1), ('C', 2), ('D', 3), ('E', 4)];
+
+        let bptree = BpTree.fromArray(arr, Cmp.Char, null);
+
+    ```
+  - You can define your own comparator function for custome types. The comparator function must return an `Int8` value. The value returned should be:
+    - `0` if the two values are equal
+    - `1` if the first value is greater than the second value
+    - `-1` if the first value is less than the second value
+
+- **Examples of operations on a B+ Tree**
 ```motoko
-    let bptree = BpTree.fromArray(?32, [('A', 0), ('B', 1), ('C', 2), ('D', 3), ('E', 4)], Char.compare);
+    let arr = [('A', 0), ('B', 1), ('C', 2), ('D', 3), ('E', 4)];
+    let bptree = BpTree.fromArray(arr, Cmp.Char, null);
 
-    assert Iter.toArray(BpTree.keys(bptree)) == ['A', 'B', 'C', 'D'];
+    assert BpTree.get(bptree, 'A') == ?0;
 
-    assert BpTree.get(bptree, 'A') == 0;
-
-    ignore BpTree.insert(bptree, 'E', 4);
-    assert Iter.toArray(BpTree.vals(bptree)) == ['A', 'B', 'C', 'D', 'E'];
+    ignore BpTree.insert(bptree, 'F', 5);
+    assert Iter.toArray(BpTree.vals(bptree)) == ['A', 'B', 'C', 'D', 'E', 'F];
 
     // replace
     assert BpTree.insert(bptree, 'C', 33) == ?3;
 
-    assert BpTree.remove(bptree, Char.compare, 'C') == ?33;
-    assert BpTree.toArray(bptree) == [('A', 0), ('B', 1), ('D', 3), ('E', 4)];
+    assert BpTree.remove(bptree, Cmp.Char, 'C') == ?33;
+    assert BpTree.toArray(bptree) == [('A', 0), ('B', 1), ('D', 3), ('E', 4), ('F', 5)];
 
-    assert BpTree.min(bptree, Char.compare) == ?('A', 0);
-    assert BpTree.max(bptree, Char.compare) == ?('E', 4);
+    assert BpTree.min(bptree, Cmp.Char) == ?('A', 0);
+    assert BpTree.max(bptree, Cmp.Char) == ?('F', 5);
 
     // get sorted position of a key
-    assert BpTree.getIndex(bptree, Char.compare, 'A') == 0;
+    assert BpTree.getIndex(bptree, Cmp.Char, 'A') == 0;
 
     // get the key and value at a given position
     assert BpTree.getFromIndex(bptree, 0) == ('A', 0);
 ```
 
-- Iterating over a B+ Tree
+- **Iterating over a B+ Tree**
     - Each iterator is implemented as a Reversible Iterator (`RevIter`) and can be iterated in both directions.
     - An iter can be created from a B+ Tree using the `entries()`, `keys()`, `vals()`, `scan()`, or `range()` functions.
     - The iterator can be reversed just by calling the `rev()` function on the iterator.
+    > More information on reversible iterators can be found in the itertools library [docs](https://mops.one/itertools/docs/RevIter)
 
 ```motoko
-    let bptree = BpTree.fromArray(?32, [('A', 0), ('B', 1), ('C', 2), ('D', 3), ('E', 4)], Char.compare);
-
     let entries = BpTree.entries(bptree);
     assert Iter.toArray(entries.rev()) == [('E', 4), ('D', 3), ('C', 2), ('B', 1), ('A', 0)];
 
-    // search for elements bounded by the given keys (the keys are inclusive)
-    let results = BpTree.scan(bptree, Char.compare, ?'B', ?'D');
+    // search for elements bounded by the given keys
+    let results = BpTree.scan(bptree, Cmp.Char, ?'B', ?'D');
     assert Iter.toArray(results) == [('B', 1), ('C', 2), ('D', 3)];
     
-    let results2 = BpTree.scan(bptree, Char.compare, ?'A', ?'C');
+    let results2 = BpTree.scan(bptree, Cmp.Char, ?'A', ?'C');
     assert Iter.toArray(results2.rev()) == [('C', 2), ('B', 1), ('A', 0)];
 
     // retrieve elements by their index
@@ -68,7 +83,7 @@ This library contains implementations of different Btree variants.
     assert Iter.toArray(range1) == [('C', 2), ('D', 3), ('E', 4)];
 
     // retrieve the next 3 elements after a given key
-    let index_of_B = BpTree.getIndex(bptree, Char.compare, 'B');
+    let index_of_B = BpTree.getIndex(bptree, Cmp.Char, 'B');
     assert index_of_B == 1;
     
     let range2 = BpTree.range(bptree, index_of_B + 1, indexB + 3);

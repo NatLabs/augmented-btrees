@@ -80,10 +80,10 @@ module BpTree {
     /// #### Examples
     /// ```motoko
     ///     let entries = [('A', 1), ('B', 2), ('C', 3)].vals();
-    ///     let bptree = BpTree.fromEntries<Char, Nat>(null, entries, Cmp.Char);
+    ///     let bptree = BpTree.fromEntries<Char, Nat>(entries, Cmp.Char, null);
     /// ```
 
-    public func fromEntries<K, V>(order : ?Nat, entries : Iter<(K, V)>, cmp : CmpFn<K>) : BpTree<K, V> {
+    public func fromEntries<K, V>(entries : Iter<(K, V)>, cmp : CmpFn<K>, order : ?Nat) : BpTree<K, V> {
         let bptree = BpTree.new<K, V>(order);
 
         for ((k, v) in entries) {
@@ -103,17 +103,10 @@ module BpTree {
     /// #### Examples
     /// ```motoko
     ///    let arr = [('A', 1), ('B', 2), ('C', 3)];
-    ///    let bptree = BpTree.fromArray<Char, Nat>(null, arr, Cmp.Char);
+    ///    let bptree = BpTree.fromArray<Char, Nat>(arr, Cmp.Char, null);
     /// ```
-    public func fromArray<K, V>(order : ?Nat, arr : [(K, V)], cmp : CmpFn<K>) : BpTree<K, V> {
-        let bptree = BpTree.new<K, V>(order);
-
-        for (kv in arr.vals()) {
-            let (k, v) = kv;
-            ignore insert(bptree, cmp, k, v);
-        };
-
-        bptree;
+    public func fromArray<K, V>(arr : [(K, V)], cmp : CmpFn<K>, order : ?Nat) : BpTree<K, V> {
+        fromEntries(arr.vals(), cmp, order);
     };
 
     /// Returns a sorted array of the key-value pairs in the tree.
@@ -121,7 +114,7 @@ module BpTree {
     /// #### Examples
     /// ```motoko
     ///     let arr = [('A', 1), ('B', 2), ('C', 3)];
-    ///     let bptree = BpTree.fromArray<Char, Nat>(null, arr, Cmp.Char);
+    ///     let bptree = BpTree.fromArray<Char, Nat>(arr, Cmp.Char, null);
     ///     assert BpTree.toArray(bptree) == arr;
     /// ```
     public func toArray<K, V>(self : BpTree<K, V>) : [(K, V)] {
@@ -133,7 +126,7 @@ module BpTree {
     /// #### Examples
     /// ```motoko
     ///     let arr = [('A', 1), ('B', 2), ('C', 3)];
-    ///     let bptree = BpTree.fromArray<Char, Nat>(null, arr, Cmp.Char);
+    ///     let bptree = BpTree.fromArray<Char, Nat>(arr, Cmp.Char, null);
     ///
     ///     assert BpTree.size(bptree) == 3;
     /// ```
@@ -147,7 +140,7 @@ module BpTree {
     /// #### Examples
     /// ```motoko
     ///     let arr = [('A', 1), ('B', 2), ('C', 3)];
-    ///     let bptree = BpTree.fromArray<Char, Nat>(null, arr, Cmp.Char);
+    ///     let bptree = BpTree.fromArray<Char, Nat>(arr, Cmp.Char, null);
     ///
     ///     assert BpTree.get(bptree, Cmp.Char, 'A') == 1;
     ///     assert BpTree.get(bptree, Cmp.Char, 'D') == null;
@@ -192,8 +185,8 @@ module BpTree {
     /// ```motoko
     ///     let bptree = BpTree.new<Text, Nat>(?32);
     ///
-    ///     assert BpTree.insert(bptree, Text.compare, "id", 1) == null;
-    ///     assert BpTree.insert(bptree, Text.compare, "id", 2) == ?1;
+    ///     assert BpTree.insert(bptree, Cmp.Text, "id", 1) == null;
+    ///     assert BpTree.insert(bptree, Cmp.Text, "id", 2) == ?1;
     /// ```
     public func insert<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, key : K, val : V) : ?V {
         func inc_branch_subtree_size(branch : Branch<K, V>, index: Nat) {
@@ -326,7 +319,7 @@ module BpTree {
     /// #### Examples
     /// ```motoko
     ///     let arr = [('A', 1), ('B', 2), ('C', 3)];
-    ///     let bptree = BpTree.fromArray<Char, Nat>(null, arr, Cmp.Char);
+    ///     let bptree = BpTree.fromArray<Char, Nat>(arr, Cmp.Char, null);
     ///
     ///     assert BpTree.remove(bptree, Cmp.Char, 'A') == ?1;
     ///     assert BpTree.remove(bptree, Cmp.Char, 'D') == null;
@@ -472,7 +465,7 @@ module BpTree {
     /// #### Examples
     /// ```motoko
     ///     let arr = [('A', 1), ('B', 2), ('C', 3)];
-    ///     let bptree = BpTree.fromArray<Char, Nat>(null, arr, Cmp.Char);
+    ///     let bptree = BpTree.fromArray<Char, Nat>(arr, Cmp.Char, null);
     ///
     ///     assert BpTree.min(bptree) == ?('A', 1);
     /// ```
@@ -486,7 +479,7 @@ module BpTree {
     /// #### Examples
     /// ```motoko
     ///     let arr = [('A', 1), ('B', 2), ('C', 3)];
-    ///     let bptree = BpTree.fromArray<Char, Nat>(null, arr, Cmp.Char);
+    ///     let bptree = BpTree.fromArray<Char, Nat>(arr, Cmp.Char, null);
     ///
     ///     assert BpTree.max(bptree) == ?('C', 3);
     /// ```
@@ -500,7 +493,7 @@ module BpTree {
     /// #### Examples
     /// ```motoko
     ///     let arr = [('A', 1), ('B', 2), ('C', 3)];
-    ///     let bptree = BpTree.fromArray<Char, Nat>(null, arr, Cmp.Char);
+    ///     let bptree = BpTree.fromArray<Char, Nat>(arr, Cmp.Char, null);
     ///
     ///     assert BpTree.removeMin(bptree, Cmp.Char) == ?('A', 1);
     /// ```
@@ -518,7 +511,7 @@ module BpTree {
     /// #### Examples
     /// ```motoko
     ///     let arr = [('A', 1), ('B', 2), ('C', 3)];
-    ///     let bptree = BpTree.fromArray<Char, Nat>(null, arr, Cmp.Char);
+    ///     let bptree = BpTree.fromArray<Char, Nat>(arr, Cmp.Char, null);
     ///
     ///     assert BpTree.removeMax(bptree, Cmp.Char) == ?('C', 3);
     /// ```
@@ -553,7 +546,7 @@ module BpTree {
     /// #### Examples
     /// ```motoko
     ///     let arr = [('A', 1), ('B', 2), ('C', 3)];
-    ///     let bptree = BpTree.fromArray<Char, Nat>(null, arr, Cmp.Char);
+    ///     let bptree = BpTree.fromArray<Char, Nat>(arr, Cmp.Char, null);
     ///
     ///     assert BpTree.getIndex(bptree, Cmp.Char, 'B') == 1;
     ///     assert BpTree.getIndex(bptree, Cmp.Char, 'D') == 3;
@@ -568,7 +561,7 @@ module BpTree {
     /// #### Examples
     /// ```motoko
     ///     let arr = [('A', 1), ('B', 2), ('C', 3)];
-    ///     let bptree = BpTree.fromArray<Char, Nat>(null, arr, Cmp.Char);
+    ///     let bptree = BpTree.fromArray<Char, Nat>(arr, Cmp.Char, null);
     ///
     ///     assert BpTree.getFromIndex(bptree, 0) == ('A', 1);
     ///     assert BpTree.getFromIndex(bptree, 1) == ('B', 2);
@@ -577,7 +570,7 @@ module BpTree {
         Methods.get_from_index(self, i);
     };
 
-    /// Returns an iterator over the entries of the tree in the range [start, end).
+    /// Returns an iterator over the entries of the tree in the range [start, end].
     /// The iterator is inclusive of start and exclusive of end.
     public func range<K, V>(self : BpTree<K, V>, start : Nat, end : Nat) : RevIter<(K, V)> {
         Methods.range(self, start, end);

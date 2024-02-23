@@ -35,7 +35,7 @@ jobs:
             ~/.cache/mops
             ~/mops
 
-      - uses: aviate-labs/setup-dfx@v0.2.3
+      - uses: aviate-labs/setup-dfx@v0.2.6
         with:
           dfx-version: 0.15.0
 

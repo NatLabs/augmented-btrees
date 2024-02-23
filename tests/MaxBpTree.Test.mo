@@ -291,7 +291,7 @@ func max_bp_tree_test(order : Nat, random : Buffer.Buffer<(Nat, Nat)>, sorted_by
         "maxValue(): replacing entries with lower values",
         func() {
             let sorted_by_val = Itertools.toBuffer<(Nat, Nat)>(random.vals());
-            let max_bp_tree = MaxBpTree.fromEntries(?order, sorted_by_val.vals(), Cmp.Nat, Cmp.Nat);
+            let max_bp_tree = MaxBpTree.fromEntries(sorted_by_val.vals(), Cmp.Nat, Cmp.Nat, ?order);
             // assert MaxBpTree.size(max_bp_tree) == random.size();
             sorted_by_val.sort(Utils.tuple_cmp_val(Nat.compare));
 
@@ -357,7 +357,7 @@ func max_bp_tree_test(order : Nat, random : Buffer.Buffer<(Nat, Nat)>, sorted_by
             sorted_by_val.sort(Utils.tuple_cmp_val(Nat.compare));
             Buffer.reverse(sorted_by_val);
 
-            let max_bp_tree = MaxBpTree.fromEntries(?order, random.vals(), Cmp.Nat, Cmp.Nat);
+            let max_bp_tree = MaxBpTree.fromEntries(random.vals(), Cmp.Nat, Cmp.Nat, ?order);
             assert max_bp_tree.order == order;
 
             label for_loop for ((i, expected) in Itertools.enumerate(sorted_by_val.vals())) {
@@ -410,7 +410,7 @@ func max_bp_tree_test(order : Nat, random : Buffer.Buffer<(Nat, Nat)>, sorted_by
         "removeMin(): test _remove_from_leaf",
         func() {
             let value_map = MaxValueMap(?random);
-            let max_bp_tree = MaxBpTree.fromEntries(?order, random.vals(), Cmp.Nat, Cmp.Nat);
+            let max_bp_tree = MaxBpTree.fromEntries(random.vals(), Cmp.Nat, Cmp.Nat, ?order);
 
             label for_loop for ((i, expected) in Itertools.enumerate(sorted_by_key.vals())) {
                 let (min_key, min_val) = expected;
@@ -465,7 +465,7 @@ func max_bp_tree_test(order : Nat, random : Buffer.Buffer<(Nat, Nat)>, sorted_by
         func() {
 
             let value_map = MaxValueMap(?random);
-            let max_bp_tree = MaxBpTree.fromEntries(?order, random.vals(), Cmp.Nat, Cmp.Nat);
+            let max_bp_tree = MaxBpTree.fromEntries(random.vals(), Cmp.Nat, Cmp.Nat, ?order);
 
             label for_loop for ((i, (k, v)) in Itertools.enumerate(random.vals())) {
 
@@ -512,7 +512,7 @@ func max_bp_tree_test(order : Nat, random : Buffer.Buffer<(Nat, Nat)>, sorted_by
 
     // todo: check that the tree maintains the max value after replacing a value
     test("test _replace_at_leaf_index()", func (){
-        let max_bptree = MaxBpTree.fromEntries(?order, random.vals(), Cmp.Nat, Cmp.Nat);
+        let max_bptree = MaxBpTree.fromEntries(random.vals(), Cmp.Nat, Cmp.Nat, ?order);
         let value_map = MaxValueMap(?random);
 
         label for_loop for ((i, (leaf, j, prev_entry)) in Itertools.enumerate(MaxBpTree.leafEntries(max_bptree).rev())){
@@ -608,7 +608,7 @@ func max_bp_tree_test(order : Nat, random : Buffer.Buffer<(Nat, Nat)>, sorted_by
 };
 
 func bptree_tests(order : Nat, random : Buffer.Buffer<(Nat, Nat)>, sorted_by_key : Buffer.Buffer<(Nat, Nat)>) {
-    let bptree = MaxBpTree.fromEntries(?order, random.vals(), Cmp.Nat, Cmp.Nat);
+    let bptree = MaxBpTree.fromEntries(random.vals(), Cmp.Nat, Cmp.Nat, ?order);
 
     test(
         "getIndex",
@@ -648,7 +648,7 @@ func bptree_tests(order : Nat, random : Buffer.Buffer<(Nat, Nat)>, sorted_by_key
         func() {
             let _rand = Iter.toArray<(Nat, Nat)>(Itertools.take(random.vals(), 100));
 
-            let bptree = MaxBpTree.fromEntries(?order, _rand.vals(), Cmp.Nat, Cmp.Nat);
+            let bptree = MaxBpTree.fromEntries(_rand.vals(), Cmp.Nat, Cmp.Nat, ?order);
             let rand = Array.sort<(Nat, Nat)>(_rand, Utils.tuple_cmp(Nat.compare));
 
             for (i in Itertools.range(0, MaxBpTree.size(bptree))) {
@@ -679,7 +679,7 @@ func bptree_tests(order : Nat, random : Buffer.Buffer<(Nat, Nat)>, sorted_by_key
         func() {
             let _rand = Iter.toArray<(Nat, Nat)>(Itertools.take(random.vals(), 100));
 
-            let bptree = MaxBpTree.fromEntries(?order, _rand.vals(), Cmp.Nat, Cmp.Nat);
+            let bptree = MaxBpTree.fromEntries(_rand.vals(), Cmp.Nat, Cmp.Nat, ?order);
             let rand = Array.sort<(Nat, Nat)>(_rand, Utils.tuple_cmp(Nat.compare));
 
             for (i in Itertools.range(0, MaxBpTree.size(bptree))) {
