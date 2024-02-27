@@ -24,41 +24,50 @@ module Methods {
     let {Const = C } = T;
 
     public func update_leaf_fields<K, V>(leaf : CommonFields<K, V>, cmp_val : CmpFn<V>, index : Nat, key : K, val : V) {
-        let ?max = leaf.4[C.MAX] else {
-            leaf.4[C.MAX] := ?(key, val);
-            leaf.0[C.MAX_INDEX] := index;
-            return;
+        switch(leaf.4[C.MAX]){
+            case (null){
+                leaf.4[C.MAX] := ?(key, val);
+                leaf.0[C.MAX_INDEX] := index;
+            };
+            case (?max){
+                if (cmp_val(val, max.1) == +1) {
+                    leaf.4[C.MAX] := ?(key, val);
+                    leaf.0[C.MAX_INDEX] := index;
+                };
+            }
         };
+    };
 
-        let max_key = max.0;
-        let max_val = max.1;
-
-        if (cmp_val(val, max_val) == +1) {
-            leaf.4[C.MAX] := ?(key, val);
-            leaf.0[C.MAX_INDEX] := index;
+    public func update_leaf_with_kv_pair<K, V>(leaf : CommonFields<K, V>, cmp_val : CmpFn<V>, index : Nat, kv: (K, V)) {
+        switch(leaf.4[C.MAX]){
+            case (null){
+                leaf.4[C.MAX] := ?kv;
+                leaf.0[C.MAX_INDEX] := index;
+            };
+            case (?max){
+                if (cmp_val(kv.1, max.1) == +1) {
+                    leaf.4[C.MAX] := ?kv;
+                    leaf.0[C.MAX_INDEX] := index;
+                };
+            }
         };
     };
 
     public func update_branch_fields<K, V>(branch : Branch<K, V>, cmp_val : CmpFn<V>, index : Nat, child_node : Node<K, V>) {
         switch (child_node) {
             case (#leaf(child) or #branch(child) : CommonNodeFields<K, V>) {
-                let ?child_max = child.4[C.MAX] else Debug.trap("update_branch_fields: child max is null");
-                let (child_max_key, child_max_val) = child_max;
-
-                let ?max = branch.4[C.MAX] else {
-                    branch.4[C.MAX] := ?(child_max_key, child_max_val);
-                    branch.0[C.MAX_INDEX] := index;
-                    
-                    return;
-                };
-
-                let branch_max_key = max.0;
-                let branch_max_val = max.1;
-
-                if (cmp_val(child_max_val, branch_max_val) == +1) {
-                    branch.4[C.MAX] := ?(child_max_key, child_max_val);
-                    branch.0[C.MAX_INDEX] := index;
-
+                switch(child.4[C.MAX], branch.4[C.MAX]) {
+                    case (null, _) Debug.trap("update_branch_fields: child max is null");
+                    case (child_max, null) {
+                        branch.4[C.MAX] := child_max;
+                        branch.0[C.MAX_INDEX] := index;
+                    };
+                    case (?child_max, ?curr_max) {
+                        if (cmp_val(child_max.1, curr_max.1) == +1) {
+                            branch.4[C.MAX] := ?child_max;
+                            branch.0[C.MAX_INDEX] := index;
+                        };
+                    };
                 };
             };
         };

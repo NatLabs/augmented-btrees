@@ -23,23 +23,8 @@ module Branch {
         order : Nat,
         opt_keys : ?[var ?K],
         opt_children : ?[var ?Node<K, V>],
-        gen_id: () -> Nat,
+        gen_id : () -> Nat,
     ) : Branch<K, V> {
-        
-        let children = switch(opt_children){
-            case(?children) children;
-            case(_) {
-                let node : Branch<K, V> = (
-                    Array.init(4, 0),
-                    Array.init(1, null),
-                    Array.init(order - 1 : Nat, null),
-                    Array.init(order, null)
-                );
-
-                node.0[C.ID] := gen_id();
-                return node;
-            }
-        };
 
         let self : Branch<K, V> = (
             Array.init(4, 0),
@@ -48,86 +33,6 @@ module Branch {
             Array.init(order, null)
         );
 
-        self.0[C.ID] := gen_id();
-
-        switch (children[0]) {
-            case (? #leaf(node)) {
-                node.1[C.PARENT] := ?self;
-                node.0[C.INDEX] := 0;
-                
-                self.0[C.COUNT] += 1;
-                self.0[C.SUBTREE_SIZE] += node.0[C.COUNT];
-            };
-            case (? #branch(node)) {
-                node.1[C.PARENT] := ?self;
-                node.0[C.INDEX] := 0;
-                
-                self.0[C.COUNT] += 1;
-                self.0[C.SUBTREE_SIZE] += node.0[C.SUBTREE_SIZE];
-            };
-            case (_) Debug.trap("Branch.new: should replace the opt_children input with a null value ");
-        };
-
-        self.3[0] := children[0];
-
-        switch (opt_keys) {
-            case (?keys) {
-                for (i in Iter.range(1, children.size() - 1)) {
-                    switch (children[i]) {
-                        case (? #leaf(node)) {
-                            node.1[C.PARENT] := ?self;
-                            node.0[C.INDEX] := self.0[C.COUNT];
-                            
-                            self.0[C.COUNT] += 1;
-                            self.0[C.SUBTREE_SIZE] += node.0[C.COUNT];
-                        };
-                        case (? #branch(node)) {
-                            node.1[C.PARENT] := ?self;
-                            node.0[C.INDEX] := self.0[C.COUNT];
-                            
-                            self.0[C.COUNT] += 1;
-                            self.0[C.SUBTREE_SIZE] += node.0[C.SUBTREE_SIZE];
-                        };
-                        case (_) { return self; };
-                    };
-
-                    self.2[i - 1] := keys[i - 1];
-                    self.3[i] := children[i];
-                };
-            };
-            case (_) {
-                for (i in Iter.range(1, children.size() - 1)) {
-                    let key = switch (children[i]) {
-                        case (? #leaf(node)) {
-                            node.1[C.PARENT] := ?self;
-                            node.0[C.INDEX] := self.0[C.COUNT];
-                            
-                            self.0[C.COUNT] += 1;
-                            self.0[C.SUBTREE_SIZE] += node.0[C.COUNT];
-
-                            switch (node.3[0]) { // node.3
-                                case (?kv) ?kv.0;
-                                case (_) null;
-                            };
-                        };
-                        case (? #branch(node)) {
-                            node.1[C.PARENT] := ?self;
-                            node.0[C.INDEX] := self.0[C.COUNT];
-                            
-                            self.0[C.COUNT] += 1;
-                            self.0[C.SUBTREE_SIZE] += node.0[C.SUBTREE_SIZE];
-
-                            node/*.keys*/.2[0];
-                        };
-                        case (_) return self;
-                    };
-
-                    self.2[i - 1] := key;
-                    self.3[i] := children[i];
-                };
-            };
-        };
-        
         self;
     };
 
@@ -144,8 +49,35 @@ module Branch {
         parent.2[i - 1] := ?new_key;
     };
 
+    public func add_child<K, V>(branch: Branch<K,V>, child: Node<K,V>) {
+        let i = branch.0[C.COUNT] : Nat;
+        branch.3[i] := ?child;
+
+        switch (child) {
+            case (#branch(node)) {
+                node.1[C.PARENT] := ?branch;
+                node.0[C.INDEX] := i;
+                branch.0[C.SUBTREE_SIZE] += node.0[C.SUBTREE_SIZE];
+            };
+            case(#leaf(node)) {
+                node.1[C.PARENT] := ?branch;
+                node.0[C.INDEX] := i;
+                branch.0[C.SUBTREE_SIZE] += node.0[C.COUNT];
+            };
+        };
+        
+        branch.0[C.COUNT] += 1;
+    };
+
+    public func add_children<K, V>(branch: Branch<K,V>, children: [Node<K,V>]) {
+        var i = 0;
+        while (i < children.size()) {
+            add_child(branch, children[i]);
+        };
+    };
+
     public func split<K, V>(node : Branch<K, V>, child : Node<K, V>, child_index : Nat, first_child_key : K, gen_id: () -> Nat) : Branch<K, V> {
-         let arr_len = node.0[C.COUNT];
+        let arr_len = node.0[C.COUNT];
         let median = (arr_len / 2) + 1;
 
         let is_elem_added_to_right = child_index >= median;
@@ -155,47 +87,35 @@ module Branch {
         var offset = if (is_elem_added_to_right) 0 else 1;
         var already_inserted = false;
 
-        let right_keys = Array.init<?K>(node.2.size(), null);
+        let right_cnt = arr_len + 1 - median : Nat;
+        let right_node = Branch.new<K, V>(node.3.size(), null, null, gen_id);
+        
+        var i = 0;
+        
+        while (i < right_cnt) {
+            let j = i + median - offset : Nat;
 
-        let right_children = Utils.tabulate_var<Node<K, V>>(
-            node.3.size(),
-            node.0[C.COUNT] + 1 - median,
-            func(i : Nat) : ?Node<K, V> {
-
-                let j = i + median - offset : Nat;
-
-                let child_node = if (j >= median and j == child_index and not already_inserted) {
-                    offset += 1;
-                    already_inserted := true;
-                    if (i > 0) right_keys[i - 1] := ?first_child_key;
-                    ?child;
-                } else if (j >= arr_len) {
-                    null;
+            let ?child_node = if (j >= median and j == child_index and not already_inserted) {
+                offset += 1;
+                already_inserted := true;
+                if (i > 0) right_node.2[i - 1] := ?first_child_key;
+                ?child;
+            } else {
+                if (i == 0) {
+                    median_key := node.2[j - 1];
                 } else {
-                    if (i == 0) {
-                        median_key := node.2[j - 1];
-                    } else {
-                        right_keys[i - 1] := node.2[j - 1];
-                    };
-                    node.2[j - 1] := null;
-                    Utils.extract(node.3, j);
+                    right_node.2[i - 1] := node.2[j - 1];
                 };
+                node.2[j - 1] := null;
+                Utils.extract(node.3, j);
+            } else Debug.trap("Branch.split: accessed a null value");
 
-                switch (child_node) {
-                    case (? #branch(child)) {
-                        child.0[C.INDEX] := i;
-                        node.0[C.SUBTREE_SIZE] -= child.0[C.SUBTREE_SIZE];
-                    };
-                    case (? #leaf(child)) {
-                        child.0[C.INDEX] := i;
-                        node.0[C.SUBTREE_SIZE] -= child.0[C.COUNT];
-                    };
-                    case (_) {};
-                };
+            Branch.add_child<K, V>(right_node, child_node);
+            i += 1;
+        };
 
-                child_node;
-            },
-        );
+        node.0[C.SUBTREE_SIZE] -= right_node.0[C.SUBTREE_SIZE];
+
 
         var j = median - 1 : Nat;
 
@@ -227,16 +147,6 @@ module Branch {
         };
 
         node.0[C.COUNT] := median;
-        let right_cnt = node.3.size() + 1 - median : Nat;
-
-        let right_node = switch (node.3[0]) {
-            case (? #leaf(_)) Branch.new(node.3.size(), null, ?right_children, gen_id);
-            case (? #branch(_)) {
-                Branch.new(node.3.size(), ?right_keys, ?right_children, gen_id);
-                // Branch new fails to update the median key to its correct position so we do it manually
-            };
-            case (_) Debug.trap("right_node: accessed a null value");
-        };
 
         right_node.0[C.INDEX] := node.0[C.INDEX] + 1;
 
@@ -409,7 +319,7 @@ module Branch {
             ArrayMut.shift_by(branch_node.2, 0, branch_node.0[C.COUNT] - 1 : Nat, data_to_move : Nat);
             Branch.shift_by(branch_node, 0, branch_node.0[C.COUNT] : Nat, data_to_move : Nat);
             var i = 0;
-            for (_ in Iter.range(0, data_to_move - 1)) {
+            while (i < data_to_move) {
                 let j = adj_node.0[C.COUNT] - i - 1 : Nat;
                 branch_node.2[data_to_move - i - 1] := median_key;
                 let ?mk = ArrayMut.remove(adj_node.2, j - 1 : Nat, adj_node.0[C.COUNT] - 1 : Nat) else Debug.trap("4. redistribute_branch_keys: accessed a null value");
@@ -443,7 +353,7 @@ module Branch {
             var median_key = parent.2[branch_node.0[C.INDEX]];
             var i = 0;
 
-            for (_ in Iter.range(0, data_to_move - 1)) {
+            while (i < data_to_move) {
                 ArrayMut.insert(branch_node.2, branch_node.0[C.COUNT] + i - 1 : Nat, median_key, branch_node.0[C.COUNT] - 1 : Nat);
                 median_key := adj_node.2[i];
 
@@ -486,12 +396,15 @@ module Branch {
         var median_key = parent.2[right.0[C.INDEX] - 1];
         let right_subtree_size = right.0[C.SUBTREE_SIZE];
         // merge right into left
-        for (i in Iter.range(0, right.0[C.COUNT] - 1)){
+        var i = 0;
+        
+        while (i < right.0[C.COUNT]){
             ArrayMut.insert(left.2, left.0[C.COUNT] + i - 1 : Nat, median_key, left.0[C.COUNT] - 1 : Nat);
             median_key := right.2[i];
 
             let ?child = right.3[i] else Debug.trap("2. merge_branch_nodes: accessed a null value");
             Branch.insert(left, left.0[C.COUNT] + i, child);
+            i += 1;
         };
 
         left.0[C.COUNT] += right.0[C.COUNT];

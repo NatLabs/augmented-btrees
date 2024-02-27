@@ -101,6 +101,8 @@ Heap
 
 #### Using a circular buffer to improve delete() performance
 
+worse performance because of the internal operations required to find the real index each element
+
 #### Addition of ranking operations: getIndex() and getFromIndex()
 **Instructions**
 
@@ -232,3 +234,51 @@ Heap
 | getCeiling()   | 213_804 |    213_804 |
 | removeMin()    | 513_040 |  1_908_884 |
 | removeMax()    | 509_176 |  1_908_676 |
+
+#### Use internal leaf to root operations to improve performance, replace for loops with while loops, avoid deconstructing tuples
+
+Instructions
+
+|            |    insert() |   replace() |      get() |  entries() |     scan() |    remove() |
+| :--------- | ----------: | ----------: | ---------: | ---------: | ---------: | ----------: |
+| Map        |  24_598_150 |   9_032_975 |  8_459_600 |      3_836 |      3_232 |   8_769_418 |
+| RBTree     | 105_236_358 | 103_166_554 | 44_269_891 | 17_795_354 |      4_891 | 141_566_127 |
+| BTree      | 114_964_951 |  83_757_726 | 78_246_105 | 10_944_900 | 24_351_645 | 130_728_937 |
+| B+Tree     | 116_288_125 |  91_628_770 | 81_339_298 |  4_854_853 |  6_635_837 | 128_646_576 |
+| Max B+Tree | 140_422_764 | 132_275_160 | 81_341_110 |  4_856_757 |  6_619_287 | 171_192_531 |
+
+
+Heap
+
+|            |  insert() | replace() |   get() | entries() |    scan() |    remove() |
+| :--------- | --------: | --------: | ------: | --------: | --------: | ----------: |
+| Map        |   534_660 |     9_204 |   9_200 |     9_036 |     8_904 |     255_520 |
+| RBTree     | 9_051_828 | 8_268_692 |  12_960 | 1_889_036 |     8_904 | -15_479_996 |
+| BTree      | 1_234_000 | 1_157_004 | 484_600 |   602_276 | 1_014_572 |   1_968_844 |
+| B+Tree     |   735_132 |   613_804 | 213_800 |     9_084 |    31_424 |     213_524 |
+| Max B+Tree |   891_760 | 1_458_924 | 213_800 |     9_084 |    31_424 |   1_106_948 |
+
+**other b+tree fns**
+
+Instructions
+
+|                |      B+Tree |  Max B+Tree |
+| :------------- | ----------: | ----------: |
+| getFromIndex() |  68_084_521 |  73_059_451 |
+| getIndex()     | 167_272_699 | 167_274_197 |
+| getFloor()     |  79_745_701 |  79_747_291 |
+| getCeiling()   |  79_746_354 |  79_748_036 |
+| removeMin()    | 151_741_662 | 123_466_797 |
+| removeMax()    | 115_662_568 |  67_542_286 |
+
+
+Heap
+
+|                |  B+Tree | Max B+Tree |
+| :------------- | ------: | ---------: |
+| getFromIndex() | 328_960 |    328_960 |
+| getIndex()     | 586_764 |    586_764 |
+| getFloor()     | 213_804 |    213_804 |
+| getCeiling()   | 213_804 |    213_804 |
+| removeMin()    | 213_864 |    686_508 |
+| removeMax()    | 209_944 |    731_268 |

@@ -51,25 +51,30 @@ module Leaf {
         // that gets shifted by the inserted elemeent
         var offset = if (is_elem_added_to_right) 0 else 1;
 
+        let right_cnt = arr_len + 1 - median : Nat;
+        let right_node = Leaf.new<K, V>(leaf.3.size(), 0, null, gen_id);
+
         var already_inserted = false;
-        let right_kvs = Utils.tabulate_var<(K, V)>(
-            leaf.3.size(),
-            leaf.0[C.COUNT] + 1 - median,
-            func(i : Nat) : ?(K, V) {
 
-                let j = i + median - offset : Nat;
+        var i = 0;
+        while (i < right_cnt) {
+            let j = i + median - offset : Nat;
 
-                if (j >= median and j == elem_index and not already_inserted) {
-                    offset += 1;
-                    already_inserted := true;
-                    ?elem;
-                } else if (j >= arr_len) {
-                    null;
-                } else {
-                    Utils.extract(leaf.3, j);
-                };
-            },
-        );
+            let ?kv = if (j >= median and j == elem_index and not already_inserted) {
+                offset += 1;
+                already_inserted := true;
+                ?elem;
+            } else {
+                Utils.extract(leaf.3, j);
+            } else Debug.trap("Leaf.split: kv is null");
+
+            right_node.3[i] := ?kv;
+
+            i += 1;
+        };
+
+        right_node.0[C.COUNT] := right_cnt;
+
 
         var j = median - 1 : Nat;
 
@@ -83,8 +88,6 @@ module Leaf {
         };
 
         leaf.0[C.COUNT] := median;
-        let right_cnt = arr_len + 1 - median : Nat;
-        let right_node = Leaf.new(leaf.3.size(), right_cnt, ?right_kvs, gen_id);
 
         right_node.0[C.INDEX] := leaf.0[C.INDEX] + 1;
         right_node.1[C.PARENT] := leaf.1[C.PARENT];
@@ -104,7 +107,7 @@ module Leaf {
     };
 
     public func redistribute_keys<K, V>(leaf_node : Leaf<K, V>) {
-           let ?parent = leaf_node.1[C.PARENT] else return;
+        let ?parent = leaf_node.1[C.PARENT] else return;
 
         var adj_node = leaf_node;
         if (parent.0[C.COUNT] > 1) {
@@ -136,7 +139,7 @@ module Leaf {
 
             var i = 0;
             ArrayMut.shift_by(leaf_node.3, 0, leaf_node.0[C.COUNT], data_to_move);
-            for (_ in Iter.range(0, data_to_move - 1)) {
+            while (i < data_to_move) {
                 let opt_kv = ArrayMut.remove(adj_node.3, adj_node.0[C.COUNT] - i - 1 : Nat, adj_node.0[C.COUNT]);
 
                 // no need to call update_fields as we are the adjacent node is before the leaf node 
@@ -149,7 +152,7 @@ module Leaf {
             // adj_node is after leaf_node
 
             var i = 0;
-            for (_ in Iter.range(0, data_to_move - 1)) {
+            while (i < data_to_move ) {
                 let opt_kv = adj_node.3[i];
                 ArrayMut.insert(leaf_node.3, leaf_node.0[C.COUNT] + i, opt_kv, leaf_node.0[C.COUNT]);
 
@@ -186,7 +189,7 @@ module Leaf {
         var i = 0;
 
         // merge right into left
-        for (_ in Iter.range(0, right.0[C.COUNT] - 1)) {
+        while (i < right.0[C.COUNT]) {
             let opt_kv = right.3[i];
             ArrayMut.insert(left.3, left.0[C.COUNT] + i, opt_kv, left.0[C.COUNT]);
 

@@ -14,16 +14,15 @@ import BufferDeque "mo:buffer-deque/BufferDeque";
 import ArrayMut "../internal/ArrayMut";
 import Utils "../internal/Utils";
 import T "Types";
-import Cursor "../internal/Cursor";
 import InternalTypes "../internal/Types";
 import RevIter "mo:itertools/RevIter";
+import Branch "Branch";
 
 module Methods {
     type Iter<A> = Iter.Iter<A>;
     type Order = Order.Order;
     type Result<A, B> = Result.Result<A, B>;
     type BufferDeque<A> = BufferDeque.BufferDeque<A>;
-    public type Cursor<K, V> = Cursor.Cursor<K, V>;
     public type RevIter<A> = RevIter.RevIter<A>;
 
     public type MaxBpTree<K, V> = T.MaxBpTree<K, V>;
@@ -34,6 +33,8 @@ module Methods {
     type CommonNodeFields<K, V> = T.CommonNodeFields<K, V>;
     type CmpFn<A> = T.CmpFn<A>;
     type MultiCmpFn<A, B> = T.MultiCmpFn<A, B>;
+    type LeafEntry<K, V> = T.LeafEntry<K, V>;
+
     let {Const = C } = T;
 
     public func depth<K, V>(max_bptree : MaxBpTree<K, V>) : Nat {
@@ -74,14 +75,15 @@ module Methods {
         };
     };
 
-    public func update_branch_path_from_leaf_to_root<K, V>(self : MaxBpTree<K, V>, leaf : Leaf<K, V>, update : (Branch<K, V>) -> ()) {
+    public func update_leaf_to_root<K, V>(self : MaxBpTree<K, V>, leaf : Leaf<K, V>, update : (Branch<K, V>, Nat) -> ()) {
         var parent = leaf.1[C.PARENT];
-        var index = leaf.0[C.INDEX];
+        var child_index = leaf.0[C.INDEX];
             
         loop {
             switch (parent) {
                 case (?node) {
-                    update(node);
+                    update(node, child_index);
+                    child_index:= node.0[C.INDEX];
                     parent := node.1[C.PARENT];
                 };
 
@@ -90,9 +92,9 @@ module Methods {
         };
     };
 
-    public func update_branch_path_from_leaf_to_root_with_index<K, V>(self : MaxBpTree<K, V>, leaf : Leaf<K, V>, update : (Branch<K, V>, Nat) -> ()) {
-        var parent = leaf.1[C.PARENT];
-        var child_index = leaf.0[C.INDEX];
+    public func update_branch_to_root<K, V>(branch : Branch<K, V>, update : (Branch<K, V>, Nat) -> ()) {
+        var parent = branch.1[C.PARENT];
+        var child_index = branch.0[C.INDEX];
             
         loop {
             switch (parent) {
@@ -191,12 +193,6 @@ module Methods {
         };
     };
 
-    public func extract<T>(arr : [var ?T], index : Nat) : ?T {
-        let tmp = arr[index];
-        arr[index] := null;
-        tmp;
-    };
-
     public func gen_id<K, V>(max_bptree : MaxBpTree<K, V>) : Nat {
         let id = max_bptree.next_id;
         max_bptree.next_id += 1;
@@ -216,66 +212,6 @@ module Methods {
             case (#branch(node)) node.0[C.SUBTREE_SIZE];
             case (#leaf(node)) node.0[C.COUNT];
         };
-    };
-
-    public func new_iterator<K, V>(
-        start_leaf : Leaf<K, V>,
-        start_index : Nat,
-        end_leaf : Leaf<K, V>,
-        end_index : Nat // exclusive
-    ) : RevIter<(K, V)> {
-
-        var _start_leaf = ?start_leaf;
-        var i = start_index;
-
-        var _end_leaf = ?end_leaf;
-        var j = end_index;
-
-        func next() : ?(K, V) {
-            let ?start = _start_leaf else return null;
-            let ?end = _end_leaf else return null;
-
-            if (start.0[C.ID] == end.0[C.ID] and i >= j) {
-                _start_leaf := null;
-                return null;
-            };
-
-            if (i >= start.0[C.COUNT]) {
-                _start_leaf := start.2[C.NEXT];
-                i := 0;
-                return next();
-            };
-
-            let entry = start.3[i];
-            i += 1;
-            return entry;
-        };
-
-        func nextFromEnd() : ?(K, V) {
-            let ?start = _start_leaf else return null;
-            let ?end = _end_leaf else return null;
-
-            if (start.0[C.ID] == end.0[C.ID] and i >= j) {
-                _end_leaf := null;
-                return null;
-            };
-
-            if (j == 0) {
-                _end_leaf := end.2[C.PREV];
-                switch (_end_leaf) {
-                    case (?leaf) j := leaf.0[C.COUNT];
-                    case (_) { return null };
-                };
-
-                return nextFromEnd();
-            };
-
-            let entry = end.3[j - 1];
-            j -= 1;
-            return entry;
-        };
-
-        RevIter.new(next, nextFromEnd);
     };
 
     // Returns the leaf node and rank of the first element in the leaf node
@@ -504,14 +440,74 @@ module Methods {
         leaf_node.3[leaf_node.0[C.COUNT] - 1];
     };
 
-    // Returns a double ended iterator over the entries of the tree.
+    public func new_iterator<K, V>(
+        start_leaf : Leaf<K, V>,
+        start_index : Nat,
+        end_leaf : Leaf<K, V>,
+        end_index : Nat // exclusive
+    ) : RevIter<(K, V)> {
+
+        var _start_leaf = ?start_leaf;
+        var i = start_index;
+
+        var _end_leaf = ?end_leaf;
+        var j = end_index;
+
+        func next() : ?(K, V) {
+            let ?start = _start_leaf else return null;
+            let ?end = _end_leaf else return null;
+
+            if (start.0[C.ID] == end.0[C.ID] and i >= j) {
+                _start_leaf := null;
+                return null;
+            };
+
+            if (i >= start.0[C.COUNT]) {
+                _start_leaf := start.2[C.NEXT];
+                i := 0;
+                return next();
+            };
+
+            let entry = start.3[i];
+            i += 1;
+            return entry;
+        };
+
+        func nextFromEnd() : ?(K, V) {
+            let ?start = _start_leaf else return null;
+            let ?end = _end_leaf else return null;
+
+            if (start.0[C.ID] == end.0[C.ID] and i >= j) {
+                _end_leaf := null;
+                return null;
+            };
+
+            if (j == 0) {
+                _end_leaf := end.2[C.PREV];
+                switch (_end_leaf) {
+                    case (?leaf) j := leaf.0[C.COUNT];
+                    case (_) { return null };
+                };
+
+                return nextFromEnd();
+            };
+
+            let entry = end.3[j - 1];
+            j -= 1;
+            return entry;
+        };
+
+        RevIter.new(next, nextFromEnd);
+    };
+
+    // Returns a reversible iterator over the entries of the tree.
     public func entries<K, V>(max_bptree : MaxBpTree<K, V>) : RevIter<(K, V)> {
         let min_leaf = Methods.get_min_leaf_node(max_bptree);
         let max_leaf = Methods.get_max_leaf_node(max_bptree);
         Methods.new_iterator(min_leaf, 0, max_leaf, max_leaf.0[C.COUNT]);
     };
 
-    // Returns a double ended iterator over the keys of the tree.
+    // Returns a reversible iterator over the keys of the tree.
     public func keys<K, V>(self : MaxBpTree<K, V>) : RevIter<K> {
         RevIter.map(
             entries(self),
@@ -521,7 +517,7 @@ module Methods {
         );
     };
 
-    // Returns a double ended iterator over the values of the tree.
+    // Returns a reversible iterator over the values of the tree.
     public func vals<K, V>(self : MaxBpTree<K, V>) : RevIter<V> {
         RevIter.map(
             entries(self),
@@ -529,6 +525,75 @@ module Methods {
                 kv.1;
             },
         );
+    };
+
+    public func leaf_iterator<K, V>(
+        start_leaf : Leaf<K, V>,
+        start_index : Nat,
+        end_leaf : Leaf<K, V>,
+        end_index : Nat // exclusive
+    ) : RevIter<LeafEntry<K, V>> {
+
+        var _start_leaf = ?start_leaf;
+        var i = start_index;
+
+        var _end_leaf = ?end_leaf;
+        var j = end_index;
+
+        func next() : ?LeafEntry<K, V> {
+            let ?start = _start_leaf else return null;
+            let ?end = _end_leaf else return null;
+
+            if (start.0[C.ID] == end.0[C.ID] and i >= j) {
+                _start_leaf := null;
+                return null;
+            };
+
+            if (i >= start.0[C.COUNT]) {
+                _start_leaf := start.2[C.NEXT];
+                i := 0;
+                return next();
+            };
+
+            let index = i;
+
+            let ?entry = start.3[i] else Debug.trap("leaf_iterator: accessed a null value");
+            i += 1;
+            return ?(start, index, entry);
+        };
+
+        func nextFromEnd() : ?LeafEntry<K, V> {
+            let ?start = _start_leaf else return null;
+            let ?end = _end_leaf else return null;
+
+            if (start.0[C.ID] == end.0[C.ID] and i >= j) {
+                _end_leaf := null;
+                return null;
+            };
+
+            if (j == 0) {
+                _end_leaf := end.2[C.PREV];
+                switch (_end_leaf) {
+                    case (?leaf) j := leaf.0[C.COUNT];
+                    case (_) { return null };
+                };
+
+                return nextFromEnd();
+            };
+
+            let index = j - 1 : Nat;
+            let ?entry = end.3[index] else Debug.trap("leaf_iterator: accessed a null value");
+            j -= 1;
+            return ?(end, index, entry);
+        };
+
+        RevIter.new(next, nextFromEnd);
+    };
+
+    public func leaf_entries<K, V>(max_bptree : MaxBpTree<K, V>) : RevIter<LeafEntry<K, V>> {
+        let min_leaf = Methods.get_min_leaf_node(max_bptree);
+        let max_leaf = Methods.get_max_leaf_node(max_bptree);
+        Methods.leaf_iterator(min_leaf, 0, max_leaf, max_leaf.0[C.COUNT]);
     };
 
     // Returns the rank of the given key in the tree.
@@ -596,6 +661,7 @@ module Methods {
                 case (#branch(branch)) {
                     let ?max = branch.4[C.MAX] else Debug.trap("1. validate_max_path: max is null");
                     let max_index = branch.0[C.MAX_INDEX];
+                    // let subtree_size = branch.0[C.SUBTREE_SIZE];
 
                     assert max_index < branch.0[C.COUNT];
                     let ?#branch(node) or ?#leaf(node) : ?CommonNodeFields<Nat, Nat> = branch.3[max_index] else Debug.trap("2. validate_max_path: node is null");
@@ -603,7 +669,7 @@ module Methods {
 
                     let is_equal = cmp_val(max.1, node_max.1) == 0;
                     var are_children_valid = true;
-
+                    
                     for (i in Iter.range(0, branch.0[C.COUNT] - 1)) {
                         let ?child = branch.3[i] else Debug.trap("4. validate_max_path: child is null");
                         are_children_valid := are_children_valid and validate(child);
@@ -623,6 +689,34 @@ module Methods {
         };
 
         validate(max_bptree.root);
+    };
+
+    public func validate_subtree_size(max_bptree: MaxBpTree<Nat, Nat>) : Bool {
+        func subtree_size(node : Node<Nat, Nat>) : Nat {
+            switch (node) {
+                case (#branch(branch)) {
+                    var size = 0;
+                    for (i in Iter.range(0, branch.0[C.COUNT] - 1)) {
+                        let ?child = branch.3[i] else Debug.trap("1. validate_subtree_size: child is null");
+                        size += subtree_size(child);
+                    };
+
+                    if (size != branch.0[C.SUBTREE_SIZE]) {
+                        Debug.print("validate subtree size error");
+                        Debug.print("branch: " # Branch.toText(branch, Nat.toText, Nat.toText));
+                        Debug.print("branch subtree size should be : " # debug_show size);
+                        assert false;
+                    };
+
+                    size;
+                };
+                case (#leaf(leaf)) {
+                    leaf.0[C.COUNT];
+                };
+            };
+        };
+
+        subtree_size(max_bptree.root) == max_bptree.size;
     };
 
 };
