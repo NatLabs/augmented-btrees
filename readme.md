@@ -6,7 +6,7 @@ This library contains implementations of various Btree variants, that adopt cert
 - [ ] Max Value B+ Tree ([docs](https://mops.one/augmented-btrees/docs/MaxBpTree/lib#new)) `in-progress`
 
 ### Usage
-- **Import the library **
+- **Import the library**
   
 ```motoko
     import { BpTree; MaxBpTree; Cmp } "mo:augmented-btrees";
@@ -44,7 +44,7 @@ This library contains implementations of various Btree variants, that adopt cert
     assert BpTree.get(bptree, 'A') == ?0;
 
     ignore BpTree.insert(bptree, 'F', 5);
-    assert Iter.toArray(BpTree.vals(bptree)) == ['A', 'B', 'C', 'D', 'E', 'F];
+    assert Iter.toArray(BpTree.vals(bptree)) == ['A', 'B', 'C', 'D', 'E', 'F'];
 
     // replace
     assert BpTree.insert(bptree, 'C', 33) == ?3;
