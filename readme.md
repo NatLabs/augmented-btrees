@@ -1,8 +1,9 @@
 ## Augmented Btrees
-This library contains implementations of different Btree variants.
+This library contains implementations of various Btree variants, that adopt certain features and trade-offs to suit different use cases when storing and managing sorted key-value pairs.
 
-- [x] B+ Tree ([BpTree](https://mops.one/augmented-btrees/docs/BpTree/lib#new))
-- [ ] Max Value B+ Tree ([MaxBpTree](https://mops.one/augmented-btrees/docs/MaxBpTree/lib#new)) `in-progress`
+**Supported B-tree variants:**
+- [x] B+ Tree ([docs](https://mops.one/augmented-btrees/docs/BpTree/lib#new))
+- [ ] Max Value B+ Tree ([docs](https://mops.one/augmented-btrees/docs/MaxBpTree/lib#new)) `in-progress`
 
 ### Usage
 - **Import the library **
@@ -12,16 +13,16 @@ This library contains implementations of different Btree variants.
 ```
 
 - **Creating a new B+ Tree**
-    - You can specify the `order` of the tree. The `order` of the tree is the maximum number of entries a single leaf node can store. The order can be any number in this range [4, 8, 16, 32, 64, 128, 256, 516]. The default order is 32.
+    - Specify the desired `order` of the tree, which determines the maximum number of entries a single leaf node can hold. The order can be any number in this range [4, 8, 16, 32, 64, 128, 256, 516] with the default being 32. 
 
 ```motoko
     let bptree = BpTree.new(?32);
 ```
 
 - **Comparator Function**
-  - This library replaces the default comparator function found in motoko's base module lib with a `Cmp` module for better performance. The default comparator returns an `Order` type which has a higher overhead than the `Int8` type returned the functions in the `Cmp` module.
-  - The `Cmp` module contains functions for all the primitive types in motoko.
-  - Here's is an example creating a B+Tree that stores and compares `Char` keys.
+  - This library replaces the default comparator function with a more performant `Cmp` module that returns an `Int8` type for comparisons, which requires less overhead compared to the `Order` type.
+  - The `Cmp` module provides functions for various primitive types in motoko. 
+  - Here's an example of a B+Tree that stores and compares `Char` keys.
     ```motoko
         import { BpTree; Cmp } "mo:augmented-btrees";
         
@@ -30,7 +31,7 @@ This library contains implementations of different Btree variants.
         let bptree = BpTree.fromArray(arr, Cmp.Char, null);
 
     ```
-  - You can define your own comparator function for custome types. The comparator function must return an `Int8` value. The value returned should be:
+  - You can define your own comparator functions for custom types. The comparator function must return either of these `Int8` values:
     - `0` if the two values are equal
     - `1` if the first value is greater than the second value
     - `-1` if the first value is less than the second value
@@ -62,10 +63,10 @@ This library contains implementations of different Btree variants.
 ```
 
 - **Iterating over a B+ Tree**
-    - Each iterator is implemented as a Reversible Iterator (`RevIter`) and can be iterated in both directions.
-    - An iter can be created from a B+ Tree using the `entries()`, `keys()`, `vals()`, `scan()`, or `range()` functions.
-    - The iterator can be reversed just by calling the `rev()` function on the iterator.
-    > More information on reversible iterators can be found in the itertools library [docs](https://mops.one/itertools/docs/RevIter)
+  - All iterators implemented in this library are of the type `RevIter` and are reversible. 
+  - An iterator can be created from a B+ Tree using any of these functions: `entries()`, `keys()`, `vals()`, `scan()`, or `range()`. 
+  - The iterator can be reversed by calling the `.rev()` function on the iterator.
+    > For more details on reversible iterators, refer to the [itertools library documentation](https://mops.one/itertools/docs/RevIter)
 
 ```motoko
     let entries = BpTree.entries(bptree);
@@ -78,7 +79,7 @@ This library contains implementations of different Btree variants.
     let results2 = BpTree.scan(bptree, Cmp.Char, ?'A', ?'C');
     assert Iter.toArray(results2.rev()) == [('C', 2), ('B', 1), ('A', 0)];
 
-    // retrieve elements by their index
+    // retrieve elements by their **index**
     let range1 = BpTree.range(bptree, 2, 4);
     assert Iter.toArray(range1) == [('C', 2), ('D', 3), ('E', 4)];
 
@@ -102,8 +103,8 @@ Benchmarking the performance with 10k entries
 | :--------- | ----------: | ----------: | ---------: | ---------: | ---------: | ----------: |
 | RBTree     | 105_236_358 | 103_166_554 | 44_269_891 | 17_795_354 |      4_891 | 141_566_127 |
 | BTree      | 114_964_951 |  83_757_726 | 78_246_105 | 10_944_900 | 24_351_645 | 130_728_937 |
-| B+Tree     | 116_660_293 |  91_628_770 | 81_339_298 |  4_854_853 |  6_635_837 | 130_971_230 |
-| Max B+Tree | 142_346_011 | 131_460_306 | 81_341_110 |  4_856_757 |  6_619_287 | 179_615_500 |
+| B+Tree     | 116_288_125 |  91_628_770 | 81_339_298 |  4_854_853 |  6_635_837 | 128_646_576 |
+| Max B+Tree | 140_422_764 | 132_275_160 | 81_341_110 |  4_856_757 |  6_619_287 | 171_192_531 |
 
 **Heap**
 
@@ -111,8 +112,8 @@ Benchmarking the performance with 10k entries
 | :--------- | --------: | --------: | ------: | --------: | --------: | ----------: |
 | RBTree     | 9_051_828 | 8_268_692 |  12_960 | 1_889_036 |     8_904 | -15_479_996 |
 | BTree      | 1_234_000 | 1_157_004 | 484_600 |   602_276 | 1_014_572 |   1_968_844 |
-| B+Tree     |   772_584 |   613_804 | 213_800 |     9_084 |    31_424 |     344_116 |
-| Max B+Tree |   950_360 | 1_924_204 | 213_800 |     9_084 |    31_424 |   1_761_648 |
+| B+Tree     |   735_132 |   613_804 | 213_800 |     9_084 |    31_424 |     213_524 |
+| Max B+Tree |   891_760 | 1_458_924 | 213_800 |     9_084 |    31_424 |   1_106_948 |
 
 #### Other B+Tree functions
 
@@ -124,8 +125,8 @@ Benchmarking the performance with 10k entries
 | getIndex()     | 167_272_699 | 167_274_197 |
 | getFloor()     |  79_745_701 |  79_747_291 |
 | getCeiling()   |  79_746_354 |  79_748_036 |
-| removeMin()    | 154_673_724 | 204_129_959 |
-| removeMax()    | 118_557_851 | 160_697_206 |
+| removeMin()    | 151_741_662 | 123_466_797 |
+| removeMax()    | 115_662_568 |  67_542_286 |
 
 **Heap**
 
@@ -135,5 +136,5 @@ Benchmarking the performance with 10k entries
 | getIndex()     | 586_764 |    586_764 |
 | getFloor()     | 213_804 |    213_804 |
 | getCeiling()   | 213_804 |    213_804 |
-| removeMin()    | 513_040 |  1_908_884 |
-| removeMax()    | 509_176 |  1_908_676 |
+| removeMin()    | 213_864 |    686_508 |
+| removeMax()    | 209_944 |    731_268 |
