@@ -10,6 +10,7 @@ import Nat "mo:base/Nat";
 import Result "mo:base/Result";
 import Buffer "mo:base/Buffer";
 import BufferDeque "mo:buffer-deque/BufferDeque";
+import Itertools "mo:itertools/Iter";
 
 import ArrayMut "../internal/ArrayMut";
 import Utils "../internal/Utils";
@@ -17,6 +18,7 @@ import T "Types";
 import InternalTypes "../internal/Types";
 import RevIter "mo:itertools/RevIter";
 import Branch "Branch";
+import MaxHeap "../internal/MaxHeap";
 
 module Methods {
     type Iter<A> = Iter.Iter<A>;
@@ -652,38 +654,66 @@ module Methods {
         Methods.new_iterator(left_node, i, right_node, j);
     };
 
-    public func validate_max_path(max_bptree : MaxBpTree<Nat, Nat>, cmp_val: CmpFn<Nat>) : Bool {
+    func buffer_swap_remove<A>(buffer: Buffer.Buffer<A>, i: Nat): A {
+        let j = buffer.size() - 1;
+        let temp = buffer.get(j);
+        buffer.put(j, buffer.get(i));
+        buffer.put(i, temp);
+        buffer.remove(j);
+    };
+
+    public func validate_max_path(max_bptree : MaxBpTree<Nat, Nat>) : Bool {
 
         if (max_bptree.size == 0) return true;
 
         func validate(node : Node<Nat, Nat>) : Bool {
             switch (node) {
                 case (#branch(branch)) {
-                    let ?max = branch.4[C.MAX] else Debug.trap("1. validate_max_path: max is null");
-                    let max_index = branch.0[C.MAX_INDEX];
-                    // let subtree_size = branch.0[C.SUBTREE_SIZE];
+                    let heap : Buffer.Buffer<(Nat, Nat)> = ArrayMut.to_buffer(branch.5);
+                    let children_max_vals = Buffer.Buffer<(Nat, Nat)>(8);
 
-                    assert max_index < branch.0[C.COUNT];
-                    let ?#branch(node) or ?#leaf(node) : ?CommonNodeFields<Nat, Nat> = branch.3[max_index] else Debug.trap("2. validate_max_path: node is null");
-                    let ?node_max = node.4[C.MAX] else Debug.trap("3. validate_max_path: node_max is null");
-
-                    let is_equal = cmp_val(max.1, node_max.1) == 0;
-                    var are_children_valid = true;
-                    
                     for (i in Iter.range(0, branch.0[C.COUNT] - 1)) {
-                        let ?child = branch.3[i] else Debug.trap("4. validate_max_path: child is null");
-                        are_children_valid := are_children_valid and validate(child);
+                        let ?node = branch.3[i] else Debug.trap("0. validate_max_path: child is null");
+
+                        if (not validate(node)) return false;
+                        let #branch(child) or #leaf(child) = node;
+                        let ?max = MaxHeap.peekMax(child.5) else Debug.trap("1. validate_max_path: max is null");
+                        children_max_vals.add(max);
                     };
 
-                    is_equal and are_children_valid;
+                    heap.sort(Utils.tuple_order_cmp(Nat.compare, Nat.compare));
+                    children_max_vals.sort(Utils.tuple_order_cmp(Nat.compare, Nat.compare));
+
+                    for ((a, b) in Itertools.zip(heap.vals(), children_max_vals.vals())) {
+                        if (a != b) {
+                            Debug.print("validate_max_path: heap and children_max_vals are not equal");
+                            Debug.print(" a != b -> " # debug_show a # " != " # debug_show b);
+                            Debug.print("heap: " # debug_show Buffer.toArray(heap));
+                            Debug.print("children_max_vals: " # debug_show Buffer.toArray(children_max_vals));
+                            return false;
+                        };
+                    };
+
+                    return true;
                 };
                 case (#leaf(leaf)) {
-                    let ?max = leaf.4[C.MAX] else Debug.trap("leaf 1. validate_max_path: max is null");
-                    let max_index = leaf.0[C.MAX_INDEX];
+                    let heap = ArrayMut.to_buffer(leaf.5);
+                    let kvs = ArrayMut.to_buffer(leaf.3);
 
-                    let ?elem = leaf.3[max_index] else Debug.trap("leaf 2. validate_max_path: elem is null");
+                    heap.sort(Utils.tuple_order_cmp(Nat.compare, Nat.compare));
+                    kvs.sort(Utils.tuple_order_cmp(Nat.compare, Nat.compare));
 
-                    cmp_val(elem.1, max.1) == 0;
+                    for ((a, b) in Itertools.zip(heap.vals(), kvs.vals())) {
+                        if (a != b) {
+                            Debug.print("validate_max_path: heap and kvs are not equal");
+                            Debug.print(" a != b -> " # debug_show a # " != " # debug_show b);
+                            Debug.print("heap: " # debug_show Buffer.toArray(heap));
+                            Debug.print("kvs: " # debug_show Buffer.toArray(kvs));
+                            return false;
+                        };
+                    };
+
+                    return true;
                 };
             };
         };

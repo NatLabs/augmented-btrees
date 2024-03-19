@@ -65,7 +65,7 @@ module Leaf {
                 already_inserted := true;
                 ?elem;
             } else {
-                Utils.extract(leaf.3, j);
+                ArrayMut.extract(leaf.3, j);
             } else Debug.trap("Leaf.split: kv is null");
 
             right_node.3[i] := ?kv;

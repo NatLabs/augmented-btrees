@@ -27,13 +27,6 @@ module {
         };
     };
 
-    public func extract<T>(arr : [var ?T], index : Nat) : ?T {
-        let tmp = arr[index];
-        arr[index] := null;
-        tmp;
-    };
-
-
     public func validate_array_equal_count<T>(arr : [var ?T], count : Nat) : Bool {
         var i = 0;
 
@@ -82,15 +75,45 @@ module {
         };
     };
 
-    public func tuple_cmp<K>(cmp: (K, K) -> Order) : ((K, Any), (K, Any)) -> Order {
+    public func tuple_cmp_key<K>(cmp: T.CmpFn<K>) : ((K, Any), (K, Any)) -> Int8 {
+        func ((a, _) : (K, Any), (b, _) : (K, Any)): Int8 {
+            cmp(a, b)
+        };
+    };
+
+    public func tuple_cmp_val<V>(cmp: T.CmpFn<V>) : ((Any, V), (Any, V)) -> Int8 {
+        func ((_, a) : (Any, V), (_, b) : (Any, V)): Int8 {
+            cmp(a, b)
+        };
+    };
+
+    public func tuple_cmp<K, V>( cmp_key: T.CmpFn<K>, cmp_val: T.CmpFn<V>) : ((K, V), (K, V)) -> Int8 {
+        func ((a_key, a_val) : (K, V), (b_key, b_val) : (K, V)): Int8 {
+            let val_result = cmp_val(a_val, b_val);
+            if (val_result == 0) return cmp_key(a_key, b_key);
+            val_result;
+        };
+    };
+
+    public func tuple_order_cmp_key<K>(cmp: (K, K) -> Order) : ((K, Any), (K, Any)) -> Order {
         func ((a, _) : (K, Any), (b, _) : (K, Any)): Order {
             cmp(a, b)
         };
     };
 
-    public func tuple_cmp_val<V>(cmp: (V, V) -> Order) : ((Any, V), (Any, V)) -> Order {
+    public func tuple_order_cmp_val<V>(cmp: (V, V) -> Order) : ((Any, V), (Any, V)) -> Order {
         func ((_, a) : (Any, V), (_, b) : (Any, V)): Order {
             cmp(a, b)
         };
     };
+
+    public func tuple_order_cmp<K, V>(cmp_key: (K, K) -> Order, cmp_val: (V, V) -> Order) : ((K, V), (K, V)) -> Order {
+        func ((a_key, a_val) : (K, V), (b_key, b_val) : (K, V)): Order {
+            let val_result = cmp_val(a_val, b_val);
+            if (val_result == #equal) return cmp_key(a_key, b_key);
+            val_result;
+        };
+    };
+
+
 }

@@ -12,6 +12,7 @@ import ArrayMut "../internal/ArrayMut";
 import Utils "../internal/Utils";
 import InternalTypes "../internal/Types";
 import Common "Common";
+import MaxHeap "../internal/MaxHeap";
 
 module Leaf {
     type Iter<A> = Iter.Iter<A>;
@@ -41,6 +42,7 @@ module Leaf {
                 case (_) Array.init<?(K, V)>(order, null);
             },
             Array.init(1, null),
+            Array.init<?(K, V)>(order, null)
         );
 
         leaf_node.0[C.ID] := gen_id();
@@ -51,6 +53,7 @@ module Leaf {
 
     public func insert<K, V>(
         leaf: Leaf<K, V>,
+        cmp_key: CmpFn<K>,
         cmp_val: CmpFn<V>,
         index: Nat,
         kv: (K, V),
@@ -67,19 +70,20 @@ module Leaf {
         };
 
         Common.update_leaf_with_kv_pair(leaf, cmp_val, index, kv);
+        MaxHeap.put(leaf.5, Utils.tuple_cmp(cmp_key, cmp_val), kv, leaf.0[C.COUNT]);
 
         leaf.3[i] := ?kv;
         leaf.0[C.COUNT] += 1;
     };
 
-    public func split<K, V>(
-        leaf : Leaf<K, V>,
+    public func split(
+        leaf : Leaf<Nat, Nat>,
         elem_index : Nat,
-        elem : (K, V),
+        elem : (Nat, Nat),
         gen_id : () -> Nat,
-        cmp_key : CmpFn<K>,
-        cmp_val : CmpFn<V>,
-    ) : Leaf<K, V> {
+        cmp_key : CmpFn<Nat>,
+        cmp_val : CmpFn<Nat>,
+    ) : Leaf<Nat, Nat> {
 
         let arr_len = leaf.0[C.COUNT];
         let median = (arr_len / 2) + 1;
@@ -89,9 +93,10 @@ module Leaf {
         // if elem is added to the left
         // this variable allows us to retrieve the last element on the left
         // that gets shifted by the inserted elemeent
-        var offset = if (is_elem_added_to_right) 0 else 1;
+        let initial_offset = if (is_elem_added_to_right) 0 else 1;
+        var offset = initial_offset;
         let right_cnt = arr_len + 1 - median : Nat;
-        let right_node = Leaf.new<K, V>(leaf.3.size(), 0, null, gen_id, cmp_val);
+        let right_node = Leaf.new<Nat, Nat>(leaf.3.size(), 0, null, gen_id, cmp_val);
 
         var already_inserted = false;
 
@@ -104,11 +109,12 @@ module Leaf {
                 already_inserted := true;
                 ?elem;
             } else {
-                Utils.extract(leaf.3, j);
+                ArrayMut.extract(leaf.3, j);
             } else Debug.trap("Leaf.split: kv is null");
 
             right_node.3[i] := ?kv;
             Common.update_leaf_with_kv_pair(right_node, cmp_val, i, kv);
+            MaxHeap.put(right_node.5, Utils.tuple_cmp(cmp_key, cmp_val), kv, i);
 
             i += 1;
         };
@@ -125,15 +131,36 @@ module Leaf {
             // } 
             false;
         };
-        
 
+        // remove right kvs from left heap
+        // faster than removing each kv one by one
+        let ?first_right_kv = right_node.3[0] else Debug.trap("Leaf.split: first_right_kv is null");
+
+        func remove_right_kvs(kv: (Nat, Nat)) : Bool {
+            cmp_key(kv.0, first_right_kv.0) >= 0;
+        };
+
+        Debug.print("leaf heap count: " # debug_show ArrayMut.count(leaf.5));
+        Debug.print("leaf count: " # debug_show leaf.0[C.COUNT]);
+        Debug.print("leaf: " # debug_show leaf.3);
+        Debug.print("Leaf heap: " # debug_show leaf.5);
+        Debug.print("median_key: " # debug_show first_right_kv);
+
+        assert Utils.validate_array_equal_count(leaf.5, leaf.0[C.COUNT]);
+
+        ignore MaxHeap.removeIf(leaf.5, Utils.tuple_cmp(cmp_key, cmp_val), leaf.0[C.COUNT], remove_right_kvs);
+
+        Debug.print("Leaf heap after removeIf: " # debug_show leaf.5);
+        assert Utils.validate_array_equal_count(leaf.5, median - initial_offset);
+
+        // insert the new element in its correct position
         var j = median - 1 : Nat;
-
         label while_loop while (moved_left_max or j >= elem_index) {
             if (j > elem_index) {
                 leaf.3[j] := leaf.3[j - 1];
             } else if (j == elem_index) {
                 leaf.3[j] := ?elem;
+                MaxHeap.put(leaf.5, Utils.tuple_cmp(cmp_key, cmp_val), elem, median - 1 : Nat);
             };
 
             if (moved_left_max) {

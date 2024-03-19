@@ -1,5 +1,6 @@
 import Order "mo:base/Order";
 import InternalTypes "../internal/Types";
+import MaxHeap "../internal/MaxHeap";
 
 module {
     type Order = Order.Order;
@@ -7,6 +8,7 @@ module {
     public type CmpFn<A> = (A, A) -> Int8;
     public type MultiCmpFn<A, B> = (A, B) -> Int8;
     public type LeafEntry<K, V> = (Leaf<K, V>, Nat, (K, V));
+    public type MaxHeap<A> = MaxHeap.MaxHeap<A>;
 
     public type MaxBpTree<K, V> = {
         order : Nat;
@@ -26,7 +28,8 @@ module {
         parent: [var ?Branch<K, V>], // parent
         keys: [var ?K], // [...keys]
         children: [var ?Node<K, V>], // [...child nodes]
-        max: [var ?(K, V)] // (max_key, max_val)
+        max: [var ?(K, V)], // (max_key, max_val)
+        max_heap: MaxHeap<(K, V)>
     );
 
     /// Leaf nodes are doubly linked lists of key-value pairs.
@@ -35,7 +38,8 @@ module {
         parent: [var ?Branch<K, V>], // parent
         adjacent_nodes: [var ?Leaf<K, V>], // [prev, next]
         kvs: [var ?(K, V)], // [...key-value pairs]
-        max: [var ?(K, V)] // (max_key, max_val)
+        max: [var ?(K, V)],// (max_key, max_val)
+        max_heap: MaxHeap<(K, V)>
     );
 
     public module Const = {

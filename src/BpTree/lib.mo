@@ -287,7 +287,7 @@ module BpTree {
 
                 let split_node = Branch.split(parent, right_node, right_index, right_key, gen_id);
 
-                let ?first_key = Utils.extract(split_node.2, split_node.2.size() - 1 : Nat) else Debug.trap("4. insert: accessed a null value in first key of branch");
+                let ?first_key = ArrayMut.extract(split_node.2, split_node.2.size() - 1 : Nat) else Debug.trap("4. insert: accessed a null value in first key of branch");
                 right_key := first_key;
 
                 left_node := #branch(parent);

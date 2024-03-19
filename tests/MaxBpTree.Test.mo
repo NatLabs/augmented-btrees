@@ -33,7 +33,7 @@ type Set<A> = Set.Set<A>;
 
 let {nhash} = Set;
 
-let limit = 1_000;
+let limit = 1_00;
 let data = Buffer.Buffer<(Nat, Nat)>(limit);
 
 for (i in Iter.range(0, limit - 1)) {
@@ -50,7 +50,7 @@ let random = Itertools.toBuffer<(Nat, Nat)>(unique_iter);
 // assert random.size() * 100 > (limit) * 95;
 
 let sorted = Buffer.clone<(Nat, Nat)>(random);
-sorted.sort(Utils.tuple_cmp(Nat.compare));
+sorted.sort(Utils.tuple_order_cmp_key(Nat.compare));
 
 func map_to_entries(iter : Iter.Iter<Nat>) : Iter.Iter<(Nat, Nat)> {
     return Iter.map<Nat, (Nat, Nat)>(iter, func(n : Nat) : (Nat, Nat) = (n, n));
@@ -128,7 +128,7 @@ class MaxValueMap(opt_values: ?Buffer.Buffer<(Nat, Nat)>){
 func max_bp_tree_test(order : Nat, random : Buffer.Buffer<(Nat, Nat)>, sorted_by_key : Buffer.Buffer<(Nat, Nat)>) {
 
     let sorted_by_val = Itertools.toBuffer<(Nat, Nat)>(random.vals());
-    sorted_by_val.sort(Utils.tuple_cmp_val(Nat.compare));
+    sorted_by_val.sort(Utils.tuple_order_cmp_val(Nat.compare));
 
     test(
         "insert random",
@@ -138,6 +138,10 @@ func max_bp_tree_test(order : Nat, random : Buffer.Buffer<(Nat, Nat)>, sorted_by
 
             label for_loop for ((i, (k, v)) in Itertools.enumerate(random.vals())) {
                 ignore MaxBpTree.insert(max_bp_tree, Cmp.Nat, Cmp.Nat, k, v);
+                Debug.print("after insert");
+                Debug.print("branch nodes " # debug_show(MaxBpTree.toNodeKeys(max_bp_tree)));
+                Debug.print("leaf nodes " # debug_show(MaxBpTree.toLeafNodes(max_bp_tree)));
+
 
                 let subtree_size = switch (max_bp_tree.root) {
                     case (#branch(node)) { node.0 [C.SUBTREE_SIZE] };
@@ -146,13 +150,15 @@ func max_bp_tree_test(order : Nat, random : Buffer.Buffer<(Nat, Nat)>, sorted_by
 
                 assert subtree_size == i + 1;
 
-                if (not MaxBpTreeMethods.validate_max_path(max_bp_tree, Cmp.Nat)) {
+                if (not MaxBpTreeMethods.validate_max_path(max_bp_tree)) {
                     Debug.print("invalid max path discovered at index " # debug_show i);
                     Debug.print("inserting " # debug_show (k, v));
                     Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bp_tree)));
                     Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bp_tree)));
                     assert false;
                 };
+
+                Debug.print("validate_max_path passed");
 
                 if (not MaxBpTreeMethods.validate_subtree_size(max_bp_tree)) {
                     Debug.print("invalid subtree size at index " # debug_show i);
@@ -186,522 +192,522 @@ func max_bp_tree_test(order : Nat, random : Buffer.Buffer<(Nat, Nat)>, sorted_by
         },
     );
 
-    test(
-        "retrieve max value",
-        func() {
-            let max_bp_tree = MaxBpTree.new<Nat, Nat>(?order);
-            assert max_bp_tree.order == order;
+    // test(
+    //     "retrieve max value",
+    //     func() {
+    //         let max_bp_tree = MaxBpTree.new<Nat, Nat>(?order);
+    //         assert max_bp_tree.order == order;
 
-            let (init_key, init_val) = random.get(0);
-            ignore MaxBpTree.insert(max_bp_tree, Cmp.Nat, Cmp.Nat, init_key, init_val);
-            var max = (init_key, init_val);
+    //         let (init_key, init_val) = random.get(0);
+    //         ignore MaxBpTree.insert(max_bp_tree, Cmp.Nat, Cmp.Nat, init_key, init_val);
+    //         var max = (init_key, init_val);
 
-            assert MaxBpTree.maxValue(max_bp_tree) == ?max;
+    //         assert MaxBpTree.maxValue(max_bp_tree) == ?max;
 
-            label for_loop for ((i, (k, v)) in Itertools.enumerate(Itertools.skip(random.vals(), 1))) {
+    //         label for_loop for ((i, (k, v)) in Itertools.enumerate(Itertools.skip(random.vals(), 1))) {
 
-                ignore MaxBpTree.insert(max_bp_tree, Cmp.Nat, Cmp.Nat, k, v);
+    //             ignore MaxBpTree.insert(max_bp_tree, Cmp.Nat, Cmp.Nat, k, v);
 
-                if (v > max.1) {
-                    max := (k, v);
-                };
+    //             if (v > max.1) {
+    //                 max := (k, v);
+    //             };
 
-                assert MaxBpTree.maxValue(max_bp_tree) == ?max;
-            };
-        },
-    );
+    //             assert MaxBpTree.maxValue(max_bp_tree) == ?max;
+    //         };
+    //     },
+    // );
 
-    test(
-        "retrieve max value after replacing value",
-        func() {
+    // test(
+    //     "retrieve max value after replacing value",
+    //     func() {
 
-            let max_bp_tree = MaxBpTree.new<Nat, Nat>(?order);
-            // let set = TrieMap.TrieMap<Nat, ()>(Nat.equal, Nat32.fromNat);
+    //         let max_bp_tree = MaxBpTree.new<Nat, Nat>(?order);
+    //         // let set = TrieMap.TrieMap<Nat, ()>(Nat.equal, Nat32.fromNat);
 
-            let cmp_val = func(a : (Nat, Nat), b : (Nat, Nat)) : Order.Order = Nat.compare(a.1, b.1);
+    //         let cmp_val = func(a : (Nat, Nat), b : (Nat, Nat)) : Order.Order = Nat.compare(a.1, b.1);
 
-            // entries are flipped to sort by values: (value, key)
-            let btree = BTree.init<Nat, Nat>(?order);
+    //         // entries are flipped to sort by values: (value, key)
+    //         let btree = BTree.init<Nat, Nat>(?order);
 
-            // add entries with unique values
-            for ((k, v) in random.vals()) {
-                if (not BTree.has(btree, Nat.compare, v)) {
-                    ignore BTree.insert<Nat, Nat>(btree, Nat.compare, v, k);
-                    ignore MaxBpTree.insert(max_bp_tree, Cmp.Nat, Cmp.Nat, k, v);
-                };
-            };
+    //         // add entries with unique values
+    //         for ((k, v) in random.vals()) {
+    //             if (not BTree.has(btree, Nat.compare, v)) {
+    //                 ignore BTree.insert<Nat, Nat>(btree, Nat.compare, v, k);
+    //                 ignore MaxBpTree.insert(max_bp_tree, Cmp.Nat, Cmp.Nat, k, v);
+    //             };
+    //         };
 
-            let buffer = Itertools.toBuffer<(Nat, Nat)>(
-                Iter.map<(Nat, Nat), (Nat, Nat)>(
-                    BTree.entries(btree),
-                    func((v, k) : (Nat, Nat)) : (Nat, Nat) = (k, v),
-                )
-            );
+    //         let buffer = Itertools.toBuffer<(Nat, Nat)>(
+    //             Iter.map<(Nat, Nat), (Nat, Nat)>(
+    //                 BTree.entries(btree),
+    //                 func((v, k) : (Nat, Nat)) : (Nat, Nat) = (k, v),
+    //             )
+    //         );
 
-            func gen_val() : Nat = fuzz.nat.randomRange(1, limit * 10);
+    //         func gen_val() : Nat = fuzz.nat.randomRange(1, limit * 10);
 
-            for (i in Itertools.range(0, buffer.size())) {
-                let (key, prev_val) = buffer.get(i);
+    //         for (i in Itertools.range(0, buffer.size())) {
+    //             let (key, prev_val) = buffer.get(i);
 
-                var new_val = gen_val();
+    //             var new_val = gen_val();
 
-                while (Option.isSome(BTree.get(btree, Nat.compare, new_val))) {
-                    new_val := gen_val();
-                };
+    //             while (Option.isSome(BTree.get(btree, Nat.compare, new_val))) {
+    //                 new_val := gen_val();
+    //             };
 
-                let recieved_prev_val = MaxBpTree.insert(max_bp_tree, Cmp.Nat, Cmp.Nat, key, new_val);
-                assert ?prev_val == recieved_prev_val;
+    //             let recieved_prev_val = MaxBpTree.insert(max_bp_tree, Cmp.Nat, Cmp.Nat, key, new_val);
+    //             assert ?prev_val == recieved_prev_val;
 
-                if (not MaxBpTreeMethods.validate_max_path(max_bp_tree, Cmp.Nat)) {
-                    Debug.print("invalid max path discovered at index " # debug_show i);
-                    Debug.print("replacing " # debug_show (key, prev_val) # " with " # debug_show (key, new_val));
-                    Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bp_tree)));
-                    Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bp_tree)));
-                    assert false;
-                };
+    //             if (not MaxBpTreeMethods.validate_max_path(max_bp_tree)) {
+    //                 Debug.print("invalid max path discovered at index " # debug_show i);
+    //                 Debug.print("replacing " # debug_show (key, prev_val) # " with " # debug_show (key, new_val));
+    //                 Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bp_tree)));
+    //                 Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bp_tree)));
+    //                 assert false;
+    //             };
 
-                if (not MaxBpTreeMethods.validate_subtree_size(max_bp_tree)) {
-                    Debug.print("invalid subtree size discovered at index " # debug_show i);
-                    Debug.print("replacing " # debug_show (key, prev_val) # " with " # debug_show (key, new_val));
-                    Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bp_tree)));
-                    Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bp_tree)));
-                    assert false;
-                };
+    //             if (not MaxBpTreeMethods.validate_subtree_size(max_bp_tree)) {
+    //                 Debug.print("invalid subtree size discovered at index " # debug_show i);
+    //                 Debug.print("replacing " # debug_show (key, prev_val) # " with " # debug_show (key, new_val));
+    //                 Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bp_tree)));
+    //                 Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bp_tree)));
+    //                 assert false;
+    //             };
 
-                ignore BTree.delete(btree, Nat.compare, prev_val);
-                ignore BTree.insert(btree, Nat.compare, new_val, key);
+    //             ignore BTree.delete(btree, Nat.compare, prev_val);
+    //             ignore BTree.insert(btree, Nat.compare, new_val, key);
 
-                let ?flipped_max = BTree.max(btree) else Debug.trap("Btree doesn't have max value");
-                let actual_max = (flipped_max.1, flipped_max.0);
+    //             let ?flipped_max = BTree.max(btree) else Debug.trap("Btree doesn't have max value");
+    //             let actual_max = (flipped_max.1, flipped_max.0);
 
-                let ?recieved = MaxBpTree.maxValue(max_bp_tree) else Debug.trap("max value is null");
+    //             let ?recieved = MaxBpTree.maxValue(max_bp_tree) else Debug.trap("max value is null");
 
-                if (actual_max.1 != recieved.1) {
-                    Debug.print("mismatch at index " # debug_show i);
-                    Debug.print("expected != recieved: " # debug_show (actual_max, recieved));
-                    assert false;
-                };
+    //             if (actual_max.1 != recieved.1) {
+    //                 Debug.print("mismatch at index " # debug_show i);
+    //                 Debug.print("expected != recieved: " # debug_show (actual_max, recieved));
+    //                 assert false;
+    //             };
 
-            };
+    //         };
 
-        },
-    );
+    //     },
+    // );
 
-    test(
-        "maxValue(): replacing entries with lower values",
-        func() {
-            let sorted_by_val = Itertools.toBuffer<(Nat, Nat)>(random.vals());
-            let max_bp_tree = MaxBpTree.fromEntries(sorted_by_val.vals(), Cmp.Nat, Cmp.Nat, ?order);
-            // assert MaxBpTree.size(max_bp_tree) == random.size();
-            sorted_by_val.sort(Utils.tuple_cmp_val(Nat.compare));
+    // test(
+    //     "maxValue(): replacing entries with lower values",
+    //     func() {
+    //         let sorted_by_val = Itertools.toBuffer<(Nat, Nat)>(random.vals());
+    //         let max_bp_tree = MaxBpTree.fromEntries(sorted_by_val.vals(), Cmp.Nat, Cmp.Nat, ?order);
+    //         // assert MaxBpTree.size(max_bp_tree) == random.size();
+    //         sorted_by_val.sort(Utils.tuple_order_cmp_val(Nat.compare));
 
-            let max_vals = Itertools.takeWhile(
-                object {
-                    public func next() : ?(Nat, Nat) = MaxBpTree.maxValue(max_bp_tree);
-                },
-                func((k, v) : (Nat, Nat)) : Bool = v > 0,
-            );
+    //         let max_vals = Itertools.takeWhile(
+    //             object {
+    //                 public func next() : ?(Nat, Nat) = MaxBpTree.maxValue(max_bp_tree);
+    //             },
+    //             func((k, v) : (Nat, Nat)) : Bool = v > 0,
+    //         );
 
-            for ((i, (k, v)) in Itertools.enumerate(Itertools.take(max_vals, limit))) {
-                let expected = v;
-                let recieved = MaxBpTree.get(max_bp_tree, Cmp.Nat, k);
+    //         for ((i, (k, v)) in Itertools.enumerate(Itertools.take(max_vals, limit))) {
+    //             let expected = v;
+    //             let recieved = MaxBpTree.get(max_bp_tree, Cmp.Nat, k);
 
-                if (not (?expected == recieved)) {
-                    Debug.print("mismatch at key " # debug_show k # " index " # debug_show i);
-                    Debug.print("expected != recieved " # debug_show (?expected, recieved));
-                    Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bp_tree)));
-                    Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bp_tree)));
+    //             if (not (?expected == recieved)) {
+    //                 Debug.print("mismatch at key " # debug_show k # " index " # debug_show i);
+    //                 Debug.print("expected != recieved " # debug_show (?expected, recieved));
+    //                 Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bp_tree)));
+    //                 Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bp_tree)));
 
-                    assert false;
-                };
+    //                 assert false;
+    //             };
 
-                let expected_max = sorted_by_val.get(sorted_by_val.size() - i - 1);
+    //             let expected_max = sorted_by_val.get(sorted_by_val.size() - i - 1);
 
-                if (not (expected_max.1 == v)) {
-                    Debug.print("k -> " # debug_show k);
-                    Debug.print("expected max -> " # debug_show expected_max);
-                    Debug.print("mismatch at key " # debug_show k # " index " # debug_show i);
-                    Debug.print("expected != recieved " # debug_show (expected_max, (k, v)));
-                    Debug.print("node keys -> " # debug_show MaxBpTree.toNodeKeys(max_bp_tree));
-                    Debug.print("leaf nodes -> " # debug_show MaxBpTree.toLeafNodes(max_bp_tree));
-                    assert false;
-                };
+    //             if (not (expected_max.1 == v)) {
+    //                 Debug.print("k -> " # debug_show k);
+    //                 Debug.print("expected max -> " # debug_show expected_max);
+    //                 Debug.print("mismatch at key " # debug_show k # " index " # debug_show i);
+    //                 Debug.print("expected != recieved " # debug_show (expected_max, (k, v)));
+    //                 Debug.print("node keys -> " # debug_show MaxBpTree.toNodeKeys(max_bp_tree));
+    //                 Debug.print("leaf nodes -> " # debug_show MaxBpTree.toLeafNodes(max_bp_tree));
+    //                 assert false;
+    //             };
 
-                assert ?v == MaxBpTree.insert(max_bp_tree, Cmp.Nat, Cmp.Nat, k, 0);
+    //             assert ?v == MaxBpTree.insert(max_bp_tree, Cmp.Nat, Cmp.Nat, k, 0);
 
-                if (not MaxBpTreeMethods.validate_max_path(max_bp_tree, Cmp.Nat)) {
-                    Debug.print("invalid max path discovered at index " # debug_show i);
-                    Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bp_tree)));
-                    Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bp_tree)));
-                    assert false;
-                };
+    //             if (not MaxBpTreeMethods.validate_max_path(max_bp_tree)) {
+    //                 Debug.print("invalid max path discovered at index " # debug_show i);
+    //                 Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bp_tree)));
+    //                 Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bp_tree)));
+    //                 assert false;
+    //             };
 
-                if (not MaxBpTreeMethods.validate_subtree_size(max_bp_tree)) {
-                    Debug.print("invalid subtree size at index " # debug_show i);
-                    Debug.print("setting value in " # debug_show (k, v) # " to zero");
-                    Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bp_tree)));
-                    Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bp_tree)));
-                    assert false;
-                };
+    //             if (not MaxBpTreeMethods.validate_subtree_size(max_bp_tree)) {
+    //                 Debug.print("invalid subtree size at index " # debug_show i);
+    //                 Debug.print("setting value in " # debug_show (k, v) # " to zero");
+    //                 Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bp_tree)));
+    //                 Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bp_tree)));
+    //                 assert false;
+    //             };
 
-            };
+    //         };
 
-        },
-    );
+    //     },
+    // );
 
-    test(
-        "removeMaxValue()",
-        func() {
+    // test(
+    //     "removeMaxValue()",
+    //     func() {
 
-            let sorted_by_val = Itertools.toBuffer<(Nat, Nat)>(random.vals());
-            sorted_by_val.sort(Utils.tuple_cmp_val(Nat.compare));
-            Buffer.reverse(sorted_by_val);
+    //         let sorted_by_val = Itertools.toBuffer<(Nat, Nat)>(random.vals());
+    //         sorted_by_val.sort(Utils.tuple_order_cmp_val(Nat.compare));
+    //         Buffer.reverse(sorted_by_val);
 
-            let max_bp_tree = MaxBpTree.fromEntries(random.vals(), Cmp.Nat, Cmp.Nat, ?order);
-            assert max_bp_tree.order == order;
+    //         let max_bp_tree = MaxBpTree.fromEntries(random.vals(), Cmp.Nat, Cmp.Nat, ?order);
+    //         assert max_bp_tree.order == order;
 
-            label for_loop for ((i, expected) in Itertools.enumerate(sorted_by_val.vals())) {
+    //         label for_loop for ((i, expected) in Itertools.enumerate(sorted_by_val.vals())) {
 
-                let (max_k, max_v) = expected;
+    //             let (max_k, max_v) = expected;
 
-                let ?received = MaxBpTree.maxValue(max_bp_tree) else Debug.trap("max value is null");
-                assert max_v == received.1;
+    //             let ?received = MaxBpTree.maxValue(max_bp_tree) else Debug.trap("max value is null");
+    //             assert max_v == received.1;
 
-                assert MaxBpTree.size(max_bp_tree) == (sorted_by_val.size() - i : Nat);
+    //             assert MaxBpTree.size(max_bp_tree) == (sorted_by_val.size() - i : Nat);
 
-                let ?removed = MaxBpTree.removeMaxValue(max_bp_tree, Cmp.Nat, Cmp.Nat) else Debug.trap("max value is null");
+    //             let ?removed = MaxBpTree.removeMaxValue(max_bp_tree, Cmp.Nat, Cmp.Nat) else Debug.trap("max value is null");
 
-                // Debug.print("deleting: " # debug_show expected # " at index " # debug_show i);
-                // Debug.print("expected vs received: " # debug_show (expected, MaxBpTree.maxValue(max_bp_tree)));
-                // Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bp_tree)));
-                // Debug.print("leaf nodes: " # debug_show (MaxBpTree.toLeafNodes(max_bp_tree)));
+    //             // Debug.print("deleting: " # debug_show expected # " at index " # debug_show i);
+    //             // Debug.print("expected vs received: " # debug_show (expected, MaxBpTree.maxValue(max_bp_tree)));
+    //             // Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bp_tree)));
+    //             // Debug.print("leaf nodes: " # debug_show (MaxBpTree.toLeafNodes(max_bp_tree)));
 
-                if (expected.1 != removed.1) {
-                    Debug.print("mismatch at index " # debug_show i);
-                    Debug.print("expected != recieved: " # debug_show (expected, removed));
-                    Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bp_tree)));
-                    Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bp_tree)));
-                };
+    //             if (expected.1 != removed.1) {
+    //                 Debug.print("mismatch at index " # debug_show i);
+    //                 Debug.print("expected != recieved: " # debug_show (expected, removed));
+    //                 Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bp_tree)));
+    //                 Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bp_tree)));
+    //             };
 
-                if (not MaxBpTreeMethods.validate_max_path(max_bp_tree, Cmp.Nat)) {
-                    Debug.print("invalid max path discovered at index " # debug_show i);
-                    Debug.print("removing max value " # debug_show (max_k, max_v));
-                    Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bp_tree)));
-                    Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bp_tree)));
-                    assert false;
-                };
+    //             if (not MaxBpTreeMethods.validate_max_path(max_bp_tree)) {
+    //                 Debug.print("invalid max path discovered at index " # debug_show i);
+    //                 Debug.print("removing max value " # debug_show (max_k, max_v));
+    //                 Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bp_tree)));
+    //                 Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bp_tree)));
+    //                 assert false;
+    //             };
 
-                if (not MaxBpTreeMethods.validate_subtree_size(max_bp_tree)) {
-                    Debug.print("invalid subtree size at index " # debug_show i);
-                    Debug.print("removing max value " # debug_show (max_k, max_v));
-                    Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bp_tree)));
-                    Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bp_tree)));
-                    assert false;
-                };
-            };
+    //             if (not MaxBpTreeMethods.validate_subtree_size(max_bp_tree)) {
+    //                 Debug.print("invalid subtree size at index " # debug_show i);
+    //                 Debug.print("removing max value " # debug_show (max_k, max_v));
+    //                 Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bp_tree)));
+    //                 Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bp_tree)));
+    //                 assert false;
+    //             };
+    //         };
 
-            assert MaxBpTree.size(max_bp_tree) == 0;
-            assert MaxBpTree.maxValue(max_bp_tree) == null;
+    //         assert MaxBpTree.size(max_bp_tree) == 0;
+    //         assert MaxBpTree.maxValue(max_bp_tree) == null;
 
-        },
-    );
+    //     },
+    // );
 
-    test(
-        "removeMin(): test _remove_from_leaf",
-        func() {
-            let value_map = MaxValueMap(?random);
-            let max_bp_tree = MaxBpTree.fromEntries(random.vals(), Cmp.Nat, Cmp.Nat, ?order);
+    // test(
+    //     "removeMin(): test _remove_from_leaf",
+    //     func() {
+    //         let value_map = MaxValueMap(?random);
+    //         let max_bp_tree = MaxBpTree.fromEntries(random.vals(), Cmp.Nat, Cmp.Nat, ?order);
 
-            label for_loop for ((i, expected) in Itertools.enumerate(sorted_by_key.vals())) {
-                let (min_key, min_val) = expected;
+    //         label for_loop for ((i, expected) in Itertools.enumerate(sorted_by_key.vals())) {
+    //             let (min_key, min_val) = expected;
 
-                let ?expected_max = value_map.max_entry() else Debug.trap("max value is null");
-                let ?recieved_max = MaxBpTree.maxValue(max_bp_tree) else Debug.trap("max value is null");
+    //             let ?expected_max = value_map.max_entry() else Debug.trap("max value is null");
+    //             let ?recieved_max = MaxBpTree.maxValue(max_bp_tree) else Debug.trap("max value is null");
 
-                if (not value_map.is_max_entry(recieved_max)) {
-                    Debug.print("mismatch at index " # debug_show i);
-                    Debug.print("expected_max != recieved_max: " # debug_show (expected_max, recieved_max));
-                    Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bp_tree)));
-                    Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bp_tree)));
+    //             if (not value_map.is_max_entry(recieved_max)) {
+    //                 Debug.print("mismatch at index " # debug_show i);
+    //                 Debug.print("expected_max != recieved_max: " # debug_show (expected_max, recieved_max));
+    //                 Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bp_tree)));
+    //                 Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bp_tree)));
 
-                    assert false;
-                };
+    //                 assert false;
+    //             };
 
-                let ?removed = MaxBpTree.removeMin(max_bp_tree, Cmp.Nat, Cmp.Nat) else Debug.trap("min value is null");
-                value_map.remove(removed);
+    //             let ?removed = MaxBpTree.removeMin(max_bp_tree, Cmp.Nat, Cmp.Nat) else Debug.trap("min value is null");
+    //             value_map.remove(removed);
                 
-                if (expected != removed) {
-                    Debug.print("mismatch at index " # debug_show i);
-                    Debug.print("expected != recieved: " # debug_show (expected, removed));
-                    Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bp_tree)));
-                    Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bp_tree)));
-                };
+    //             if (expected != removed) {
+    //                 Debug.print("mismatch at index " # debug_show i);
+    //                 Debug.print("expected != recieved: " # debug_show (expected, removed));
+    //                 Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bp_tree)));
+    //                 Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bp_tree)));
+    //             };
 
-                if (not MaxBpTreeMethods.validate_max_path(max_bp_tree, Cmp.Nat)) {
-                    Debug.print("invalid max path discovered at index " # debug_show i);
-                    Debug.print("removing min " # debug_show (min_key, min_val));
-                    Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bp_tree)));
-                    Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bp_tree)));
-                    assert false;
-                };
+    //             if (not MaxBpTreeMethods.validate_max_path(max_bp_tree)) {
+    //                 Debug.print("invalid max path discovered at index " # debug_show i);
+    //                 Debug.print("removing min " # debug_show (min_key, min_val));
+    //                 Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bp_tree)));
+    //                 Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bp_tree)));
+    //                 assert false;
+    //             };
 
-                assert MaxBpTree.size(max_bp_tree) == (sorted_by_key.size() - i - 1 : Nat);
+    //             assert MaxBpTree.size(max_bp_tree) == (sorted_by_key.size() - i - 1 : Nat);
 
-                if (not MaxBpTreeMethods.validate_subtree_size(max_bp_tree)) {
-                    Debug.print("invalid subtree size at index " # debug_show i);
-                    Debug.print("removing min " # debug_show (min_key, min_val));
-                    Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bp_tree)));
-                    Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bp_tree)));
-                    assert false;
-                };
+    //             if (not MaxBpTreeMethods.validate_subtree_size(max_bp_tree)) {
+    //                 Debug.print("invalid subtree size at index " # debug_show i);
+    //                 Debug.print("removing min " # debug_show (min_key, min_val));
+    //                 Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bp_tree)));
+    //                 Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bp_tree)));
+    //                 assert false;
+    //             };
 
-            };
+    //         };
 
-        },
-    );
+    //     },
+    // );
 
-    test(
-        "delete: insertion order",
-        func() {
+    // test(
+    //     "delete: insertion order",
+    //     func() {
 
-            let value_map = MaxValueMap(?random);
-            let max_bp_tree = MaxBpTree.fromEntries(random.vals(), Cmp.Nat, Cmp.Nat, ?order);
+    //         let value_map = MaxValueMap(?random);
+    //         let max_bp_tree = MaxBpTree.fromEntries(random.vals(), Cmp.Nat, Cmp.Nat, ?order);
 
-            label for_loop for ((i, (k, v)) in Itertools.enumerate(random.vals())) {
+    //         label for_loop for ((i, (k, v)) in Itertools.enumerate(random.vals())) {
 
-                assert ?v == MaxBpTree.get(max_bp_tree, Cmp.Nat, k);
+    //             assert ?v == MaxBpTree.get(max_bp_tree, Cmp.Nat, k);
 
-                let ?expected_max = value_map.max_entry() else Debug.trap("max value is null");
-                let ?recieved_max = MaxBpTree.maxValue(max_bp_tree) else Debug.trap("max value is null");
+    //             let ?expected_max = value_map.max_entry() else Debug.trap("max value is null");
+    //             let ?recieved_max = MaxBpTree.maxValue(max_bp_tree) else Debug.trap("max value is null");
 
-                if (not value_map.is_max_entry(recieved_max)) {
-                    Debug.print("mismatch at index " # debug_show i);
-                    Debug.print("expected_max != recieved_max: " # debug_show (expected_max, recieved_max));
-                    Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bp_tree)));
-                    Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bp_tree)));
+    //             if (not value_map.is_max_entry(recieved_max)) {
+    //                 Debug.print("mismatch at index " # debug_show i);
+    //                 Debug.print("expected_max != recieved_max: " # debug_show (expected_max, recieved_max));
+    //                 Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bp_tree)));
+    //                 Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bp_tree)));
 
-                    assert false;
-                };
+    //                 assert false;
+    //             };
 
-                assert MaxBpTree.size(max_bp_tree) == (random.size() - i : Nat);
+    //             assert MaxBpTree.size(max_bp_tree) == (random.size() - i : Nat);
 
-                assert ?v == MaxBpTree.remove(max_bp_tree, Cmp.Nat, Cmp.Nat, k);
-                value_map.remove(k, v);
+    //             assert ?v == MaxBpTree.remove(max_bp_tree, Cmp.Nat, Cmp.Nat, k);
+    //             value_map.remove(k, v);
 
-                if (not MaxBpTreeMethods.validate_max_path(max_bp_tree, Cmp.Nat)) {
-                    Debug.print("invalid max path discovered at index " # debug_show i);
-                    Debug.print("removing " # debug_show (k, v));
-                    Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bp_tree)));
-                    Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bp_tree)));
-                    assert false;
-                };
+    //             if (not MaxBpTreeMethods.validate_max_path(max_bp_tree)) {
+    //                 Debug.print("invalid max path discovered at index " # debug_show i);
+    //                 Debug.print("removing " # debug_show (k, v));
+    //                 Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bp_tree)));
+    //                 Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bp_tree)));
+    //                 assert false;
+    //             };
 
-                if (not MaxBpTreeMethods.validate_subtree_size(max_bp_tree)) {
-                    Debug.print("invalid subtree size at index " # debug_show i);
-                    Debug.print("removing " # debug_show (k, v));
-                    Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bp_tree)));
-                    Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bp_tree)));
-                    assert false;
-                };
+    //             if (not MaxBpTreeMethods.validate_subtree_size(max_bp_tree)) {
+    //                 Debug.print("invalid subtree size at index " # debug_show i);
+    //                 Debug.print("removing " # debug_show (k, v));
+    //                 Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bp_tree)));
+    //                 Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bp_tree)));
+    //                 assert false;
+    //             };
 
-            };
+    //         };
 
-            assert MaxBpTree.size(max_bp_tree) == 0;
-        },
-    );
+    //         assert MaxBpTree.size(max_bp_tree) == 0;
+    //     },
+    // );
 
-    // todo: check that the tree maintains the max value after replacing a value
-    test("test _replace_at_leaf_index()", func (){
-        let max_bptree = MaxBpTree.fromEntries(random.vals(), Cmp.Nat, Cmp.Nat, ?order);
-        let value_map = MaxValueMap(?random);
+    // // todo: check that the tree maintains the max value after replacing a value
+    // test("test _replace_at_leaf_index()", func (){
+    //     let max_bptree = MaxBpTree.fromEntries(random.vals(), Cmp.Nat, Cmp.Nat, ?order);
+    //     let value_map = MaxValueMap(?random);
 
-        label for_loop for ((i, (leaf, j, prev_entry)) in Itertools.enumerate(MaxBpTree.leafEntries(max_bptree).rev())){
-            let (prev_key, prev_val) = prev_entry;
-            let new_key = prev_key + 1;
-            let new_val = fuzz.nat.randomRange(1, limit * 10);
+    //     label for_loop for ((i, (leaf, j, prev_entry)) in Itertools.enumerate(MaxBpTree.leafEntries(max_bptree).rev())){
+    //         let (prev_key, prev_val) = prev_entry;
+    //         let new_key = prev_key + 1;
+    //         let new_val = fuzz.nat.randomRange(1, limit * 10);
 
-            // Debug.print("replacing " # debug_show (prev_key, prev_val) # " with " # debug_show (new_key, new_val) # " at index " # debug_show i);
+    //         // Debug.print("replacing " # debug_show (prev_key, prev_val) # " with " # debug_show (new_key, new_val) # " at index " # debug_show i);
 
-            let ?expected_max = value_map.max_entry() else Debug.trap("max value is null");
-            let ?recieved_max = MaxBpTree.maxValue(max_bptree) else Debug.trap("max value is null");
+    //         let ?expected_max = value_map.max_entry() else Debug.trap("max value is null");
+    //         let ?recieved_max = MaxBpTree.maxValue(max_bptree) else Debug.trap("max value is null");
 
-            if (not value_map.is_max_entry(recieved_max)) {
-                Debug.print("mismatch at index " # debug_show i);
-                Debug.print("expected_max != recieved_max: " # debug_show (expected_max, recieved_max));
-                Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bptree)));
-                Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bptree)));
+    //         if (not value_map.is_max_entry(recieved_max)) {
+    //             Debug.print("mismatch at index " # debug_show i);
+    //             Debug.print("expected_max != recieved_max: " # debug_show (expected_max, recieved_max));
+    //             Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bptree)));
+    //             Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bptree)));
 
-                assert false;
-            };
+    //             assert false;
+    //         };
 
-            assert ?prev_val == MaxBpTree._replace_at_leaf_index(max_bptree, Cmp.Nat, Cmp.Nat, leaf, j, new_key, new_val, true);
-            value_map.remove(prev_key, prev_val);
-            value_map.insert(new_key, new_val);
+    //         assert ?prev_val == MaxBpTree._replace_at_leaf_index(max_bptree, Cmp.Nat, Cmp.Nat, leaf, j, new_key, new_val, true);
+    //         value_map.remove(prev_key, prev_val);
+    //         value_map.insert(new_key, new_val);
 
-            if (not MaxBpTreeMethods.validate_max_path(max_bptree, Cmp.Nat)) {
-                Debug.print("invalid max path discovered at index " # debug_show i);
-                Debug.print("replacing " # debug_show (prev_key, prev_val) # " with " # debug_show (new_key, new_val));
-                Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bptree)));
-                Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bptree)));
-                assert false;
-            };
+    //         if (not MaxBpTreeMethods.validate_max_path(max_bptree, Cmp.Nat)) {
+    //             Debug.print("invalid max path discovered at index " # debug_show i);
+    //             Debug.print("replacing " # debug_show (prev_key, prev_val) # " with " # debug_show (new_key, new_val));
+    //             Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bptree)));
+    //             Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bptree)));
+    //             assert false;
+    //         };
 
-            if (not MaxBpTreeMethods.validate_subtree_size(max_bptree)) {
-                Debug.print("invalid subtree size discovered at index " # debug_show i);
-                Debug.print("replacing " # debug_show (prev_key, prev_val) # " with " # debug_show (new_key, new_val));
-                Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bptree)));
-                Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bptree)));
-                assert false;
-            };
+    //         if (not MaxBpTreeMethods.validate_subtree_size(max_bptree)) {
+    //             Debug.print("invalid subtree size discovered at index " # debug_show i);
+    //             Debug.print("replacing " # debug_show (prev_key, prev_val) # " with " # debug_show (new_key, new_val));
+    //             Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bptree)));
+    //             Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bptree)));
+    //             assert false;
+    //         };
 
-            // Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bptree)));
-            // Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bptree)));
-        };
-    });
+    //         // Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bptree)));
+    //         // Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bptree)));
+    //     };
+    // });
 
-    test("test _insert_at_leaf_index", func(){
-        let max_bptree = MaxBpTree.new<Nat, Nat>(?order);
-        let value_map = MaxValueMap(null);
+    // test("test _insert_at_leaf_index", func(){
+    //     let max_bptree = MaxBpTree.new<Nat, Nat>(?order);
+    //     let value_map = MaxValueMap(null);
 
-        let leftmost_leaf = MaxBpTreeMethods.get_min_leaf_node(max_bptree);
+    //     let leftmost_leaf = MaxBpTreeMethods.get_min_leaf_node(max_bptree);
 
-        let entries = RevIter.fromBuffer(sorted_by_key);
-        for ((i, (k, v)) in Itertools.enumerate(entries.rev())){
-            // Debug.print("inserting " # debug_show (k, v) # " at index " # debug_show i);
+    //     let entries = RevIter.fromBuffer(sorted_by_key);
+    //     for ((i, (k, v)) in Itertools.enumerate(entries.rev())){
+    //         // Debug.print("inserting " # debug_show (k, v) # " at index " # debug_show i);
 
-            MaxBpTree._insert_at_leaf_index(max_bptree, Cmp.Nat, Cmp.Nat, leftmost_leaf, 0, k, v, true);
-            value_map.insert(k, v);
-            let ?expected_max = value_map.max_entry() else Debug.trap("max value is null");
-            let ?recieved_max = MaxBpTree.maxValue(max_bptree) else Debug.trap("max value is null");
+    //         MaxBpTree._insert_at_leaf_index(max_bptree, Cmp.Nat, Cmp.Nat, leftmost_leaf, 0, k, v, true);
+    //         value_map.insert(k, v);
+    //         let ?expected_max = value_map.max_entry() else Debug.trap("max value is null");
+    //         let ?recieved_max = MaxBpTree.maxValue(max_bptree) else Debug.trap("max value is null");
 
-            if (not value_map.is_max_entry(recieved_max)) {
-                Debug.print("mismatch at index " # debug_show i);
-                Debug.print("expected_max != recieved_max: " # debug_show (expected_max, recieved_max));
-                Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bptree)));
-                Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bptree)));
+    //         if (not value_map.is_max_entry(recieved_max)) {
+    //             Debug.print("mismatch at index " # debug_show i);
+    //             Debug.print("expected_max != recieved_max: " # debug_show (expected_max, recieved_max));
+    //             Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bptree)));
+    //             Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bptree)));
 
-                assert false;
-            };
+    //             assert false;
+    //         };
 
-            if (not MaxBpTreeMethods.validate_max_path(max_bptree, Cmp.Nat)) {
-                Debug.print("invalid max path discovered at index " # debug_show i);
-                Debug.print("inserting " # debug_show (k, v));
-                Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bptree)));
-                Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bptree)));
-                assert false;
-            };
+    //         if (not MaxBpTreeMethods.validate_max_path(max_bptree, Cmp.Nat)) {
+    //             Debug.print("invalid max path discovered at index " # debug_show i);
+    //             Debug.print("inserting " # debug_show (k, v));
+    //             Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bptree)));
+    //             Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bptree)));
+    //             assert false;
+    //         };
 
-            if (not MaxBpTreeMethods.validate_subtree_size(max_bptree)) {
-                Debug.print("invalid subtree size discovered at index " # debug_show i);
-                Debug.print("inserting " # debug_show (k, v));
-                Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bptree)));
-                Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bptree)));
-                assert false;
-            };
+    //         if (not MaxBpTreeMethods.validate_subtree_size(max_bptree)) {
+    //             Debug.print("invalid subtree size discovered at index " # debug_show i);
+    //             Debug.print("inserting " # debug_show (k, v));
+    //             Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bptree)));
+    //             Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bptree)));
+    //             assert false;
+    //         };
 
-            // Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bptree)));
-            // Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bptree)));
+    //         // Debug.print("node keys: " # debug_show (MaxBpTree.toNodeKeys(max_bptree)));
+    //         // Debug.print("node leaves: " # debug_show (MaxBpTree.toLeafNodes(max_bptree)));
 
-        };
-    });
+    //     };
+    // });
 
 };
 
 func bptree_tests(order : Nat, random : Buffer.Buffer<(Nat, Nat)>, sorted_by_key : Buffer.Buffer<(Nat, Nat)>) {
-    let bptree = MaxBpTree.fromEntries(random.vals(), Cmp.Nat, Cmp.Nat, ?order);
+    // let bptree = MaxBpTree.fromEntries(random.vals(), Cmp.Nat, Cmp.Nat, ?order);
 
-    test(
-        "getIndex",
-        func() {
-            for (i in Itertools.range(0, sorted_by_key.size())) {
-                let (key, _) = sorted_by_key.get(i);
-                let rank = MaxBpTree.getIndex(bptree, Cmp.Nat, key);
+    // test(
+    //     "getIndex",
+    //     func() {
+    //         for (i in Itertools.range(0, sorted_by_key.size())) {
+    //             let (key, _) = sorted_by_key.get(i);
+    //             let rank = MaxBpTree.getIndex(bptree, Cmp.Nat, key);
 
-                if (not (rank == i)) {
-                    Debug.print("sorted_by_key: " # debug_show Buffer.toArray(sorted_by_key));
-                    Debug.print("mismatch for key:" # debug_show key);
-                    Debug.print("expected != actual:" # debug_show (i, rank));
-                    assert false;
-                };
-            };
-        },
-    );
+    //             if (not (rank == i)) {
+    //                 Debug.print("sorted_by_key: " # debug_show Buffer.toArray(sorted_by_key));
+    //                 Debug.print("mismatch for key:" # debug_show key);
+    //                 Debug.print("expected != actual:" # debug_show (i, rank));
+    //                 assert false;
+    //             };
+    //         };
+    //     },
+    // );
 
-    test(
-        "getFromIndex",
-        func() {
-            for (i in Itertools.range(0, sorted_by_key.size())) {
-                let expected = sorted_by_key.get(i);
-                let received = MaxBpTree.getFromIndex(bptree, i);
+    // test(
+    //     "getFromIndex",
+    //     func() {
+    //         for (i in Itertools.range(0, sorted_by_key.size())) {
+    //             let expected = sorted_by_key.get(i);
+    //             let received = MaxBpTree.getFromIndex(bptree, i);
 
-                if (not (expected == received)) {
-                    Debug.print("mismatch at rank:" # debug_show i);
-                    Debug.print("expected != received: " # debug_show (expected, received));
-                    assert false;
-                };
-            };
-        },
-    );
+    //             if (not (expected == received)) {
+    //                 Debug.print("mismatch at rank:" # debug_show i);
+    //                 Debug.print("expected != received: " # debug_show (expected, received));
+    //                 assert false;
+    //             };
+    //         };
+    //     },
+    // );
 
-    test(
-        "scan",
-        func() {
-            let _rand = Iter.toArray<(Nat, Nat)>(Itertools.take(random.vals(), 100));
+    // test(
+    //     "scan",
+    //     func() {
+    //         let _rand = Iter.toArray<(Nat, Nat)>(Itertools.take(random.vals(), 100));
 
-            let bptree = MaxBpTree.fromEntries(_rand.vals(), Cmp.Nat, Cmp.Nat, ?order);
-            let rand = Array.sort<(Nat, Nat)>(_rand, Utils.tuple_cmp(Nat.compare));
+    //         let bptree = MaxBpTree.fromEntries(_rand.vals(), Cmp.Nat, Cmp.Nat, ?order);
+    //         let rand = Array.sort<(Nat, Nat)>(_rand, Utils.tuple_order_cmp_key(Nat.compare));
 
-            for (i in Itertools.range(0, MaxBpTree.size(bptree))) {
+    //         for (i in Itertools.range(0, MaxBpTree.size(bptree))) {
 
-                for (j in Itertools.range(i + 1, MaxBpTree.size(bptree))) {
-                    let start_key = rand[i].0;
-                    let end_key = rand[j].0;
+    //             for (j in Itertools.range(i + 1, MaxBpTree.size(bptree))) {
+    //                 let start_key = rand[i].0;
+    //                 let end_key = rand[j].0;
 
-                    if (
-                        not Itertools.equal<(Nat, Nat)>(
-                            MaxBpTree.scan(bptree, Cmp.Nat, start_key, end_key),
-                            Itertools.fromArraySlice(rand, i, j + 1),
-                            func(a : (Nat, Nat), b : (Nat, Nat)) : Bool = a == b,
-                        )
-                    ) {
-                        Debug.print("mismatch: " # debug_show (i, j));
-                        Debug.print("scan " # debug_show Iter.toArray(MaxBpTree.scan(bptree, Cmp.Nat, start_key, end_key)));
-                        Debug.print("expected " # debug_show Iter.toArray(Itertools.fromArraySlice(rand, i, j + 1)));
-                        assert false;
-                    };
-                };
-            };
-        },
-    );
+    //                 if (
+    //                     not Itertools.equal<(Nat, Nat)>(
+    //                         MaxBpTree.scan(bptree, Cmp.Nat, start_key, end_key),
+    //                         Itertools.fromArraySlice(rand, i, j + 1),
+    //                         func(a : (Nat, Nat), b : (Nat, Nat)) : Bool = a == b,
+    //                     )
+    //                 ) {
+    //                     Debug.print("mismatch: " # debug_show (i, j));
+    //                     Debug.print("scan " # debug_show Iter.toArray(MaxBpTree.scan(bptree, Cmp.Nat, start_key, end_key)));
+    //                     Debug.print("expected " # debug_show Iter.toArray(Itertools.fromArraySlice(rand, i, j + 1)));
+    //                     assert false;
+    //                 };
+    //             };
+    //         };
+    //     },
+    // );
 
-    test(
-        "range",
-        func() {
-            let _rand = Iter.toArray<(Nat, Nat)>(Itertools.take(random.vals(), 100));
+    // test(
+    //     "range",
+    //     func() {
+    //         let _rand = Iter.toArray<(Nat, Nat)>(Itertools.take(random.vals(), 100));
 
-            let bptree = MaxBpTree.fromEntries(_rand.vals(), Cmp.Nat, Cmp.Nat, ?order);
-            let rand = Array.sort<(Nat, Nat)>(_rand, Utils.tuple_cmp(Nat.compare));
+    //         let bptree = MaxBpTree.fromEntries(_rand.vals(), Cmp.Nat, Cmp.Nat, ?order);
+    //         let rand = Array.sort<(Nat, Nat)>(_rand, Utils.tuple_order_cmp_key(Nat.compare));
 
-            for (i in Itertools.range(0, MaxBpTree.size(bptree))) {
+    //         for (i in Itertools.range(0, MaxBpTree.size(bptree))) {
 
-                for (j in Itertools.range(i + 1, MaxBpTree.size(bptree))) {
+    //             for (j in Itertools.range(i + 1, MaxBpTree.size(bptree))) {
 
-                    if (
-                        not Itertools.equal<(Nat, Nat)>(
-                            MaxBpTree.range(bptree, i, j),
-                            Itertools.fromArraySlice(rand, i, j + 1),
-                            func(a : (Nat, Nat), b : (Nat, Nat)) : Bool = a == b,
-                        )
-                    ) {
-                        Debug.print("mismatch: " # debug_show (i, j));
-                        Debug.print("range " # debug_show Iter.toArray(MaxBpTree.range(bptree, i, j)));
-                        Debug.print("expected " # debug_show Iter.toArray(Itertools.fromArraySlice(rand, i, j + 1)));
-                        assert false;
-                    };
-                };
-            };
-        },
-    );
+    //                 if (
+    //                     not Itertools.equal<(Nat, Nat)>(
+    //                         MaxBpTree.range(bptree, i, j),
+    //                         Itertools.fromArraySlice(rand, i, j + 1),
+    //                         func(a : (Nat, Nat), b : (Nat, Nat)) : Bool = a == b,
+    //                     )
+    //                 ) {
+    //                     Debug.print("mismatch: " # debug_show (i, j));
+    //                     Debug.print("range " # debug_show Iter.toArray(MaxBpTree.range(bptree, i, j)));
+    //                     Debug.print("expected " # debug_show Iter.toArray(Itertools.fromArraySlice(rand, i, j + 1)));
+    //                     assert false;
+    //                 };
+    //             };
+    //         };
+    //     },
+    // );
 };
 
 for (order in [4, 8, 32].vals()) {

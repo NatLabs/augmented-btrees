@@ -107,7 +107,7 @@ module Branch {
                     right_node.2[i - 1] := node.2[j - 1];
                 };
                 node.2[j - 1] := null;
-                Utils.extract(node.3, j);
+                ArrayMut.extract(node.3, j);
             } else Debug.trap("Branch.split: accessed a null value");
 
             Branch.add_child<K, V>(right_node, child_node);

@@ -1,6 +1,7 @@
 import Array "mo:base/Array";
 import Debug "mo:base/Debug";
 import Int "mo:base/Int";
+import Buffer "mo:base/Buffer";
 
 import T "Types";
 
@@ -28,6 +29,27 @@ module {
 
     };
 
+    public func count<A>(arr : [var ?A]) : Nat {
+        var cnt = 0;
+
+        while (cnt < arr.size()) {
+            switch (arr[cnt]) {
+                case (?val) {};
+                case (_) return cnt;
+            };
+
+            cnt += 1;
+        };
+        
+        return cnt;
+    };
+
+    public func extract<T>(arr : [var ?T], index : Nat) : ?T {
+        let tmp = arr[index];
+        arr[index] := null;
+        tmp;
+    };
+    
     public func insert<A>(arr : [var ?A], index : Nat, item : ?A, size : Nat) {
         var i = size;
         while (i > index) {
@@ -54,20 +76,68 @@ module {
         item;
     };
 
-    // public func linear_search<B, A>(arr : [var ?A], cmp : T.MultiCmpFn<B, A>, search_key : B, arr_len : Nat) : Int {
-    //     var i = 0;
+    // removeIf is a function that removes an element from an array if the predicate is true
+    // it returns the size of the array after the removal
+    public func removeIf<A>(arr : [var ?A], size : Nat, should_remove: (val: A, index: Nat) -> Bool) : Nat {
+        if (size == 0) return size;
 
-    //     while (i < arr_len) {
-    //         let ?val = arr[i] else Debug.trap("linear_search: accessed a null value");
-    //         switch (cmp(search_key, val)) {
-    //             case (0) return i;
-    //             case (-1) return -(i + 1);
-    //             case (+1) i += 1;
-    //         };
-    //     };
+        var i = 0;
+        var removed = 0;
 
-    //     return -(i + 1);
-    // };
+        while (i < size){
+            let ?val = arr[i] else Debug.trap("ArrayMut.removeIf(): encountered null value at index (" # debug_show i #"). Is count (" # debug_show size # ") valid?");
+            if (should_remove(val, i)){
+                removed += 1;
+                arr[i] := null;
+            };
+            i += 1;
+        };
+
+        var read = 0;
+        var write = 0;
+
+        while (read < size){
+            switch (arr[read]){
+                case (?val) {
+                    arr[read] := null;
+                    arr[write] := ?val;
+                    write += 1;
+                };
+                case (_) {};
+            };
+
+            read += 1;
+        };
+        
+        Debug.print("count: " # debug_show count(arr));
+        assert count(arr) == (size - removed : Nat);
+        size - removed;
+    };
+
+    public func swap<A>(arr : [var ?A], i : Nat, j : Nat) {
+        let temp = arr[i];
+        arr[i] := arr[j];
+        arr[j] := temp;
+    };
+
+    public func index_of<A>(arr : [var ?A], size : Nat, is_equal: (A, A) -> Bool, item : A) : ?Nat {
+        var i = 0;
+        var found = false;
+
+        label while_loop while (i < size) {
+            switch(arr[i]){
+                case (?val) found := is_equal(val, item);
+                case (_) Debug.trap("ArrayMut.index_of(): encountered null value in heap. Is count (" # debug_show size # ") valid?");
+            };
+
+            if (found) break while_loop;
+            i += 1;
+        };
+
+        if (not found) return null;
+
+        return ?i;
+    };
 
     public func binary_search<B, A>(arr : [var ?A], cmp : T.MultiCmpFn<B, A>, search_key : B, arr_len : Nat) : Int {
         if (arr_len == 0) return -1; // should insert at index Int.abs(i + 1)
@@ -127,4 +197,21 @@ module {
             };
         };
     };
+
+    public func to_buffer<A>(arr: [var ?A]) : Buffer.Buffer<A>{
+        let buffer = Buffer.Buffer<A>(8);
+        var i = 0;
+
+        label loop1 while (i < arr.size()) {
+            switch(arr[i]){
+                case (?val) buffer.add(val);
+                case (_) return buffer;
+            };
+
+            i += 1;
+        };
+
+        buffer
+    };
+    
 };

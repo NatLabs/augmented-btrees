@@ -22,8 +22,8 @@ module {
         bench.name("Comparing RBTree, BTree and B+Tree (BpTree)");
         bench.description("Benchmarking the performance with 10k entries");
 
-        bench.rows(["Map", "RBTree", "BTree", "B+Tree", "Max B+Tree"]);
-        bench.cols(["insert()", "replace()", "get()", "entries()", "scan()", "remove()"]);
+        bench.cols(["Map", "RBTree", "BTree", "B+Tree", "Max B+Tree"]);
+        bench.rows(["insert()", "replace() higher vals", "replace() lower vals", "get()", "entries()", "scan()", "remove()"]);
 
         let limit = 10_000;
         
@@ -35,21 +35,23 @@ module {
         let rbtree = RbTree.RBTree<Nat, Nat>(Nat.compare);
 
         let entries = Buffer.Buffer<(Nat, Nat)>(limit);
-        let replacements = Buffer.Buffer<(Nat, Nat)>(limit);
+        let higher_replacements = Buffer.Buffer<(Nat, Nat)>(limit);
+        let lower_replacements = Buffer.Buffer<(Nat, Nat)>(limit);
 
         for (i in Iter.range(0, limit - 1)) {
             let key = fuzz.nat.randomRange(1, limit ** 3);
             let val = fuzz.nat.randomRange(1, limit ** 3);
 
             entries.add((key, val));
-            replacements.add((key, val * 2));
+            higher_replacements.add((key, val * 2));
+            lower_replacements.add((key, val / key)); // skewed towards really low values
         };
 
         let sorted = Buffer.clone(entries);
         sorted.sort(func(a, b) = Nat.compare(a.0, b.0));
 
         bench.runner(
-            func(row, col) = switch (row, col) {
+            func(row, col) = switch (col, row) {
                 case ("Map", "insert()") {
                     var i = 0;
 
@@ -58,10 +60,18 @@ module {
                         i += 1;
                     };
                 };
-                case ("Map", "replace()") {
+                case ("Map", "replace() higher vals") {
                     var i = 0;
 
-                    for ((key, val) in replacements.vals()) {
+                    for ((key, val) in higher_replacements.vals()) {
+                        ignore Map.put(map, nhash, key, val);
+                        i += 1;
+                    };
+                };
+                case ("Map", "replace() lower vals") {
+                    var i = 0;
+
+                    for ((key, val) in lower_replacements.vals()) {
                         ignore Map.put(map, nhash, key, val);
                         i += 1;
                     };
@@ -73,7 +83,7 @@ module {
                     };
                 };
                 case ("Map", "entries()") {
-                    for (i in rbtree.entries()) { ignore i };
+                    for (i in Map.entries(map)) { ignore i };
                 };
                 case ("Map", "scan()") { };
                 case ("Map", "remove()") {
@@ -90,10 +100,18 @@ module {
                         i += 1;
                     };
                 };
-                case ("RBTree", "replace()") {
+                case ("RBTree", "replace() higher vals") {
                     var i = 0;
 
-                    for ((key, val) in replacements.vals()) {
+                    for ((key, val) in higher_replacements.vals()) {
+                        rbtree.put(key, val);
+                        i += 1;
+                    };
+                };
+                case ("RBTree", "replace() lower vals") {
+                    var i = 0;
+
+                    for ((key, val) in lower_replacements.vals()) {
                         rbtree.put(key, val);
                         i += 1;
                     };
@@ -119,8 +137,13 @@ module {
                         ignore BTree.insert(btree, Nat.compare, key, val);
                     };
                 };
-                case ("BTree", "replace()") {
-                    for ((key, val) in replacements.vals()) {
+                case ("BTree", "replace() higher vals") {
+                    for ((key, val) in higher_replacements.vals()) {
+                        ignore BTree.insert(btree, Nat.compare, key, val);
+                    };
+                };
+                case ("BTree", "replace() lower vals") {
+                    for ((key, val) in lower_replacements.vals()) {
                         ignore BTree.insert(btree, Nat.compare, key, val);
                     };
                 };
@@ -155,8 +178,13 @@ module {
                         ignore BpTree.insert(bptree, Cmp.Nat, key, val);
                     };
                 };
-                case ("B+Tree", "replace()") {
-                    for ((key, val) in replacements.vals()) {
+                case ("B+Tree", "replace() higher vals") {
+                    for ((key, val) in higher_replacements.vals()) {
+                        ignore BpTree.insert(bptree, Cmp.Nat, key, val);
+                    };
+                };
+                case ("B+Tree", "replace() lower vals") {
+                    for ((key, val) in lower_replacements.vals()) {
                         ignore BpTree.insert(bptree, Cmp.Nat, key, val);
                     };
                 };
@@ -191,8 +219,13 @@ module {
                         ignore MaxBpTree.insert(max_bp_tree, Cmp.Nat, Cmp.Nat, key, val);
                     };
                 };
-                case ("Max B+Tree", "replace()") {
-                    for ((key, val) in replacements.vals()) {
+                case ("Max B+Tree", "replace() higher vals") {
+                    for ((key, val) in higher_replacements.vals()) {
+                        ignore MaxBpTree.insert(max_bp_tree, Cmp.Nat, Cmp.Nat, key, val);
+                    };
+                };
+                case ("Max B+Tree", "replace() lower vals") {
+                    for ((key, val) in lower_replacements.vals()) {
                         ignore MaxBpTree.insert(max_bp_tree, Cmp.Nat, Cmp.Nat, key, val);
                     };
                 };

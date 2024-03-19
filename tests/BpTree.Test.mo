@@ -402,7 +402,7 @@ func bp_tree_test(order : Nat, random : Buffer.Buffer<Nat>) {
             let _rand = Iter.toArray<(Nat, Nat)>(Itertools.take(iter, 100));
 
             let bptree = BpTree.fromEntries<Nat, Nat>(_rand.vals(), Cmp.Nat, ?order);
-            let rand = Array.sort<(Nat, Nat)>(_rand, Utils.tuple_cmp(Nat.compare));
+            let rand = Array.sort<(Nat, Nat)>(_rand, Utils.tuple_order_cmp_key(Nat.compare));
 
             for (i in Itertools.range(0, BpTree.size(bptree))) {
 
