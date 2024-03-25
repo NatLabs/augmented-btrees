@@ -12,7 +12,6 @@ import ArrayMut "../internal/ArrayMut";
 import Utils "../internal/Utils";
 import InternalTypes "../internal/Types";
 import Common "Common";
-import MaxHeap "../internal/MaxHeap";
 
 module Leaf {
     type Iter<A> = Iter.Iter<A>;
@@ -35,14 +34,13 @@ module Leaf {
 
         let leaf_node : Leaf<K, V> = (
             Array.init<Nat>(5, 0),
-            Array.init(1, null),
+            Array.init<?Branch<K, V>>(1, null),
             Array.init(2, null),
             switch (opt_kvs) {
                 case (?kvs) kvs;
                 case (_) Array.init<?(K, V)>(order, null);
             },
             Array.init(1, null),
-            Array.init<?(K, V)>(order, null)
         );
 
         leaf_node.0[C.ID] := gen_id();
@@ -69,21 +67,20 @@ module Leaf {
             i -= 1;
         };
 
-        Common.update_leaf_with_kv_pair(leaf, cmp_val, index, kv);
-        MaxHeap.put(leaf.5, Utils.tuple_cmp(cmp_key, cmp_val), kv, leaf.0[C.COUNT]);
+        Common.update_leaf_with_kv_pair(leaf, cmp_key, cmp_val, index, kv);
 
         leaf.3[i] := ?kv;
         leaf.0[C.COUNT] += 1;
     };
 
-    public func split(
-        leaf : Leaf<Nat, Nat>,
+    public func split<K, V>(
+        leaf : Leaf<K, V>,
         elem_index : Nat,
-        elem : (Nat, Nat),
+        elem : (K, V),
         gen_id : () -> Nat,
-        cmp_key : CmpFn<Nat>,
-        cmp_val : CmpFn<Nat>,
-    ) : Leaf<Nat, Nat> {
+        cmp_key : CmpFn<K>,
+        cmp_val : CmpFn<V>,
+    ) : Leaf<K, V> {
 
         let arr_len = leaf.0[C.COUNT];
         let median = (arr_len / 2) + 1;
@@ -96,7 +93,7 @@ module Leaf {
         let initial_offset = if (is_elem_added_to_right) 0 else 1;
         var offset = initial_offset;
         let right_cnt = arr_len + 1 - median : Nat;
-        let right_node = Leaf.new<Nat, Nat>(leaf.3.size(), 0, null, gen_id, cmp_val);
+        let right_node = Leaf.new<K, V>(leaf.3.size(), 0, null, gen_id, cmp_val);
 
         var already_inserted = false;
 
@@ -113,64 +110,51 @@ module Leaf {
             } else Debug.trap("Leaf.split: kv is null");
 
             right_node.3[i] := ?kv;
-            Common.update_leaf_with_kv_pair(right_node, cmp_val, i, kv);
-            MaxHeap.put(right_node.5, Utils.tuple_cmp(cmp_key, cmp_val), kv, i);
+            Common.update_leaf_with_kv_pair(right_node, cmp_key, cmp_val, i, kv);
 
             i += 1;
         };
 
         right_node.0[C.COUNT] := right_cnt;
 
-        let moved_left_max = if (leaf.0[C.MAX_INDEX] >= 0){
+        let moved_left_max : Bool = if (leaf.0[C.MAX_INDEX] >= arr_len - right_cnt - initial_offset){
             leaf.4[C.MAX] := null;
-            true;
-        }else {
-            // else if (max.2 >= elem_index){
-            //     leaf.max := ?(max.0, max.1, max.2 + 1);
-            //     false
-            // } 
+            true
+        } else if (leaf.0[C.MAX_INDEX] >= elem_index ) {
+            leaf.0[C.MAX_INDEX] := leaf.0[C.MAX_INDEX] + 1;
             false;
-        };
-
-        // remove right kvs from left heap
-        // faster than removing each kv one by one
-        let ?first_right_kv = right_node.3[0] else Debug.trap("Leaf.split: first_right_kv is null");
-
-        func remove_right_kvs(kv: (Nat, Nat)) : Bool {
-            cmp_key(kv.0, first_right_kv.0) >= 0;
-        };
-
-        Debug.print("leaf heap count: " # debug_show ArrayMut.count(leaf.5));
-        Debug.print("leaf count: " # debug_show leaf.0[C.COUNT]);
-        Debug.print("leaf: " # debug_show leaf.3);
-        Debug.print("Leaf heap: " # debug_show leaf.5);
-        Debug.print("median_key: " # debug_show first_right_kv);
-
-        assert Utils.validate_array_equal_count(leaf.5, leaf.0[C.COUNT]);
-
-        ignore MaxHeap.removeIf(leaf.5, Utils.tuple_cmp(cmp_key, cmp_val), leaf.0[C.COUNT], remove_right_kvs);
-
-        Debug.print("Leaf heap after removeIf: " # debug_show leaf.5);
-        assert Utils.validate_array_equal_count(leaf.5, median - initial_offset);
-
-        // insert the new element in its correct position
+        } else false;
+        
         var j = median - 1 : Nat;
+
         label while_loop while (moved_left_max or j >= elem_index) {
             if (j > elem_index) {
                 leaf.3[j] := leaf.3[j - 1];
             } else if (j == elem_index) {
                 leaf.3[j] := ?elem;
-                MaxHeap.put(leaf.5, Utils.tuple_cmp(cmp_key, cmp_val), elem, median - 1 : Nat);
             };
 
             if (moved_left_max) {
                 let ?kv = leaf.3[j] else Debug.trap("Leaf.split: kv is null");
-                Common.update_leaf_with_kv_pair(leaf, cmp_val, j, kv);
+                Common.update_leaf_with_kv_pair(leaf, cmp_key, cmp_val, j, kv);
             }else if (j == elem_index) {
-                Common.update_leaf_with_kv_pair(leaf, cmp_val, j, elem);
+                Common.update_leaf_with_kv_pair(leaf, cmp_key, cmp_val, j, elem);
             };
 
             if (j == 0) break while_loop else j -= 1;
+        };
+
+        //update parent max to left node because the right node is a new node
+        switch (leaf.1[C.PARENT]) {
+            case (?parent) {
+                let ?leaf_max = leaf.4[C.MAX] else Debug.trap("Leaf.split: max is null");
+                let ?parent_max = parent.4[C.MAX] else Debug.trap("Leaf.split: max is null");
+                if (parent.0[C.MAX_INDEX] == leaf.0[C.INDEX] or cmp_val(leaf_max.1, parent_max.1) == +1){
+                    parent.4[C.MAX] := leaf.4[C.MAX];
+                    parent.0[C.MAX_INDEX] := leaf.0[C.INDEX];
+                };
+            };
+            case (_) {};
         };
 
         leaf.0[C.COUNT] := median;
@@ -211,6 +195,7 @@ module Leaf {
         leaf : Leaf<K, V>,
         index : Nat,
         count : Nat,
+        cmp_key : CmpFn<K>,
         cmp_val : CmpFn<V>,
     ) : ?(K, V) {
         let removed = leaf.3[index];
@@ -223,7 +208,7 @@ module Leaf {
 
             while ( i < index){
                 let ?kv = leaf.3[i] else Debug.trap("Leaf.remove: accessed a null value");
-                Common.update_leaf_with_kv_pair(leaf, cmp_val, i, kv);
+                Common.update_leaf_with_kv_pair(leaf, cmp_key, cmp_val, i, kv);
                 i += 1;
             };
         } else if (leaf.0[C.MAX_INDEX] > index) {
@@ -239,7 +224,7 @@ module Leaf {
 
             if (is_max_removed){
                 // update with the prev index as it will be updated after the loop
-                Common.update_leaf_with_kv_pair(leaf, cmp_val, i, kv);
+                Common.update_leaf_with_kv_pair(leaf, cmp_key, cmp_val, i, kv);
             };
 
             i += 1;
@@ -366,7 +351,7 @@ module Leaf {
 
             while (i < adj_node.0[C.COUNT]) {
                 let ?kv = adj_node.3[i] else Debug.trap("Leaf.redistribute_keys: kv is null");
-                Common.update_leaf_with_kv_pair(adj_node, cmp_val, i, kv);
+                Common.update_leaf_with_kv_pair(adj_node, cmp_key, cmp_val, i, kv);
                 i += 1;
             };
 
@@ -394,7 +379,7 @@ module Leaf {
         if (is_adj_node_equal_to_parent_max) {
             switch(parent.4[C.MAX], adj_node.4[C.MAX]){
                 case (?parent_max, ?adj_max) {
-                    if (cmp_key(parent_max.0, adj_max.0) != 0) {
+                    if (cmp_val(parent_max.1, adj_max.1) != 0) {
                         parent.4[C.MAX] := ?(parent_max.0, parent_max.1);
                         parent.0[C.MAX_INDEX] := leaf_node.0[C.INDEX];
                     };
@@ -421,7 +406,7 @@ module Leaf {
             ArrayMut.insert(left.3, left.0[C.COUNT] + i, opt_kv, left.0[C.COUNT]);
 
             let ?kv = opt_kv else Debug.trap("Leaf.merge: kv is null");
-            Common.update_leaf_with_kv_pair(left, cmp_val, left.0[C.COUNT] + i, kv);
+            Common.update_leaf_with_kv_pair(left, cmp_key, cmp_val, left.0[C.COUNT] + i, kv);
 
             i += 1;
         };
@@ -462,7 +447,7 @@ module Leaf {
                 };
 
                 // update max with prev index
-                Common.update_branch_fields(parent, cmp_val, i + 1, child);
+                Common.update_branch_fields(parent, cmp_key, cmp_val, i + 1, child);
 
                 i += 1;
             };

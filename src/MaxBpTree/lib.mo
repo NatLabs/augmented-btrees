@@ -19,7 +19,6 @@ import Branch "Branch";
 import RevIter "mo:itertools/RevIter";
 import Common "Common";
 import Utils "../internal/Utils";
-import MaxHeap "../internal/MaxHeap";
 
 module MaxBpTree {
 
@@ -109,90 +108,20 @@ module MaxBpTree {
     ///     assert MaxBpTree.insert(max_bp_tree, Cmp.Text, "id", 2) == ?1;
     /// ```
     // add max-value update during replace
-    public func insert(max_bp_tree : MaxBpTree<Nat, Nat>, cmp_key : CmpFn<Nat>, cmp_val : CmpFn<Nat>, key : Nat, val : Nat) : ?Nat {
-        Debug.print("inserting: " # debug_show ((key, val)));
-        Debug.print("branch nodes " # debug_show(toNodeKeys(max_bp_tree)));
-        Debug.print("leaf nodes " # debug_show(toLeafNodes(max_bp_tree)));
-
-        var found_branch_max = false;
-        var branch_max_is_less_than_prev_value = false;
-
-        func inc_branch_subtree_size(branch : Branch<Nat, Nat>, child_index : Nat) {
-            // increase the subtree size of every branch on the path to the leaf node
-            branch.0 [C.SUBTREE_SIZE] += 1;
-
-            // update the max value of the branch node if necessary
-            // note:    this function selects the max value by comparing all the max values in the children
-            //          of the branch node. However, since the max value of the child node storing the key-value
-            //          pair we are removing has not yet computed its new max value, the value stored here is just
-            //          a placeholder (or best possible option) until the new max value is computed.
-            let ?branch_max = branch.4 [C.MAX] else Debug.trap("insert(inc_branch_subtree_size): should have a max value");
-            let max_index = branch.0 [C.MAX_INDEX];
-
-            // if (found_branch_max) {
-            //     if (branch_max_is_less_than_prev_value) {
-            //         ignore MaxHeap.removeMax(branch.5, Utils.tuple_cmp(cmp_key, cmp_val), max_index);
-            //     } else {
-            //         branch.5[0] := ?(key, val);
-            //     };
-            //     return;
-            // };
-
-            // found_branch_max := cmp_key(branch_max.0, key) == 0;
-
-            // if (found_branch_max and cmp_val(val, branch_max.1) == -1){
-            //     branch_max_is_less_than_prev_value := true;
-            //     ignore MaxHeap.removeMax(branch.5, Utils.tuple_cmp(cmp_key, cmp_val), branch.0[C.COUNT]);
-            //     switch(branch.1[C.PARENT]) {
-            //         case (?parent) {
-            //             ignore MaxHeap.remove(parent.5, Utils.tuple_cmp(cmp_key, cmp_val), branch.0[C.COUNT], branch_max);
-            //         };
-            //         case (null) {};
-            //     };
-            // } else if (found_branch_max) {
-            //     branch.5[0] := ?(key, val);
-            //     branch_max_is_less_than_prev_value := false;
-            // };
-
-            if (cmp_key(branch_max.0, key) == 0 and cmp_val(val, branch_max.1) == -1) {
-                branch.4 [C.MAX] := ?(key, val);
-                branch.0 [C.MAX_INDEX] := child_index;
-
-                var i = 0;
-                while (i < branch.0 [C.COUNT]) {
-                    let ?child = branch.3 [i] else Debug.trap("insert(inc_branch_subtree_size): accessed a null value");
-
-                    if (i == max_index) {
-                        let #branch(node) or #leaf(node) : CommonNodeFields<Nat, Nat> = child;
-                        assert i == node.0 [C.INDEX];
-                        let ?node_max = node.4 [C.MAX] else Debug.trap("insert(inc_branch_subtree_size): should have a max key");
-                        assert cmp_val(node_max.1, branch_max.1) == 0;
-                    } else {
-                        Common.update_branch_fields(branch, cmp_val, i, child);
-                    };
-
-                    i += 1;
-                };
-
-            } else {
-                Common.update_leaf_fields(branch, cmp_val, child_index, key, val);
-            };
-        };
-
-        let leaf_node = Methods.get_leaf_node_and_update_branch_path(max_bp_tree, cmp_key, key, inc_branch_subtree_size);
+    public func insert<K, V>(max_bp_tree : MaxBpTree<K, V>, cmp_key : CmpFn<K>, cmp_val : CmpFn<V>, key : K, val : V) : ?V {
+        let leaf_node = Methods.get_leaf_node(max_bp_tree, cmp_key, key);
 
         _insert_in_leaf(max_bp_tree, cmp_key, cmp_val, leaf_node, key, val);
-
     };
 
-    public func _insert_in_leaf(max_bp_tree : MaxBpTree<Nat, Nat>, cmp_key : CmpFn<Nat>, cmp_val : CmpFn<Nat>, leaf_node : Leaf<Nat, Nat>, key : Nat, val : Nat) : ?Nat {
+    public func _insert_in_leaf<K, V>(max_bp_tree : MaxBpTree<K, V>, cmp_key : CmpFn<K>, cmp_val : CmpFn<V>, leaf_node : Leaf<K, V>, key : K, val : V) : ?V {
         let int_elem_index = ArrayMut.binary_search(leaf_node.3, Utils.adapt_cmp(cmp_key), key, leaf_node.0 [C.COUNT]);
         let elem_index = if (int_elem_index >= 0) Int.abs(int_elem_index) else Int.abs(int_elem_index + 1);
 
         if (int_elem_index >= 0 and int_elem_index < leaf_node.0 [C.COUNT]) {
-            _replace_at_leaf_index(max_bp_tree, cmp_key, cmp_val, leaf_node, elem_index, key, val, false);
+            _replace_at_leaf_index(max_bp_tree, cmp_key, cmp_val, leaf_node, elem_index, key, val);
         } else {
-            _insert_at_leaf_index(max_bp_tree, cmp_key, cmp_val, leaf_node, elem_index, key, val, false);
+            _insert_at_leaf_index(max_bp_tree, cmp_key, cmp_val, leaf_node, elem_index, key, val);
             null;
         };
     };
@@ -201,17 +130,15 @@ module MaxBpTree {
     // Can also replace the key with a new key, if its inserted position is the same as the old key's position.
     // Meaning that the key is greater than the key to its left and less than the key to its right.
     // Note that this function does not check if the newly inserted key is in its correct position.
-    public func _replace_at_leaf_index(max_bp_tree : MaxBpTree<Nat, Nat>, cmp_key : CmpFn<Nat>, cmp_val : CmpFn<Nat>, leaf_node : Leaf<Nat, Nat>, elem_index : Nat, key : Nat, val : Nat, called_independently : Bool) : ?Nat {
+    public func _replace_at_leaf_index<K, V>(max_bp_tree : MaxBpTree<K, V>, cmp_key : CmpFn<K>, cmp_val : CmpFn<V>, leaf_node : Leaf<K, V>, elem_index : Nat, key : K, val : V) : ?V {
+        // Debug.print("replace");
+
         let ?prev = leaf_node.3 [elem_index] else Debug.trap("1. insert: accessed a null value while replacing a key-value pair");
-        if (not called_independently and cmp_key(prev.0, key) != 0) {
-            Debug.trap("Can only replace the key if the function was called independently");
-        };
 
         let elem = (key, val);
         leaf_node.3 [elem_index] := ?elem;
 
         let ?max = leaf_node.4 [C.MAX] else Debug.trap("1: insert (replace entry): should have a max value");
-        let max_index = leaf_node.0 [C.MAX_INDEX];
 
         if (cmp_key(max.0, prev.0) == 0 and cmp_val(val, max.1) == -1) {
             leaf_node.4 [C.MAX] := null;
@@ -221,7 +148,7 @@ module MaxBpTree {
                 // if (i == max_index) continue _loop;
 
                 let ?kv = leaf_node.3 [i] else Debug.trap("insert (replace entry): accessed a null value");
-                Common.update_leaf_with_kv_pair(leaf_node, cmp_val, i, kv);
+                Common.update_leaf_with_kv_pair(leaf_node, cmp_key, cmp_val, i, kv);
                 i += 1;
             };
 
@@ -229,30 +156,10 @@ module MaxBpTree {
             leaf_node.4 [C.MAX] := ?elem;
             leaf_node.0 [C.MAX_INDEX] := elem_index;
         } else {
-            Common.update_leaf_with_kv_pair(leaf_node, cmp_val, elem_index, elem);
+            Common.update_leaf_with_kv_pair(leaf_node, cmp_key, cmp_val, elem_index, elem);
         };
 
-        let ?_new_max = leaf_node.4 [C.MAX] else Debug.trap("2: insert (replace entry): should have a max value");
-        var new_max = _new_max;
-
-        func decrement_branch_and_calc_max_val(branch : Branch<Nat, Nat>, child_index : Nat) {
-            // revert the subtree size increase from the top level insert function
-            branch.0 [C.SUBTREE_SIZE] -= 1;
-
-            let ?max = branch.4 [C.MAX] else Debug.trap("3: insert (replace entry): should have a max value");
-
-            // let should_continue = cmp_val(new_max.1, max.1) == +1;
-            let is_greater = cmp_val(new_max.1, max.1) == +1;
-
-            if (not is_greater) {
-                new_max := max;
-            } else {
-                branch.4 [C.MAX] := ?new_max;
-                branch.0 [C.MAX_INDEX] := child_index;
-            };
-        };
-
-        func inc_branch_subtree_size(branch : Branch<Nat, Nat>, child_index : Nat) {
+        func update_path_upstream(branch : Branch<K, V>, child_index : Nat) {
             // need not increase the subtree size as it is replacing an existing key-value pair
             // ~~branch.0[C.SUBTREE_SIZE] += 1;~~
 
@@ -261,31 +168,28 @@ module MaxBpTree {
             //          of the branch node. However, since the max value of the child node storing the key-value
             //          pair we are removing has not yet computed its new max value, the value stored here is just
             //          a placeholder (or best possible option) until the new max value is computed.
-            let ?branch_max = branch.4 [C.MAX] else Debug.trap("insert(inc_branch_subtree_size): should have a max value");
+            let ?branch_max = branch.4 [C.MAX] else Debug.trap("replace(update_path_upstream): should have a max value");
             let max_index = branch.0 [C.MAX_INDEX];
 
             let ?child_max = switch (branch.3 [child_index]) {
-                case (? #branch(node) or ? #leaf(node) : ?CommonNodeFields<Nat, Nat>) {
+                case (? #branch(node) or ? #leaf(node) : ?CommonNodeFields<K, V>) {
                     node.4 [C.MAX];
                 };
                 case (_) null;
-            } else Debug.trap("insert(inc_branch_subtree_size): accessed a null value");
+            } else Debug.trap("replace(update_path_upstream): accessed a null value");
 
             if (cmp_key(branch_max.0, prev.0) == 0 and cmp_val(val, branch_max.1) == -1) {
                 branch.4 [C.MAX] := ?child_max;
 
                 var i = 0;
                 while (i < branch.0 [C.COUNT]) {
-                    let ?child = branch.3 [i] else Debug.trap("insert(inc_branch_subtree_size): accessed a null value");
+                    let ?child = branch.3 [i] else Debug.trap("replace(update_path_upstream): accessed a null value");
 
                     if (i == max_index) {
-                        let #branch(node) or #leaf(node) : CommonNodeFields<Nat, Nat> = child;
+                        let #branch(node) or #leaf(node) : CommonNodeFields<K, V> = child;
                         assert i == node.0 [C.INDEX];
-                        let ?node_max = node.4 [C.MAX] else Debug.trap("insert(inc_branch_subtree_size): should have a max key");
-                        // Debug.print("node_max: " # debug_show (node_max));
-                        // assert cmp_val(node_max.1, prev.1) == 0;
                     } else {
-                        Common.update_branch_fields(branch, cmp_val, i, child);
+                        Common.update_branch_fields(branch, cmp_key, cmp_val, i, child);
                     };
 
                     i += 1;
@@ -297,131 +201,59 @@ module MaxBpTree {
             };
         };
 
-        if (called_independently) {
-            Methods.update_leaf_to_root(max_bp_tree, leaf_node, inc_branch_subtree_size);
-        } else {
-            Methods.update_leaf_to_root(max_bp_tree, leaf_node, decrement_branch_and_calc_max_val);
-        };
+        Methods.update_leaf_to_root(max_bp_tree, leaf_node, update_path_upstream);
 
         return ?prev.1;
 
     };
 
-    public func _insert_at_leaf_index(max_bp_tree : MaxBpTree<Nat, Nat>, cmp_key : CmpFn<Nat>, cmp_val : CmpFn<Nat>, leaf_node : Leaf<Nat, Nat>, elem_index : Nat, key : Nat, val : Nat, called_independently : Bool) {
+    public func _insert_at_leaf_index<K, V>(max_bp_tree : MaxBpTree<K, V>, cmp_key : CmpFn<K>, cmp_val : CmpFn<V>, leaf_node : Leaf<K, V>, elem_index : Nat, key : K, val : V) {
 
         let entry = (key, val);
 
-        var opt_prev_max = MaxHeap.peekMax(leaf_node.5);
-
-        func update_path_upstream(branch : Branch<Nat, Nat>, child_index : Nat) {
-            let prev_max = switch(opt_prev_max) {
-                case (?prev_max) prev_max;
-                case (_) return;
-            };
-
-            let ?branch_max = MaxHeap.peekMax(branch.5) else Debug.trap("1. insert: accessed a null value");
-            
-            let ?child_max = switch (branch.3 [child_index]) {
-                case (? #branch(node) or ? #leaf(node) : ?CommonNodeFields<Nat, Nat>) {
-                    MaxHeap.peekMax(node.5);
-                };
-                case (_) null;
-            } else Debug.trap("1. insert: accessed a null value");
-
-            let cmp_result = cmp_val(child_max.1, branch_max.1);
-            if (cmp_result == 1 or (cmp_result == 0 and cmp_key(child_max.0, branch_max.0) != 0)) {
-                Debug.print("remove: " # debug_show (prev_max));
-                Debug.print("insert: " # debug_show (child_max));
-                ignore MaxHeap.remove(branch.5, Utils.tuple_cmp(cmp_key, cmp_val), branch.0 [C.COUNT], prev_max);
-                MaxHeap.put<(Nat, Nat)>(branch.5, Utils.tuple_cmp(cmp_key, cmp_val), child_max, branch.0 [C.COUNT] - 1);
-                opt_prev_max := ?branch_max;
-            } else switch(opt_prev_max){
-                case (?prev_max){
-                    Debug.print("remove: " # debug_show (prev_max));
-                    Debug.print("insert: " # debug_show (child_max));
-                    ignore MaxHeap.remove(branch.5, Utils.tuple_cmp(cmp_key, cmp_val), branch.0 [C.COUNT], prev_max);
-                    MaxHeap.put<(Nat, Nat)>(branch.5, Utils.tuple_cmp(cmp_key, cmp_val), child_max, branch.0 [C.COUNT] - 1);
-                    opt_prev_max := null;
-                };
-                case (_) {};
-            };
-
-        };
-
         if (leaf_node.0 [C.COUNT] < max_bp_tree.order) {
-
             Leaf.insert(leaf_node, cmp_key, cmp_val, elem_index, entry);
             max_bp_tree.size += 1;
 
-            Methods.update_leaf_to_root(max_bp_tree, leaf_node, update_path_upstream);
+            func update_path_upstream(branch : Branch<K, V>, child_index : Nat) {
+                branch.0 [C.SUBTREE_SIZE] += 1;
 
-            if (called_independently) {
-
-                func update_path_upstream(branch : Branch<Nat, Nat>, child_index : Nat) {
-                    branch.0 [C.SUBTREE_SIZE] += 1;
-
-                    let ?child = branch.3 [child_index] else Debug.trap("insert: accessed a null value");
-                    Common.update_branch_fields(branch, cmp_val, child_index, child);
-                };
-
-                Methods.update_leaf_to_root(max_bp_tree, leaf_node, update_path_upstream);
+                let ?child = branch.3 [child_index] else Debug.trap("insert: accessed a null value");
+                Common.update_branch_fields(branch, cmp_key, cmp_val, child_index, child);
             };
+
+            Methods.update_leaf_to_root(max_bp_tree, leaf_node, update_path_upstream);
 
             return;
         };
 
         func gen_id() : Nat = Methods.gen_id(max_bp_tree);
 
-        let ?_max_before_split = MaxHeap.peekMax(leaf_node.5) else Debug.trap("1. insert: accessed a null value");
-        var max_before_split = _max_before_split;
-
         // split leaf node
+        // Debug.print("before split leaf node: " # debug_show (leaf_node.4[C.MAX], leaf_node.3));
         let right_leaf_node = Leaf.split(leaf_node, elem_index, entry, gen_id, cmp_key, cmp_val);
+        // Debug.print("after split left node: " # debug_show (leaf_node.4[C.MAX], leaf_node.3));
+        // Debug.print("after split right node: " # debug_show (right_leaf_node.4[C.MAX], right_leaf_node.3));
 
-        var opt_parent : ?Branch<Nat, Nat> = leaf_node.1 [C.PARENT];
-        var left_node : Node<Nat, Nat> = #leaf(leaf_node);
-        let ?_left_node_max = MaxHeap.peekMax(leaf_node.5) else Debug.trap("2. insert: accessed a null value");
-        var left_node_max = _left_node_max;
+        var opt_parent : ?Branch<K, V> = leaf_node.1 [C.PARENT];
+        var left_node : Node<K, V> = #leaf(leaf_node);
         var left_index = leaf_node.0 [C.INDEX];
 
         var right_index = right_leaf_node.0 [C.INDEX];
         let ?right_leaf_first_entry = right_leaf_node.3 [0] else Debug.trap("2. insert: accessed a null value");
         var right_key = right_leaf_first_entry.0;
-        let ?_right_node_max = MaxHeap.peekMax(right_leaf_node.5) else Debug.trap("2. insert: accessed a null value");
-        var right_node_max = _right_node_max;
-        var right_node : Node<Nat, Nat> = #leaf(right_leaf_node);
+        var right_node : Node<K, V> = #leaf(right_leaf_node);
 
-        switch(leaf_node.1 [C.PARENT]) {
-            case (?parent) {
-                Debug.print("parent heap after leaf split: " # debug_show(parent.5));
-
-                if (cmp_key(max_before_split.0, left_node_max.0) != 0) {
-                    ignore MaxHeap.remove(parent.5, Utils.tuple_cmp(cmp_key, cmp_val), parent.0 [C.COUNT], max_before_split);
-                    MaxHeap.put<(Nat, Nat)>(parent.5, Utils.tuple_cmp(cmp_key, cmp_val), left_node_max, parent.0 [C.COUNT] - 1);
-                };
-            };
-            case (null) {};
-        };
-                
         // insert split leaf nodes into parent nodes if there is space
         // or iteratively split parent (internal) nodes to make space
         label index_split_loop while (Option.isSome(opt_parent)) {
+
             var subtree_diff : Nat = 0;
             let ?parent = opt_parent else Debug.trap("3. insert: accessed a null parent value");
 
-            Debug.print("opt_prev_max: " # debug_show(opt_prev_max));
-                
             parent.0 [C.SUBTREE_SIZE] -= subtree_diff;
 
-            if (called_independently) {
-                parent.0 [C.SUBTREE_SIZE] += 1;
-
-                if (cmp_key(key, right_key) == -1) {
-                    Common.update_branch_fields(parent, cmp_val, left_index, left_node);
-                } else {
-                    Common.update_branch_fields(parent, cmp_val, right_index, right_node);
-                };
-            };
+            parent.0 [C.SUBTREE_SIZE] += 1;
 
             if (parent.0 [C.COUNT] < max_bp_tree.order) {
                 var j = parent.0 [C.COUNT];
@@ -430,19 +262,13 @@ module MaxBpTree {
                     if (j == right_index) {
                         parent.2 [j - 1] := ?right_key;
                         parent.3 [j] := ?right_node;
-
-                        Debug.print("parent heap before insert " # debug_show(parent.5));
-                        Debug.print("(max_before_split, left_node_max, right_node_max) " # debug_show(max_before_split, left_node_max, right_node_max));
-                        MaxHeap.put<(Nat, Nat)>(parent.5, Utils.tuple_cmp(cmp_key, cmp_val), right_node_max, parent.0 [C.COUNT]);
-                        Debug.print("parent heap after insert " # debug_show(parent.5));
-
                     } else {
                         parent.2 [j - 1] := parent.2 [j - 2];
                         parent.3 [j] := parent.3 [j - 1];
                     };
 
                     switch (parent.3 [j]) {
-                        case ((? #branch(node) or ? #leaf(node)) : ?CommonNodeFields<Nat, Nat>) {
+                        case ((? #branch(node) or ? #leaf(node)) : ?CommonNodeFields<K, V>) {
                             node.0 [C.INDEX] := j;
 
                             if (j == right_index) {
@@ -450,11 +276,15 @@ module MaxBpTree {
                                 let ?node_max = node.4 [C.MAX] else Debug.trap("3. insert: accessed a null value");
 
                                 let cmp_result = cmp_val(node_max.1, parent_max.1);
-                                if (cmp_result == +1 or (cmp_result == 0 and cmp_key(node_max.0, parent_max.0) == 0)) {
+                                if (cmp_result == +1) {
                                     parent.4 [C.MAX] := ?(node_max.0, node_max.1);
                                     parent.0 [C.MAX_INDEX] := j;
+                                    // Debug.print("update max index: Match");
+
                                 } else if (parent.0 [C.MAX_INDEX] >= right_index) {
                                     parent.0 [C.MAX_INDEX] += 1;
+                                    // Debug.print("update max index: to the right");
+
                                 };
                             };
                         };
@@ -467,66 +297,42 @@ module MaxBpTree {
                 parent.0 [C.COUNT] += 1;
                 max_bp_tree.size += 1;
 
-                Methods.update_branch_to_root(parent, update_path_upstream);
-                
-                if (called_independently) {
 
-                    func update_path_upstream(branch : Branch<Nat, Nat>, child_index : Nat) {
-                        branch.0 [C.SUBTREE_SIZE] += 1;
+                func update_path_upstream(branch : Branch<K, V>, child_index : Nat) {
+                    branch.0 [C.SUBTREE_SIZE] += 1;
 
-                        let ?child = branch.3 [child_index] else Debug.trap("insert: accessed a null value");
-                        Common.update_branch_fields(branch, cmp_val, child_index, child);
-                    };
-
-                    Methods.update_branch_to_root(parent, update_path_upstream);
+                    let ?child = branch.3 [child_index] else Debug.trap("insert: accessed a null value");
+                    Common.update_branch_fields(branch, cmp_key, cmp_val, child_index, child);
                 };
+
+                Methods.update_branch_to_root(parent, update_path_upstream);
 
                 return;
 
             } else {
-                let left = parent;
-                let median = (left.0 [C.COUNT] / 2) + 1; // include inserted key-value pair
-                let prev_subtree_size = left.0 [C.SUBTREE_SIZE];
 
-                let ?_max_before_split = MaxHeap.peekMax(left.5) else Debug.trap("3. insert: accessed a null value");
-                max_before_split := _max_before_split;
+                let median = (parent.0 [C.COUNT] / 2) + 1; // include inserted key-value pair
+                let prev_subtree_size = parent.0 [C.SUBTREE_SIZE];
 
-                let split_node = Branch.split(left, right_node, right_index, right_key, gen_id, cmp_key, cmp_val);
+                // Debug.print("before split branch node: " # debug_show (parent.4[C.MAX], Methods.children_max(parent)));
+                let split_node = Branch.split(parent, right_node, right_index, right_key, gen_id, cmp_key, cmp_val);
+                // Debug.print("after split left node: " # debug_show (parent.4[C.MAX], Methods.children_max(parent)));
+                // Debug.print("after split right node: " # debug_show (split_node.4[C.MAX], Methods.children_max(split_node)));
 
                 let ?first_key = ArrayMut.extract(split_node.2, split_node.2.size() - 1 : Nat) else Debug.trap("4. insert: accessed a null value in first key of branch");
                 right_key := first_key;
 
-                let ?_left_node_max = MaxHeap.peekMax(left.5) else Debug.trap("4. insert: accessed a null value");
-                let ?_right_node_max = MaxHeap.peekMax(split_node.5) else Debug.trap("4. insert: accessed a null value");
-                left_node_max := _left_node_max;
-                right_node_max := _right_node_max;
-                
-
-                switch(left.1 [C.PARENT]) {
-                    case (?parent) {
-
-                        opt_prev_max := MaxHeap.peekMax(parent.5);
-
-                        if (cmp_key(max_before_split.0, left_node_max.0) != 0) {
-                            ignore MaxHeap.remove(parent.5, Utils.tuple_cmp(cmp_key, cmp_val), parent.0 [C.COUNT], max_before_split);
-                            MaxHeap.put<(Nat, Nat)>(parent.5, Utils.tuple_cmp(cmp_key, cmp_val), left_node_max, parent.0 [C.COUNT] - 1);
-                        };
-                    };
-                    case (null) {};
-                };
-                
-
-                left_node := #branch(left);
+                left_node := #branch(parent);
                 right_node := #branch(split_node);
 
                 right_index := split_node.0 [C.INDEX];
                 opt_parent := split_node.1 [C.PARENT];
 
-                subtree_diff := prev_subtree_size - left.0 [C.SUBTREE_SIZE];
+                subtree_diff := prev_subtree_size - parent.0 [C.SUBTREE_SIZE];
             };
         };
 
-        let root_node = Branch.new<Nat, Nat>(max_bp_tree.order, null, null, gen_id, cmp_val);
+        let root_node = Branch.new<K, V>(max_bp_tree.order, null, null, gen_id, cmp_val);
         root_node.2 [0] := ?right_key;
 
         Branch.add_child(root_node, cmp_key, cmp_val, left_node);
@@ -537,84 +343,12 @@ module MaxBpTree {
 
     };
 
-    type DebugLeaf<K, V> = { kvs: [?(K, V)]; max_heap: [?(K, V)] };
-    public func toLeafNodes<K, V>(self : MaxBpTree<K, V>) : [DebugLeaf<K, V>] {
-        var node = ?self.root;
-        let buffer = Buffer.Buffer<DebugLeaf<K, V>>(self.size);
-
-        var leaf_node : ?Leaf<K, V> = ?Methods.get_min_leaf_node(self);
-
-        label _loop loop {
-            switch (leaf_node) {
-                case (?leaf) {
-                    let max = do ? {
-                        let m = leaf.4 [C.MAX]!;
-                        (m.0, m.1, leaf.0 [C.MAX_INDEX]);
-                    };
-
-                    let entry = {
-                        kvs = Array.freeze<?(K, V)>(leaf.3);
-                        max_heap = Array.freeze<?(K, V)>(leaf.5);
-                    };
-
-                    buffer.add(entry);
-                    leaf_node := leaf.2 [C.NEXT];
-                };
-                case (_) break _loop;
-            };
-        };
-
-        Buffer.toArray(buffer);
+    public func toLeafNodes<K, V>(self : MaxBpTree<K, V>) : [(?(K, V, Nat), [?(K, V)])] {
+        Methods.to_leaf_nodes(self);
     };
 
-    type DebugBranch<K, V> = {
-        index: Nat;
-        keys: [?K];
-        max_heap: [?(K, V)];
-    };
-
-    public func toNodeKeys<K, V>(self : MaxBpTree<K, V>) : [[DebugBranch<K, V>]] {
-        var nodes = BufferDeque.fromArray<?Node<K, V>>([?self.root]);
-        let buffer = Buffer.Buffer<[DebugBranch<K, V>]>(self.size / 2);
-
-        while (nodes.size() > 0) {
-            let row = Buffer.Buffer<DebugBranch<K, V>>(nodes.size());
-
-            for (_ in Iter.range(1, nodes.size())) {
-                let ?node = nodes.popFront() else Debug.trap("toNodeKeys: accessed a null value");
-
-                switch (node) {
-                    case (? #branch(node)) {
-                        let node_buffer = Buffer.Buffer<?K>(node.2.size());
-                        for (key in node.2.vals()) {
-                            node_buffer.add(key);
-                        };
-
-                        for (child in node.3.vals()) {
-                            nodes.addBack(child);
-                        };
-
-                        let max = do ? {
-                            let m = node.4 [C.MAX]!;
-                            (m.0, m.1, node.0 [C.MAX_INDEX]);
-                        };
-
-                        let entry : DebugBranch<K, V> = {
-                            keys = Array.freeze<?K>(node.2);
-                            max_heap = Array.freeze<?(K, V)>(node.5);
-                            index = node.0 [C.INDEX];
-                        };
-
-                        row.add(entry);
-                    };
-                    case (_) {};
-                };
-            };
-
-            buffer.add(Buffer.toArray(row));
-        };
-
-        Buffer.toArray(buffer);
+    public func toNodeKeys<K, V>(self : MaxBpTree<K, V>) : [[(Nat, ?(K, V, Nat), [?K])]] {
+        Methods.to_node_keys(self);
     };
 
     /// Removes the key-value pair from the tree.
@@ -632,36 +366,7 @@ module MaxBpTree {
     public func remove<K, V>(self : MaxBpTree<K, V>, cmp_key : CmpFn<K>, cmp_val : CmpFn<V>, key : K) : ?V {
         if (self.size == 0) return null;
 
-        func update_path_downstream(branch : Branch<K, V>, child_index : Nat) {
-            // reduce the subtree size of every branch on the path to the leaf node
-            branch.0 [C.SUBTREE_SIZE] -= 1;
-
-            // update the max value of the branch node if necessary
-            let ?branch_max = branch.4 [C.MAX] else Debug.trap("insert(update_path_downstream): should have a max value");
-            let max_index = branch.0 [C.MAX_INDEX];
-
-            if (cmp_key(branch_max.0, key) != 0) return;
-
-            branch.4 [C.MAX] := null;
-
-            var i = 0;
-            while (i < branch.0 [C.COUNT]) {
-                let ?child = branch.3 [i] else Debug.trap("insert(update_path_downstream): accessed a null value");
-
-                if (i == max_index) {
-                    let #branch(node) or #leaf(node) : CommonNodeFields<K, V> = child;
-                    assert i == node.0 [C.INDEX];
-                    let ?node_max = node.4 [C.MAX] else Debug.trap("insert(update_path_downstream): should have a max key");
-                    assert cmp_val(node_max.1, branch_max.1) == 0;
-                } else {
-                    Common.update_branch_fields(branch, cmp_val, i, child);
-                };
-
-                i += 1;
-            };
-        };
-
-        let leaf_node = Methods.get_leaf_node_and_update_branch_path(self, cmp_key, key, update_path_downstream);
+        let leaf_node = Methods.get_leaf_node(self, cmp_key, key);
 
         let int_elem_index = ArrayMut.binary_search(leaf_node.3, Utils.adapt_cmp(cmp_key), key, leaf_node.0 [C.COUNT]);
 
@@ -675,15 +380,17 @@ module MaxBpTree {
             return null;
         };
 
-        _remove_from_leaf(self, cmp_key, cmp_val, leaf_node, elem_index, false);
+        _remove_from_leaf(self, cmp_key, cmp_val, leaf_node, elem_index);
     };
 
-    public func _remove_from_leaf<K, V>(self : MaxBpTree<K, V>, cmp_key : CmpFn<K>, cmp_val : CmpFn<V>, leaf_node : Leaf<K, V>, elem_index : Nat, called_independently : Bool) : ?V {
+    public func _remove_from_leaf<K, V>(self : MaxBpTree<K, V>, cmp_key : CmpFn<K>, cmp_val : CmpFn<V>, leaf_node : Leaf<K, V>, elem_index : Nat) : ?V {
 
         // remove elem
         let ?entry = ArrayMut.remove(leaf_node.3, elem_index, leaf_node.0 [C.COUNT]) else Debug.trap("1. remove: accessed a null value");
+        // Debug.print("removing key: " # debug_show entry);
 
         let key = entry.0;
+        let val = entry.1;
         let deleted = entry.1;
         self.size -= 1;
         leaf_node.0 [C.COUNT] -= 1;
@@ -693,9 +400,9 @@ module MaxBpTree {
 
             var i = 0;
 
-            while (i <  leaf_node.0 [C.COUNT]) {
+            while (i < leaf_node.0 [C.COUNT]) {
                 let ?kv = leaf_node.3 [i] else Debug.trap("2. remove: accessed a null value");
-                Common.update_leaf_with_kv_pair(leaf_node, cmp_val, i, kv);
+                Common.update_leaf_with_kv_pair(leaf_node, cmp_key, cmp_val, i, kv);
                 i += 1;
             };
         } else if (leaf_node.0 [C.MAX_INDEX] > elem_index) {
@@ -709,37 +416,23 @@ module MaxBpTree {
         var prev_child_index = leaf_node.0 [C.INDEX];
 
         func update_path_upstream(branch : Branch<K, V>, child_index : Nat) {
+            // Debug.print("branch index before: " # debug_show branch.0 [C.MAX_INDEX]);
+            // reduce the subtree size of every branch on the path to the leaf node
+            branch.0 [C.SUBTREE_SIZE] -= 1;
 
-            if (called_independently) {
-                // reduce the subtree size of every branch on the path to the leaf node
-                branch.0 [C.SUBTREE_SIZE] -= 1;
+            // update the max value of the branch node if necessary
+            let ?max = branch.4 [C.MAX] else Debug.trap("insert(update_path_downstream): should have a max value");
 
-                // update the max value of the branch node if necessary
-                let ?max = branch.4 [C.MAX] else Debug.trap("insert(update_path_downstream): should have a max value");
+            if (cmp_val(max.1, val) != 0) return;
 
-                if (cmp_key(max.0, key) != 0) return;
+            branch.4 [C.MAX] := null;
 
-                branch.4 [C.MAX] := null;
+            var i = 0;
+            while (i < branch.0 [C.COUNT]) {
+                let ?child = branch.3 [i] else Debug.trap("insert(update_path_downstream): accessed a null value");
+                Common.update_branch_fields(branch, cmp_key, cmp_val, i, child);
 
-                var i = 0;
-                while ( i < branch.0 [C.COUNT]) {
-                    let ?child = branch.3 [i] else Debug.trap("insert(update_path_downstream): accessed a null value");
-                    Common.update_branch_fields(branch, cmp_val, i, child);
-
-                    i += 1;
-                };
-
-            } else {
-
-                let ?branch_max = branch.4 [C.MAX] else Debug.trap("5: insert (replace entry): should have a max value");
-                let is_greater = cmp_val(new_max.1, branch_max.1) == +1;
-
-                if (not is_greater) {
-                    new_max := branch_max;
-                } else {
-                    branch.4 [C.MAX] := ?new_max;
-                    branch.0 [C.MAX_INDEX] := child_index;
-                };
+                i += 1;
             };
 
         };
@@ -771,8 +464,11 @@ module MaxBpTree {
         };
 
         if (leaf_node.0 [C.COUNT] >= min_count) return ?deleted;
+        // Debug.print("branch index before redistribute: " # debug_show (do?{leaf_node.1[C.PARENT]!.0[C.MAX_INDEX]}));
 
         Leaf.redistribute_keys(leaf_node, cmp_key, cmp_val);
+
+        // Debug.print("branch index after redistribute: " # debug_show (do?{let p = leaf_node.1[C.PARENT]!; (p.0[C.MAX_INDEX])}));
 
         if (leaf_node.0 [C.COUNT] >= min_count) return ?deleted;
 
@@ -873,8 +569,8 @@ module MaxBpTree {
     ///     let entries = [('A', 1), ('B', 2), ('C', 3)].vals();
     ///     let max_bp_tree = Methods.fromEntries<Char, Nat>(null, entries, Cmp.Char);
     /// ```
-    public func fromEntries(entries : Iter<(Nat, Nat)>, cmp_key : CmpFn<Nat>, cmp_val : CmpFn<Nat>, order: ?Nat) : MaxBpTree<Nat, Nat> {
-        let max_bp_tree = MaxBpTree.new<Nat, Nat>(order);
+    public func fromEntries<K, V>(entries : Iter<(K, V)>, cmp_key : CmpFn<K>, cmp_val : CmpFn<V>, order : ?Nat) : MaxBpTree<K, V> {
+        let max_bp_tree = MaxBpTree.new<K, V>(order);
 
         for ((k, v) in entries) {
             ignore insert(max_bp_tree, cmp_key, cmp_val, k, v);
@@ -895,16 +591,16 @@ module MaxBpTree {
     ///    let arr = [('A', 1), ('B', 2), ('C', 3)];
     ///    let max_bp_tree = MaxBpTree.fromArray<Char, Nat>(arr, Cmp.Char, Cmp.Nat, null);
     /// ```
-    // public func fromArray<K, V>(order : ?Nat, arr : [(K, V)], cmp_key : CmpFn<K>, cmp_val: CmpFn<V>) : MaxBpTree<K, V> {
-    //     let max_bp_tree = MaxBpTree.new<K, V>(order);
+    public func fromArray<K, V>(order : ?Nat, arr : [(K, V)], cmp_key : CmpFn<K>, cmp_val: CmpFn<V>) : MaxBpTree<K, V> {
+        let max_bp_tree = MaxBpTree.new<K, V>(order);
 
-    //     for (kv in arr.vals()) {
-    //         let (k, v) = kv;
-    //         ignore MaxBpTree.insert(max_bp_tree, cmp_key, cmp_val, k, v);
-    //     };
+        for (kv in arr.vals()) {
+            let (k, v) = kv;
+            ignore MaxBpTree.insert(max_bp_tree, cmp_key, cmp_val, k, v);
+        };
 
-    //     max_bp_tree;
-    // };
+        max_bp_tree;
+    };
 
     /// Returns a sorted array of the key-value pairs in the tree.
     ///
@@ -993,7 +689,7 @@ module MaxBpTree {
         let leaf_node = Methods.get_min_leaf_node(self);
         let ?min = leaf_node.3 [0] else Debug.trap("removeMin: should have a min value");
 
-        let ?v = _remove_from_leaf(self, cmp_key, cmp_val, leaf_node, 0, true) else return null;
+        let ?v = _remove_from_leaf(self, cmp_key, cmp_val, leaf_node, 0) else return null;
 
         assert cmp_val(min.1, v) == 0;
 
@@ -1017,7 +713,7 @@ module MaxBpTree {
         let index = leaf.0 [C.COUNT] - 1 : Nat;
         let ?max = leaf.3 [index] else Debug.trap("removeMax: should have a max value");
 
-        let ?v = _remove_from_leaf(self, cmp_key, cmp_val, leaf, index, true) else return null;
+        let ?v = _remove_from_leaf(self, cmp_key, cmp_val, leaf, index) else return null;
 
         assert cmp_val(max.1, v) == 0;
 
@@ -1041,8 +737,28 @@ module MaxBpTree {
         let ?max = leaf.4 [C.MAX] else Debug.trap("removeMaxValue: should have a max value");
         let max_index = leaf.0 [C.MAX_INDEX];
 
-        let ?v = _remove_from_leaf(self, cmp_key, cmp_val, leaf, max_index, true) else return null;
+        let ?v = _remove_from_leaf(self, cmp_key, cmp_val, leaf, max_index) else return null;
         assert cmp_val(max.1, v) == 0;
+        return ?max;
+    };
+
+    /// Replaces the value of the entry with the max value in the tree.
+    /// It returns the old value associated with the key.
+    /// If the tree is empty, it returns null.
+    /// Note that if there are duplicates of the max value, the key of the entry is not 
+    /// guaranteed to match the result from `maxValue`.
+    public func replaceMaxValue<K, V>(self : MaxBpTree<K, V>, cmp_key : CmpFn<K>, cmp_val : CmpFn<V>, new_val : V) : ?(K, V) {
+        if (self.size == 0) return null;
+
+        let leaf = Methods.get_max_value_leaf_node(self);
+        let max_index = leaf.0 [C.MAX_INDEX];
+        let ?max = leaf.4 [C.MAX] else Debug.trap("replaceMaxValue: should have a max value");
+
+        let old_val = max.1;
+
+        let ?v = _replace_at_leaf_index(self, cmp_key, cmp_val, leaf, max_index, max.0, new_val) else return null;
+        assert cmp_val(old_val, v) == 0;
+
         return ?max;
     };
 

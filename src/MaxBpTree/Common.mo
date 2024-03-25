@@ -23,7 +23,7 @@ module Methods {
 
     let {Const = C } = T;
 
-    public func update_leaf_fields<K, V>(leaf : CommonFields<K, V>, cmp_val : CmpFn<V>, index : Nat, key : K, val : V) {
+    public func update_leaf_fields<K, V>(leaf : CommonFields<K, V>, cmp_key : CmpFn<K>, cmp_val : CmpFn<V>, index : Nat, key : K, val : V) {
         switch(leaf.4[C.MAX]){
             case (null){
                 leaf.4[C.MAX] := ?(key, val);
@@ -33,12 +33,17 @@ module Methods {
                 if (cmp_val(val, max.1) == +1) {
                     leaf.4[C.MAX] := ?(key, val);
                     leaf.0[C.MAX_INDEX] := index;
+                } else if (cmp_val(val, max.1) == 0) {
+                    if (cmp_key(key, max.0) == -1) {
+                        leaf.4[C.MAX] := ?(key, val);
+                        leaf.0[C.MAX_INDEX] := index;
+                    }
                 };
             }
         };
     };
 
-    public func update_leaf_with_kv_pair<K, V>(leaf : CommonFields<K, V>, cmp_val : CmpFn<V>, index : Nat, kv: (K, V)) {
+    public func update_leaf_with_kv_pair<K, V>(leaf : CommonFields<K, V>, cmp_key : CmpFn<K>,cmp_val : CmpFn<V>, index : Nat, kv: (K, V)) {
         switch(leaf.4[C.MAX]){
             case (null){
                 leaf.4[C.MAX] := ?kv;
@@ -48,12 +53,17 @@ module Methods {
                 if (cmp_val(kv.1, max.1) == +1) {
                     leaf.4[C.MAX] := ?kv;
                     leaf.0[C.MAX_INDEX] := index;
+                } else if (cmp_val(kv.1, max.1) == 0) {
+                    if (cmp_key(kv.0, max.0) == -1) {
+                        leaf.4[C.MAX] := ?kv;
+                        leaf.0[C.MAX_INDEX] := index;
+                    };
                 };
             }
         };
     };
 
-    public func update_branch_fields<K, V>(branch : Branch<K, V>, cmp_val : CmpFn<V>, index : Nat, child_node : Node<K, V>) {
+    public func update_branch_fields<K, V>(branch : Branch<K, V>, cmp_key : CmpFn<K>, cmp_val : CmpFn<V>, index : Nat, child_node : Node<K, V>) {
         switch (child_node) {
             case (#leaf(child) or #branch(child) : CommonNodeFields<K, V>) {
                 switch(child.4[C.MAX], branch.4[C.MAX]) {
@@ -66,6 +76,11 @@ module Methods {
                         if (cmp_val(child_max.1, curr_max.1) == +1) {
                             branch.4[C.MAX] := ?child_max;
                             branch.0[C.MAX_INDEX] := index;
+                        } else if (cmp_val(child_max.1, curr_max.1) == 0) {
+                            if (cmp_key(child_max.0, curr_max.0) == -1) {
+                                branch.4[C.MAX] := ?child_max;
+                                branch.0[C.MAX_INDEX] := index;
+                            };
                         };
                     };
                 };
