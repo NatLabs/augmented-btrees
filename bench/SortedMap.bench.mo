@@ -22,12 +22,20 @@ module {
         bench.name("Comparing RBTree, BTree and B+Tree (BpTree)");
         bench.description("Benchmarking the performance with 10k entries");
 
-        bench.cols(["Map", "RBTree", "BTree", "B+Tree", "Max B+Tree"]);
-        bench.rows(["insert()", "replace() higher vals", "replace() lower vals", "get()", "entries()", "scan()", "remove()"]);
+        bench.cols(["RBTree", "BTree", "B+Tree", "Max B+Tree"]);
+        bench.rows([
+            "insert()",
+            "replace() higher vals",
+            "replace() lower vals",
+            "get()",
+            "entries()",
+            "scan()",
+            "remove()",
+        ]);
 
         let limit = 10_000;
-        
-        let {nhash} = Map;
+
+        let { nhash } = Map;
         let map = Map.new<Nat, Nat>();
         let btree = BTree.init<Nat, Nat>(?32);
         let bptree = BpTree.new<Nat, Nat>(?32);
@@ -85,7 +93,7 @@ module {
                 case ("Map", "entries()") {
                     for (i in Map.entries(map)) { ignore i };
                 };
-                case ("Map", "scan()") { };
+                case ("Map", "scan()") {};
                 case ("Map", "remove()") {
                     for (i in Iter.range(0, limit - 1)) {
                         Map.delete(map, nhash, i);
@@ -125,7 +133,7 @@ module {
                 case ("RBTree", "entries()") {
                     for (i in rbtree.entries()) { ignore i };
                 };
-                case ("RBTree", "scan()") { };
+                case ("RBTree", "scan()") {};
                 case ("RBTree", "remove()") {
                     for (i in Iter.range(0, limit - 1)) {
                         rbtree.delete(i);
@@ -159,11 +167,13 @@ module {
                 case ("BTree", "scan()") {
                     var i = 0;
 
-                    while (i < limit){
+                    while (i < limit) {
                         let a = sorted.get(i).0;
                         let b = sorted.get(i + 99).0;
 
-                        for (kv in BTree.scanLimit(btree, Nat.compare, a, b, #fwd, 100).results.vals()) { ignore kv };
+                        for (kv in BTree.scanLimit(btree, Nat.compare, a, b, #fwd, 100).results.vals()) {
+                            ignore kv;
+                        };
                         i += 100;
                     };
                 };
@@ -200,11 +210,13 @@ module {
                 case ("B+Tree", "scan()") {
                     var i = 0;
 
-                    while (i < limit){
+                    while (i < limit) {
                         let a = sorted.get(i).0;
                         let b = sorted.get(i + 99).0;
 
-                        for (kv in BpTree.scan(bptree, Cmp.Nat, ?a, ?b)) { ignore kv };
+                        for (kv in BpTree.scan(bptree, Cmp.Nat, ?a, ?b)) {
+                            ignore kv;
+                        };
                         i += 100;
                     };
                 };
@@ -234,22 +246,24 @@ module {
                         let key = entries.get(i).0;
                         ignore MaxBpTree.get(max_bp_tree, Cmp.Nat, key);
                     };
-                 };
+                };
                 case ("Max B+Tree", "entries()") {
                     for (kv in MaxBpTree.entries(max_bp_tree)) { ignore kv };
                 };
                 case ("Max B+Tree", "scan()") {
                     var i = 0;
 
-                    while (i < limit){
+                    while (i < limit) {
                         let a = sorted.get(i).0;
                         let b = sorted.get(i + 99).0;
 
-                        for (kv in MaxBpTree.scan(max_bp_tree, Cmp.Nat, a, b)) { ignore kv };
+                        for (kv in MaxBpTree.scan(max_bp_tree, Cmp.Nat, a, b)) {
+                            ignore kv;
+                        };
                         i += 100;
                     };
                 };
-                case ("Max B+Tree", "remove()") { 
+                case ("Max B+Tree", "remove()") {
                     for ((k, v) in entries.vals()) {
                         ignore MaxBpTree.remove(max_bp_tree, Cmp.Nat, Cmp.Nat, k);
                     };

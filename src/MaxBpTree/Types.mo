@@ -29,7 +29,7 @@ module {
         keys: [var ?K], // [...keys]
         children: [var ?Node<K, V>], // [...child nodes]
         max: [var ?(K, V)], // (max_key, max_val)
-        max_heap: MaxHeap<(K, V)>
+        // max_heap: MaxHeap<(K, V)>
     );
 
     /// Leaf nodes are doubly linked lists of key-value pairs.
@@ -39,7 +39,7 @@ module {
         adjacent_nodes: [var ?Leaf<K, V>], // [prev, next]
         kvs: [var ?(K, V)], // [...key-value pairs]
         max: [var ?(K, V)],// (max_key, max_val)
-        max_heap: MaxHeap<(K, V)>
+        // max_heap: MaxHeap<(K, V)>
     );
 
     public module Const = {
