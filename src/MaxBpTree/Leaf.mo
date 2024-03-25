@@ -117,7 +117,7 @@ module Leaf {
 
         right_node.0[C.COUNT] := right_cnt;
 
-        let moved_left_max : Bool = if (leaf.0[C.MAX_INDEX] >= arr_len - right_cnt - initial_offset){
+        let moved_left_max : Bool = if (leaf.0[C.MAX_INDEX] >= (arr_len - right_cnt - initial_offset : Nat)){
             leaf.4[C.MAX] := null;
             true
         } else if (leaf.0[C.MAX_INDEX] >= elem_index ) {

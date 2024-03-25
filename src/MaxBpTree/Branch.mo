@@ -133,7 +133,7 @@ module Branch {
 
         var j = median - 1 : Nat;
 
-        let moved_left_max = if (node.0[C.MAX_INDEX] >= arr_len - right_cnt - initial_offset){
+        let moved_left_max = if (node.0[C.MAX_INDEX] >= (arr_len - right_cnt - initial_offset : Nat)){
             node.4[C.MAX] := null;
             true;
         }else {
