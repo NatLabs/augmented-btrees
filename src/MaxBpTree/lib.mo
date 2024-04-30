@@ -138,6 +138,16 @@ module MaxBpTree {
         let elem = (key, val);
         leaf_node.3 [elem_index] := ?elem;
 
+        if (cmp_key(key, prev.0) != 0) {
+            // update the median key of the parent node if necessary
+            switch(leaf_node.1[C.PARENT]){
+                case(?parent) if (elem_index == 0) {
+                    Branch.update_median_key<K, V>(parent, leaf_node.0[C.INDEX], key);
+                };
+                case(null){};
+            };
+        };
+
         let ?max = leaf_node.4 [C.MAX] else Debug.trap("1: insert (replace entry): should have a max value");
 
         if (cmp_key(max.0, prev.0) == 0 and cmp_val(val, max.1) == -1) {

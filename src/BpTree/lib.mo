@@ -247,11 +247,8 @@ module BpTree {
 
         // insert split leaf nodes into parent nodes if there is space
         // or iteratively split parent (internal) nodes to make space
-        label index_split_loop while (Option.isSome(opt_parent)) {
-            var subtree_diff : Nat = 0;
+        while (Option.isSome(opt_parent)) {
             let ?parent = opt_parent else Debug.trap("3. insert: accessed a null parent value");
-
-            parent.0[C.SUBTREE_SIZE] -= subtree_diff;
 
             if (parent.0[C.COUNT] < self.order) {
                 var j = parent.0[C.COUNT];
@@ -282,9 +279,6 @@ module BpTree {
 
             } else {
 
-                let median = (parent.0[C.COUNT] / 2) + 1; // include inserted key-value pair
-                let prev_subtree_size = parent.0[C.SUBTREE_SIZE];
-
                 let split_node = Branch.split(parent, right_node, right_index, right_key, gen_id);
 
                 let ?first_key = ArrayMut.extract(split_node.2, split_node.2.size() - 1 : Nat) else Debug.trap("4. insert: accessed a null value in first key of branch");
@@ -295,8 +289,6 @@ module BpTree {
 
                 right_index := split_node.0[C.INDEX];
                 opt_parent := split_node.1[C.PARENT];
-
-                subtree_diff := prev_subtree_size - parent.0[C.SUBTREE_SIZE];
             };
         };
 
@@ -617,7 +609,6 @@ module BpTree {
         self.next_id := 1;
     };
     
-
     public func toLeafNodes<K, V>(self : BpTree<K, V>) : [[?(K, V)]] {
         var node = ?self.root;
         let buffer = Buffer.Buffer<[?(K, V)]>(self.size);

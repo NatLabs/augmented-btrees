@@ -433,12 +433,15 @@ module Methods {
 
     public func min<K, V>(self : MaxBpTree<K, V>) : ?(K, V) {
         let leaf_node = Methods.get_min_leaf_node(self) else return null;
+        if (leaf_node.0[C.COUNT] == 0) return null;
         leaf_node.3 [0];
     };
 
     // Returns the maximum key-value pair in the tree.
     public func max<K, V>(self : MaxBpTree<K, V>) : ?(K, V) {
         let leaf_node = Methods.get_max_leaf_node(self) else return null;
+        if (leaf_node.0[C.COUNT] == 0) return null;
+
         leaf_node.3 [leaf_node.0 [C.COUNT] - 1];
     };
 

@@ -46,9 +46,9 @@ module Branch {
         self;
     };
 
-    public func update_median_key<K, V>(_parent : Branch<K, V>, index : Nat, new_key : K) {
+    public func update_median_key<K, V>(_parent : Branch<K, V>, leaf_index : Nat, new_key : K) {
         var parent = _parent;
-        var i = index;
+        var i = leaf_index;
 
         while (i == 0) {
             i := parent.0[C.INDEX];
@@ -156,7 +156,11 @@ module Branch {
                 if (j > 0) {
                     node.2[j - 1] := ?first_child_key;
                 } else {
-                    update_median_key(node, 0, first_child_key);
+                    // elements inserted are always nodes created as a result of split
+                    // so their index is always greater than one as new nodes created from
+                    // a split operation are always inserted at the right
+                    
+                    // update_median_key(node, 0, first_child_key);
                 };
 
                 node.3[j] := ?child;

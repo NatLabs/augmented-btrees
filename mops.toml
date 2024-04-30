@@ -1,6 +1,6 @@
 [package]
 name = "augmented-btrees"
-version = "0.5.0"
+version = "0.5.1"
 description = "Contains implementations of BTree variants, most notable the B+Tree"
 repository = "https://github.com/NatLabs/augmented-btrees"
 license = "MIT"

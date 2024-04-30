@@ -190,7 +190,7 @@ func bp_tree_test(order : Nat, random : Buffer.Buffer<Nat>) {
 
                 let expected = i;
                 let rank = BpTree.getIndex(bptree, Cmp.Nat, key);
-
+                // Debug.print("(key. expected, rank) -> " # debug_show (key, expected, rank));
                 if (not (rank == expected)) {
                     Debug.print("mismatch for key:" # debug_show key);
                     Debug.print("expected != rank: " # debug_show (expected, rank));
