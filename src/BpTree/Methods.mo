@@ -19,7 +19,7 @@ import RevIter "mo:itertools/RevIter";
 
 module Methods {
 
-    let {Const = C} = T;
+    let { Const = C } = T;
     type Iter<A> = Iter.Iter<A>;
     type Order = Order.Order;
     type CmpFn<A> = T.CmpFn<A>;
@@ -41,11 +41,11 @@ module Methods {
 
         label while_loop loop {
             switch (node) {
-                case (? #branch(n)) {
-                    node := n.3[0];
+                case (?#branch(n)) {
+                    node := n.3 [0];
                     depth += 1;
                 };
-                case (? #leaf(_)) {
+                case (?#leaf(_)) {
                     return depth + 1;
                 };
                 case (_) Debug.trap("depth: accessed a null value");
@@ -60,12 +60,12 @@ module Methods {
 
         loop {
             switch (curr) {
-                case (? #branch(node)) {
-                    let int_index = ArrayMut.binary_search<K, K>(node.2, cmp, key, node.0[C.COUNT] - 1);
+                case (?#branch(node)) {
+                    let int_index = ArrayMut.binary_search<K, K>(node.2, cmp, key, node.0 [C.COUNT] - 1);
                     let node_index = if (int_index >= 0) Int.abs(int_index) + 1 else Int.abs(int_index + 1);
-                    curr := node.3[node_index];
+                    curr := node.3 [node_index];
                 };
-                case (? #leaf(leaf_node)) {
+                case (?#leaf(leaf_node)) {
                     return leaf_node;
                 };
                 case (_) Debug.trap("get_leaf_node: accessed a null value");
@@ -74,13 +74,13 @@ module Methods {
     };
 
     public func update_branch_path_from_leaf_to_root<K, V>(self : BpTree<K, V>, leaf : Leaf<K, V>, update : (Branch<K, V>) -> ()) {
-        var parent = leaf.1[C.PARENT];
+        var parent = leaf.1 [C.PARENT];
 
         loop {
             switch (parent) {
                 case (?node) {
                     update(node);
-                    parent := node.1[C.PARENT];
+                    parent := node.1 [C.PARENT];
                 };
 
                 case (_) return;
@@ -88,14 +88,14 @@ module Methods {
         };
     };
 
-    public func update_partial_branch_path_from_leaf_to_root<K, V>(self : BpTree<K, V>, leaf : Leaf<K, V>, update : (Branch<K, V>) -> (_continue: Bool)) {
-        var parent = leaf.1[C.PARENT];
+    public func update_partial_branch_path_from_leaf_to_root<K, V>(self : BpTree<K, V>, leaf : Leaf<K, V>, update : (Branch<K, V>) -> (_continue : Bool)) {
+        var parent = leaf.1 [C.PARENT];
 
         loop {
             switch (parent) {
                 case (?node) {
                     if (not update(node)) return;
-                    parent := node.1[C.PARENT];
+                    parent := node.1 [C.PARENT];
                 };
 
                 case (_) return;
@@ -108,14 +108,14 @@ module Methods {
 
         loop {
             switch (curr) {
-                case (? #branch(node)) {
-                    let int_index = ArrayMut.binary_search<K, K>(node.2, cmp, key, node.0[C.COUNT] - 1);
+                case (?#branch(node)) {
+                    let int_index = ArrayMut.binary_search<K, K>(node.2, cmp, key, node.0 [C.COUNT] - 1);
                     let node_index = if (int_index >= 0) Int.abs(int_index) + 1 else Int.abs(int_index + 1);
                     update(node, node_index);
 
-                    curr := node.3[node_index];
+                    curr := node.3 [node_index];
                 };
-                case (? #leaf(leaf_node)) {
+                case (?#leaf(leaf_node)) {
                     return leaf_node;
                 };
                 case (_) Debug.trap("get_leaf_node: accessed a null value");
@@ -128,10 +128,10 @@ module Methods {
 
         loop {
             switch (node) {
-                case (? #branch(branch)) {
-                    node := branch.3[0];
+                case (?#branch(branch)) {
+                    node := branch.3 [0];
                 };
-                case (? #leaf(leaf_node)) {
+                case (?#leaf(leaf_node)) {
                     return leaf_node;
                 };
                 case (_) Debug.trap("get_min_leaf_node: accessed a null value");
@@ -144,10 +144,10 @@ module Methods {
 
         loop {
             switch (node) {
-                case (? #branch(branch)) {
-                    node := branch.3[branch.0[C.COUNT] - 1];
+                case (?#branch(branch)) {
+                    node := branch.3 [branch.0 [C.COUNT] - 1];
                 };
-                case (? #leaf(leaf_node)) {
+                case (?#leaf(leaf_node)) {
                     return leaf_node;
                 };
                 case (_) Debug.trap("get_max_leaf_node: accessed a null value");
@@ -162,17 +162,17 @@ module Methods {
     };
 
     public func inc_branch_subtree_size<K, V>(branch : Branch<K, V>) {
-        branch.0[C.SUBTREE_SIZE] += 1;
+        branch.0 [C.SUBTREE_SIZE] += 1;
     };
 
     public func decrement_branch_subtree_size<K, V>(branch : Branch<K, V>) {
-        branch.0[C.SUBTREE_SIZE] -= 1;
+        branch.0 [C.SUBTREE_SIZE] -= 1;
     };
 
     public func subtree_size<K, V>(node : Node<K, V>) : Nat {
         switch (node) {
-            case (#branch(node)) node.0[C.SUBTREE_SIZE];
-            case (#leaf(node)) node.0[C.COUNT];
+            case (#branch(node)) node.0 [C.SUBTREE_SIZE];
+            case (#leaf(node)) node.0 [C.COUNT];
         };
     };
 
@@ -193,18 +193,18 @@ module Methods {
             let ?start = _start_leaf else return null;
             let ?end = _end_leaf else return null;
 
-            if (start.0[C.ID] == end.0[C.ID] and i >= j) {
+            if (start.0 [C.ID] == end.0 [C.ID] and i >= j) {
                 _start_leaf := null;
                 return null;
             };
 
-            if (i >= start.0[C.COUNT]) {
-                _start_leaf := start.2[C.NEXT];
+            if (i >= start.0 [C.COUNT]) {
+                _start_leaf := start.2 [C.NEXT];
                 i := 0;
                 return next();
             };
 
-            let entry = start.3[i];
+            let entry = start.3 [i];
             i += 1;
             return entry;
         };
@@ -213,22 +213,22 @@ module Methods {
             let ?start = _start_leaf else return null;
             let ?end = _end_leaf else return null;
 
-            if (start.0[C.ID] == end.0[C.ID] and i >= j) {
+            if (start.0 [C.ID] == end.0 [C.ID] and i >= j) {
                 _end_leaf := null;
                 return null;
             };
 
             if (j == 0) {
-                _end_leaf := end.2[C.PREV];
+                _end_leaf := end.2 [C.PREV];
                 switch (_end_leaf) {
-                    case (?leaf) j := leaf.0[C.COUNT];
+                    case (?leaf) j := leaf.0 [C.COUNT];
                     case (_) { return null };
                 };
 
                 return nextFromEnd();
             };
 
-            let entry = end.3[j - 1];
+            let entry = end.3 [j - 1];
             j -= 1;
             return entry;
         };
@@ -241,32 +241,32 @@ module Methods {
 
         let root = switch (self.root) {
             case (#branch(node)) node;
-            case (#leaf(node)) return (node, node.0[C.COUNT]);
+            case (#leaf(node)) return (node, 0);
         };
 
-        var rank = root.0[C.SUBTREE_SIZE];
+        var rank = root.0 [C.SUBTREE_SIZE];
 
         func get_node(parent : Branch<K, V>, key : K) : Leaf<K, V> {
-            var i = parent.0[C.COUNT] - 1 : Nat;
+            var i = parent.0 [C.COUNT] - 1 : Nat;
 
             label get_node_loop while (i >= 1) {
-                let child = parent.3[i];
+                let child = parent.3 [i];
 
-                let ?search_key = parent.2[i - 1] else Debug.trap("get_leaf_node_and_index 1: accessed a null value");
+                let ?search_key = parent.2 [i - 1] else Debug.trap("get_leaf_node_and_index 1: accessed a null value");
 
                 switch (child) {
-                    case (? #branch(node)) {
-                        if (cmp(key, search_key) == +1) {
+                    case (?#branch(node)) {
+                        if (cmp(key, search_key) != -1) {
                             return get_node(node, key);
                         };
 
-                        rank -= node.0[C.SUBTREE_SIZE];
+                        rank -= node.0 [C.SUBTREE_SIZE];
                     };
-                    case (? #leaf(node)) {
+                    case (?#leaf(node)) {
                         // subtract before comparison because we want the rank of the first element in the leaf node
-                        rank -= node.0[C.COUNT];
+                        rank -= node.0 [C.COUNT];
 
-                        if (cmp(key, search_key) == +1) {
+                        if (cmp(key, search_key) != -1) {
                             return node;
                         };
                     };
@@ -276,12 +276,12 @@ module Methods {
                 i -= 1;
             };
 
-            switch (parent.3[0]) {
-                case (? #branch(node)) {
+            switch (parent.3 [0]) {
+                case (?#branch(node)) {
                     return get_node(node, key);
                 };
-                case (? #leaf(node)) {
-                    rank -= node.0[C.COUNT];
+                case (?#leaf(node)) {
+                    rank -= node.0 [C.COUNT];
                     return node;
                 };
                 case (_) Debug.trap("get_leaf_node_and_index 3: accessed a null value");
@@ -300,16 +300,16 @@ module Methods {
         var search_index = rank;
 
         func get_node(parent : Branch<K, V>) : Leaf<K, V> {
-            var i = parent.0[C.COUNT] - 1 : Nat;
+            var i = parent.0 [C.COUNT] - 1 : Nat;
             var curr = ?parent;
-            var node_index = parent.0[C.SUBTREE_SIZE];
+            var node_index = parent.0 [C.SUBTREE_SIZE];
 
             label get_node_loop loop {
-                let child = parent.3[i];
+                let child = parent.3 [i];
 
                 switch (child) {
-                    case (? #branch(node)) {
-                        let subtree = node.0[C.SUBTREE_SIZE];
+                    case (?#branch(node)) {
+                        let subtree = node.0 [C.SUBTREE_SIZE];
 
                         node_index -= subtree;
                         if (node_index <= search_index) {
@@ -318,8 +318,8 @@ module Methods {
                         };
 
                     };
-                    case (? #leaf(node)) {
-                        let subtree = node.0[C.COUNT];
+                    case (?#leaf(node)) {
+                        let subtree = node.0 [C.COUNT];
                         node_index -= subtree;
 
                         if (node_index <= search_index) {
@@ -381,50 +381,50 @@ module Methods {
     public func get<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, key : K) : ?V {
         let leaf_node = get_leaf_node<K, V>(self, cmp, key);
 
-        let i = ArrayMut.binary_search<K, (K, V)>(leaf_node.3, Utils.adapt_cmp(cmp), key, leaf_node.0[C.COUNT]);
+        let i = ArrayMut.binary_search<K, (K, V)>(leaf_node.3, Utils.adapt_cmp(cmp), key, leaf_node.0 [C.COUNT]);
 
         if (i >= 0) {
-            let ?kv = leaf_node.3[Int.abs(i)] else Debug.trap("1. get: accessed a null value");
+            let ?kv = leaf_node.3 [Int.abs(i)] else Debug.trap("1. get: accessed a null value");
             return ?kv.1;
         };
-        
+
         null;
     };
 
     public func get_ceiling<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, key : K) : ?(K, V) {
         let leaf_node = get_leaf_node<K, V>(self, cmp, key);
 
-        let i = ArrayMut.binary_search<K, (K, V)>(leaf_node.3, Utils.adapt_cmp(cmp), key, leaf_node.0[C.COUNT]);
+        let i = ArrayMut.binary_search<K, (K, V)>(leaf_node.3, Utils.adapt_cmp(cmp), key, leaf_node.0 [C.COUNT]);
 
         if (i >= 0) {
-            return leaf_node.3[Int.abs(i)];
+            return leaf_node.3 [Int.abs(i)];
         };
 
         let expected_index = Int.abs(i) - 1 : Nat;
 
-        if (expected_index == leaf_node.0[C.COUNT]) {
-            let ?next_node = leaf_node.2[C.NEXT] else return null;
-            return next_node.3[0];
+        if (expected_index == leaf_node.0 [C.COUNT]) {
+            let ?next_node = leaf_node.2 [C.NEXT] else return null;
+            return next_node.3 [0];
         };
 
-        return leaf_node.3[expected_index];
+        return leaf_node.3 [expected_index];
     };
 
     public func get_floor<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, key : K) : ?(K, V) {
         let leaf_node = get_leaf_node<K, V>(self, cmp, key);
 
-        let i = ArrayMut.binary_search<K, (K, V)>(leaf_node.3, Utils.adapt_cmp(cmp), key, leaf_node.0[C.COUNT]);
-        
-        if (i >= 0) return leaf_node.3[Int.abs(i)];
-        
+        let i = ArrayMut.binary_search<K, (K, V)>(leaf_node.3, Utils.adapt_cmp(cmp), key, leaf_node.0 [C.COUNT]);
+
+        if (i >= 0) return leaf_node.3 [Int.abs(i)];
+
         let expected_index = Int.abs(i) - 1 : Nat;
 
         if (expected_index == 0) {
-            let ?prev_node = leaf_node.2[C.PREV] else return null;
-            return prev_node.3[prev_node.0[C.COUNT] - 1];
+            let ?prev_node = leaf_node.2 [C.PREV] else return null;
+            return prev_node.3 [prev_node.0 [C.COUNT] - 1];
         };
 
-        return leaf_node.3[expected_index - 1];
+        return leaf_node.3 [expected_index - 1];
     };
 
     public func to_array<K, V>(self : BpTree<K, V>) : [(K, V)] {
@@ -441,7 +441,7 @@ module Methods {
                         buffer.add(kv);
                     };
 
-                    leaf_node := leaf.2[C.NEXT];
+                    leaf_node := leaf.2 [C.NEXT];
                 };
                 case (_) break _loop;
             };
@@ -452,20 +452,20 @@ module Methods {
 
     public func min<K, V>(self : BpTree<K, V>) : ?(K, V) {
         let leaf_node = get_min_leaf_node(self) else return null;
-        leaf_node.3[0];
+        leaf_node.3 [0];
     };
 
     // Returns the maximum key-value pair in the tree.
     public func max<K, V>(self : BpTree<K, V>) : ?(K, V) {
         let leaf_node = get_max_leaf_node(self) else return null;
-        leaf_node.3[leaf_node.0[C.COUNT] - 1];
+        leaf_node.3 [leaf_node.0 [C.COUNT] - 1];
     };
 
     // Returns a reversible iterator over the entries of the tree.
     public func entries<K, V>(bptree : BpTree<K, V>) : RevIter<(K, V)> {
         let min_leaf = get_min_leaf_node(bptree);
         let max_leaf = get_max_leaf_node(bptree);
-        new_iterator(min_leaf, 0, max_leaf, max_leaf.0[C.COUNT]);
+        new_iterator(min_leaf, 0, max_leaf, max_leaf.0 [C.COUNT]);
     };
 
     // Returns a reversible iterator over the keys of the tree.
@@ -491,13 +491,25 @@ module Methods {
     // Returns the rank of the given key in the tree.
     public func get_index<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, key : K) : Nat {
         let (leaf_node, rank) = get_leaf_node_and_index(self, cmp, key);
-        let i = ArrayMut.binary_search<K, (K, V)>(leaf_node.3, Utils.adapt_cmp(cmp), key, leaf_node.0[C.COUNT]);
+        let i = ArrayMut.binary_search<K, (K, V)>(leaf_node.3, Utils.adapt_cmp(cmp), key, leaf_node.0 [C.COUNT]);
 
         if (i < 0) {
             return rank + (Int.abs(i) - 1 : Nat);
         };
 
         rank + Int.abs(i);
+    };
+
+    public func get_expected_index<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, key : K) : T.ExpectedIndex {
+        let (leaf_node, rank) = get_leaf_node_and_index(self, cmp, key);
+        let i = ArrayMut.binary_search<K, (K, V)>(leaf_node.3, Utils.adapt_cmp(cmp), key, leaf_node.0 [C.COUNT]);
+
+        if (i < 0) {
+            #NotFound(rank + (Int.abs(i) - 1 : Nat));
+        } else {
+            #Found(rank + Int.abs(i));
+        };
+
     };
 
     // Returns the key-value pair at the given rank.
@@ -508,7 +520,7 @@ module Methods {
 
         // assert i < leaf_node.0[C.COUNT];
 
-        let ?entry = leaf_node.3[i] else Debug.trap("getFromIndex: accessed a null value");
+        let ?entry = leaf_node.3 [i] else Debug.trap("getFromIndex: accessed a null value");
         entry;
     };
 
@@ -530,30 +542,30 @@ module Methods {
     // If the start key does not exist in the tree then the iterator will start from next key greater than start.
     // If the end key does not exist in the tree then the iterator will end at the last key less than end.
     public func scan<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, start : ?K, end : ?K) : RevIter<(K, V)> {
-        let left_node = switch(start){
-            case(?key) get_leaf_node(self, cmp, key);
-            case(null) get_min_leaf_node(self);
+        let left_node = switch (start) {
+            case (?key) get_leaf_node(self, cmp, key);
+            case (null) get_min_leaf_node(self);
         };
 
-        let start_index = switch(start){
-            case(?key) ArrayMut.binary_search<K, (K, V)>(left_node.3, Utils.adapt_cmp(cmp), key, left_node.0[C.COUNT]);
-            case(null) 0;
+        let start_index = switch (start) {
+            case (?key) ArrayMut.binary_search<K, (K, V)>(left_node.3, Utils.adapt_cmp(cmp), key, left_node.0 [C.COUNT]);
+            case (null) 0;
         };
 
         // if start_index is negative then the element was not found
         // moreover if start_index is negative then abs(i) - 1 is the index of the first element greater than start
         var i = if (start_index >= 0) Int.abs(start_index) else Int.abs(start_index) - 1 : Nat;
 
-        let right_node = switch(end){
-            case(?key) get_leaf_node(self, cmp, key);
-            case(null) get_max_leaf_node(self);
+        let right_node = switch (end) {
+            case (?key) get_leaf_node(self, cmp, key);
+            case (null) get_max_leaf_node(self);
         };
 
-        let end_index = switch(end){
-            case(?key) ArrayMut.binary_search<K, (K, V)>(right_node.3, Utils.adapt_cmp(cmp), key, right_node.0[C.COUNT]);
-            case(null) right_node.0[C.COUNT];
+        let end_index = switch (end) {
+            case (?key) ArrayMut.binary_search<K, (K, V)>(right_node.3, Utils.adapt_cmp(cmp), key, right_node.0 [C.COUNT]);
+            case (null) right_node.0 [C.COUNT];
         };
-        
+
         var j = if (end_index >= 0) Int.abs(end_index) + 1 else Int.abs(end_index) - 1 : Nat;
 
         new_iterator(left_node, i, right_node, j);

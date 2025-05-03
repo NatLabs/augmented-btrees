@@ -5,6 +5,7 @@ import Nat "mo:base/Nat";
 import Nat32 "mo:base/Nat32";
 import Iter "mo:base/Iter";
 import Buffer "mo:base/Buffer";
+import Option "mo:base/Option";
 
 import { test; suite } "mo:test";
 import Fuzz "mo:fuzz";
@@ -13,6 +14,9 @@ import Itertools "mo:itertools/Iter";
 import { BpTree; Cmp } "../src";
 import Utils "../src/internal/Utils";
 import BpTreeMethods "../src/BpTree/Methods";
+import ArrayMut "../src/internal/ArrayMut";
+import Leaf "../src/BpTree/Leaf";
+import Types "../src/BpTree/Types";
 
 import { Const = C } "../src/BpTree/Types";
 
@@ -192,6 +196,51 @@ func bp_tree_test(order : Nat, random : Buffer.Buffer<Nat>) {
                 let rank = BpTree.getIndex(bptree, Cmp.Nat, key);
                 // Debug.print("(key. expected, rank) -> " # debug_show (key, expected, rank));
                 if (not (rank == expected)) {
+                    Debug.print("mismatch for key:" # debug_show key);
+                    Debug.print("expected != rank: " # debug_show (expected, rank));
+                    assert false;
+                };
+            };
+        },
+    );
+
+    test(
+        "getExpectedIndex",
+        func() {
+
+            for (i in Itertools.range(0, sorted.size())) {
+                let key = sorted.get(i);
+
+                let expected = #Found(i);
+                let rank = BpTree.getExpectedIndex(bptree, Cmp.Nat, key);
+
+                if (not (rank == expected)) {
+                    Debug.print("getIndex -> " # debug_show (BpTree.getIndex(bptree, Cmp.Nat, key)));
+                    Debug.print("mismatch for key:" # debug_show key);
+                    Debug.print("expected != rank: " # debug_show (expected, rank));
+                    assert false;
+                };
+            };
+
+            let non_consecutive_range = Itertools.add(
+                Iter.map(
+                    Iter.filter(
+                        Itertools.slidingTuples(Itertools.range(0, sorted.size())),
+                        func((i, j) : (Nat, Nat)) : Bool = sorted.get(i) + 1 != sorted.get(j),
+                    ),
+                    func((i, j) : (Nat, Nat)) : Nat = i,
+                ),
+                sorted.size() - 1 : Nat,
+            );
+
+            for (i in non_consecutive_range) {
+                let key = sorted.get(i) + 1;
+
+                let expected = #NotFound(i + 1);
+                let rank = BpTree.getExpectedIndex(bptree, Cmp.Nat, key);
+
+                if (not (rank == expected)) {
+                    Debug.print("getIndex -> " # debug_show (BpTree.getIndex(bptree, Cmp.Nat, key)));
                     Debug.print("mismatch for key:" # debug_show key);
                     Debug.print("expected != rank: " # debug_show (expected, rank));
                     assert false;

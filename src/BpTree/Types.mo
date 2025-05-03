@@ -5,7 +5,7 @@ module {
     type Order = Order.Order;
 
     public type CmpFn<K> = InternalTypes.CmpFn<K>;
-    
+
     public type BpTree<K, V> = {
         order : Nat;
         var root : Node<K, V>;
@@ -21,7 +21,7 @@ module {
     /// Branch nodes store keys and pointers to child nodes.
     /// The data in each node is grouped together into mutable arrays of similar types stored in a tuple instead of a record.
     /// This is done to reduce the heap allocations and improve cache locality.
-    /// 
+    ///
     /// #### Fields
     /// - `nats`: [id, index, count, subtree_size]
     ///     - `id`: Unique id representing the branch as a node.
@@ -33,10 +33,10 @@ module {
     /// - `children`: The child nodes in this branch node.
 
     public type Branch<K, V> = (
-        nats: [var Nat], // [id, index, count, subtree_size]
-        parent: [var ?Branch<K, V>], // parent
-        keys: [var ?K], // [...keys]
-        children: [var ?Node<K, V>], // [...children]
+        nats : [var Nat], // [id, index, count, subtree_size]
+        parent : [var ?Branch<K, V>], // parent
+        keys : [var ?K], // [...keys]
+        children : [var ?Node<K, V>], // [...children]
     );
 
     /// Leaf nodes are doubly linked lists of key-value pairs.
@@ -53,10 +53,10 @@ module {
     /// - `kvs`: The key-value pairs in this leaf node.
 
     public type Leaf<K, V> = (
-        nats: [var Nat], // [id, index, count]
-        parent: [var ?Branch<K, V>], // parent
-        adjacent_nodes: [var ?Leaf<K, V>], // [prev, next]
-        kvs: [var ?(K, V)], // [...kvs]
+        nats : [var Nat], // [id, index, count]
+        parent : [var ?Branch<K, V>], // parent
+        adjacent_nodes : [var ?Leaf<K, V>], // [prev, next]
+        kvs : [var ?(K, V)], // [...kvs]
     );
 
     public module Const = {
@@ -79,5 +79,9 @@ module {
         #branch : CommonFields<K, V>;
     };
 
+    public type ExpectedIndex = {
+        #NotFound : Nat;
+        #Found : Nat;
+    }
 
 };

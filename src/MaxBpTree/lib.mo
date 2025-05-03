@@ -140,11 +140,11 @@ module MaxBpTree {
 
         if (cmp_key(key, prev.0) != 0) {
             // update the median key of the parent node if necessary
-            switch(leaf_node.1[C.PARENT]){
-                case(?parent) if (elem_index == 0) {
-                    Branch.update_median_key<K, V>(parent, leaf_node.0[C.INDEX], key);
+            switch (leaf_node.1 [C.PARENT]) {
+                case (?parent) if (elem_index == 0) {
+                    Branch.update_median_key<K, V>(parent, leaf_node.0 [C.INDEX], key);
                 };
-                case(null){};
+                case (null) {};
             };
         };
 
@@ -182,7 +182,7 @@ module MaxBpTree {
             let max_index = branch.0 [C.MAX_INDEX];
 
             let ?child_max = switch (branch.3 [child_index]) {
-                case (? #branch(node) or ? #leaf(node) : ?CommonNodeFields<K, V>) {
+                case (?#branch(node) or ?#leaf(node) : ?CommonNodeFields<K, V>) {
                     node.4 [C.MAX];
                 };
                 case (_) null;
@@ -278,7 +278,7 @@ module MaxBpTree {
                     };
 
                     switch (parent.3 [j]) {
-                        case ((? #branch(node) or ? #leaf(node)) : ?CommonNodeFields<K, V>) {
+                        case ((?#branch(node) or ?#leaf(node)) : ?CommonNodeFields<K, V>) {
                             node.0 [C.INDEX] := j;
 
                             if (j == right_index) {
@@ -306,7 +306,6 @@ module MaxBpTree {
 
                 parent.0 [C.COUNT] += 1;
                 max_bp_tree.size += 1;
-
 
                 func update_path_upstream(branch : Branch<K, V>, child_index : Nat) {
                     branch.0 [C.SUBTREE_SIZE] += 1;
@@ -489,7 +488,7 @@ module MaxBpTree {
             parent.3 [leaf_node.0 [C.INDEX] - 1];
         };
 
-        let ? #leaf(adj_node) = opt_adj_node else return ?deleted;
+        let ?#leaf(adj_node) = opt_adj_node else return ?deleted;
 
         let left_node = if (adj_node.0 [C.INDEX] < leaf_node.0 [C.INDEX]) adj_node else leaf_node;
         let right_node = if (adj_node.0 [C.INDEX] < leaf_node.0 [C.INDEX]) leaf_node else adj_node;
@@ -520,7 +519,7 @@ module MaxBpTree {
             Branch.redistribute_keys(branch_node, cmp_key, cmp_val);
             if (branch_node.0 [C.COUNT] >= min_count) return ?deleted;
 
-            let ? #branch(adj_branch_node) = (
+            let ?#branch(adj_branch_node) = (
                 if (branch_node.0 [C.INDEX] == 0) {
                     parent.3 [1];
                 } else {
@@ -601,7 +600,7 @@ module MaxBpTree {
     ///    let arr = [('A', 1), ('B', 2), ('C', 3)];
     ///    let max_bp_tree = MaxBpTree.fromArray<Char, Nat>(arr, Cmp.Char, Cmp.Nat, null);
     /// ```
-    public func fromArray<K, V>(order : ?Nat, arr : [(K, V)], cmp_key : CmpFn<K>, cmp_val: CmpFn<V>) : MaxBpTree<K, V> {
+    public func fromArray<K, V>(order : ?Nat, arr : [(K, V)], cmp_key : CmpFn<K>, cmp_val : CmpFn<V>) : MaxBpTree<K, V> {
         let max_bp_tree = MaxBpTree.new<K, V>(order);
 
         for (kv in arr.vals()) {
@@ -755,7 +754,7 @@ module MaxBpTree {
     /// Replaces the value of the entry with the max value in the tree.
     /// It returns the old value associated with the key.
     /// If the tree is empty, it returns null.
-    /// Note that if there are duplicates of the max value, the key of the entry is not 
+    /// Note that if there are duplicates of the max value, the key of the entry is not
     /// guaranteed to match the result from `maxValue`.
     public func replaceMaxValue<K, V>(self : MaxBpTree<K, V>, cmp_key : CmpFn<K>, cmp_val : CmpFn<V>, new_val : V) : ?(K, V) {
         if (self.size == 0) return null;
