@@ -43,10 +43,9 @@ jobs:
 
       - name: Install mops & mocv
         run: |
-          npm --yes -g i ic-mops
+          npm --yes -g i ic-mops@1.8.0
           mops i
           mops toolchain init
-          mops toolchain use moc latest
 
           # set moc path for dfx to use
           echo "DFX_MOC_PATH=$(mops toolchain bin moc)" >> $GITHUB_ENV
