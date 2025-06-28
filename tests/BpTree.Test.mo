@@ -233,6 +233,8 @@ func bp_tree_test(order : Nat, random : Buffer.Buffer<Nat>) {
                 sorted.size() - 1 : Nat,
             );
 
+            assert #NotFound(0) == BpTree.getExpectedIndex(bptree, Cmp.Nat, 0);
+
             for (i in non_consecutive_range) {
                 let key = sorted.get(i) + 1;
 
@@ -460,13 +462,13 @@ func bp_tree_test(order : Nat, random : Buffer.Buffer<Nat>) {
                     if (
                         not Itertools.equal<(Nat, Nat)>(
                             BpTree.range(bptree, i, j),
-                            Itertools.fromArraySlice(rand, i, j + 1),
+                            Itertools.fromArraySlice(rand, i, j),
                             func(a : (Nat, Nat), b : (Nat, Nat)) : Bool = a == b,
                         )
                     ) {
                         Debug.print("mismatch: " # debug_show (i, j));
                         Debug.print("range " # debug_show Iter.toArray(BpTree.range(bptree, i, j)));
-                        Debug.print("expected " # debug_show Iter.toArray(Itertools.fromArraySlice(rand, i, j + 1)));
+                        Debug.print("expected " # debug_show Iter.toArray(Itertools.fromArraySlice(rand, i, j)));
                         assert false;
                     };
                 };

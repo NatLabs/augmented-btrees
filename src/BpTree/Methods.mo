@@ -524,14 +524,14 @@ module Methods {
         entry;
     };
 
-    // Returns an iterator over the entries of the tree in the range [start, end].
+    // Returns an iterator over the entries of the tree in the range [start, end).
     // The range is defined by the ranks of the start and end keys
     public func range<K, V>(self : BpTree<K, V>, start : Nat, end : Nat) : RevIter<(K, V)> {
         let (start_node, start_node_index) = get_leaf_node_by_index(self, start);
         let (end_node, end_node_index) = get_leaf_node_by_index(self, end);
 
         let start_index = start_node_index : Nat;
-        let end_index = end_node_index + 1 : Nat; // + 1 because the end index is exclusive
+        let end_index = end_node_index : Nat;
 
         new_iterator(start_node, start_index, end_node, end_index);
     };

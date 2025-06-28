@@ -568,7 +568,7 @@ module BpTree {
         Methods.get_from_index(self, i);
     };
 
-    /// Returns an iterator over the entries of the tree in the range [start, end].
+    /// Returns an iterator over the entries of the tree in the range [start, end).
     /// The iterator is inclusive of start and exclusive of end.
     public func range<K, V>(self : BpTree<K, V>, start : Nat, end : Nat) : RevIter<(K, V)> {
         Methods.range(self, start, end);
