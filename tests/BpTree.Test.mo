@@ -186,6 +186,19 @@ func bp_tree_test(order : Nat, random : Buffer.Buffer<Nat>) {
     );
 
     test(
+        "getEntry",
+        func() {
+            for (n in random.vals()) {
+                let retrieved = BpTree.getEntry(bptree, Cmp.Nat, n);
+                if (?(n, n) != retrieved) {
+                    Debug.print("mismatch: " # debug_show (?n, retrieved, ?(n, n) == retrieved));
+                    assert false;
+                };
+            };
+        },
+    );
+
+    test(
         "getIndex",
         func() {
 

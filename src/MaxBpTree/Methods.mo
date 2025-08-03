@@ -46,11 +46,11 @@ module Methods {
 
         label while_loop loop {
             switch (node) {
-                case (? #branch(n)) {
+                case (?#branch(n)) {
                     node := n.3 [0];
                     depth += 1;
                 };
-                case (? #leaf(_)) {
+                case (?#leaf(_)) {
                     return depth + 1;
                 };
                 case (_) Debug.trap("depth: accessed a null value");
@@ -65,12 +65,12 @@ module Methods {
 
         loop {
             switch (curr) {
-                case (? #branch(node)) {
+                case (?#branch(node)) {
                     let int_index = ArrayMut.binary_search<K, K>(node.2, cmp, key, node.0 [C.COUNT] - 1);
                     let node_index = if (int_index >= 0) Int.abs(int_index) + 1 else Int.abs(int_index + 1);
                     curr := node.3 [node_index];
                 };
-                case (? #leaf(leaf_node)) {
+                case (?#leaf(leaf_node)) {
                     return leaf_node;
                 };
                 case (_) Debug.trap("get_leaf_node: accessed a null value");
@@ -132,14 +132,14 @@ module Methods {
 
         loop {
             switch (curr) {
-                case (? #branch(node)) {
+                case (?#branch(node)) {
                     let int_index = ArrayMut.binary_search<K, K>(node.2, cmp, key, node.0 [C.COUNT] - 1);
                     let node_index = if (int_index >= 0) Int.abs(int_index) + 1 else Int.abs(int_index + 1);
                     update(node, node_index);
 
                     curr := node.3 [node_index];
                 };
-                case (? #leaf(leaf_node)) {
+                case (?#leaf(leaf_node)) {
                     return leaf_node;
                 };
                 case (_) Debug.trap("get_leaf_node: accessed a null value");
@@ -152,10 +152,10 @@ module Methods {
 
         loop {
             switch (node) {
-                case (? #branch(branch)) {
+                case (?#branch(branch)) {
                     node := branch.3 [0];
                 };
-                case (? #leaf(leaf_node)) {
+                case (?#leaf(leaf_node)) {
                     return leaf_node;
                 };
                 case (_) Debug.trap("get_min_leaf_node: accessed a null value");
@@ -168,10 +168,10 @@ module Methods {
 
         loop {
             switch (node) {
-                case (? #branch(branch)) {
+                case (?#branch(branch)) {
                     node := branch.3 [branch.0 [C.COUNT] - 1];
                 };
-                case (? #leaf(leaf_node)) {
+                case (?#leaf(leaf_node)) {
                     return leaf_node;
                 };
                 case (_) Debug.trap("get_max_leaf_node: accessed a null value");
@@ -184,11 +184,11 @@ module Methods {
 
         loop {
             switch (node) {
-                case (? #branch(branch)) {
+                case (?#branch(branch)) {
                     let max_index = branch.0 [C.MAX_INDEX];
                     node := branch.3 [max_index];
                 };
-                case (? #leaf(leaf_node)) {
+                case (?#leaf(leaf_node)) {
                     return leaf_node;
                 };
                 case (_) Debug.trap("get_max_leaf_node: accessed a null value");
@@ -236,14 +236,14 @@ module Methods {
                 let ?search_key = parent.2 [i - 1] else Debug.trap("get_leaf_node_and_index 1: accessed a null value");
 
                 switch (child) {
-                    case (? #branch(node)) {
+                    case (?#branch(node)) {
                         if (cmp(key, search_key) == +1) {
                             return get_node(node, key);
                         };
 
                         rank -= node.0 [C.SUBTREE_SIZE];
                     };
-                    case (? #leaf(node)) {
+                    case (?#leaf(node)) {
                         // subtract before comparison because we want the rank of the first element in the leaf node
                         rank -= node.0 [C.COUNT];
 
@@ -258,10 +258,10 @@ module Methods {
             };
 
             switch (parent.3 [0]) {
-                case (? #branch(node)) {
+                case (?#branch(node)) {
                     return get_node(node, key);
                 };
-                case (? #leaf(node)) {
+                case (?#leaf(node)) {
                     rank -= node.0 [C.COUNT];
                     return node;
                 };
@@ -289,7 +289,7 @@ module Methods {
                 let child = parent.3 [i];
 
                 switch (child) {
-                    case (? #branch(node)) {
+                    case (?#branch(node)) {
                         let subtree = node.0 [C.SUBTREE_SIZE];
 
                         node_index -= subtree;
@@ -299,7 +299,7 @@ module Methods {
                         };
 
                     };
-                    case (? #leaf(node)) {
+                    case (?#leaf(node)) {
                         let subtree = node.0 [C.COUNT];
                         node_index -= subtree;
 
@@ -372,6 +372,19 @@ module Methods {
         null;
     };
 
+    public func get_entry<K, V>(self : MaxBpTree<K, V>, cmp : CmpFn<K>, key : K) : ?(K, V) {
+        let leaf_node = Methods.get_leaf_node<K, V>(self, cmp, key);
+
+        let i = ArrayMut.binary_search<K, (K, V)>(leaf_node.3, Utils.adapt_cmp(cmp), key, leaf_node.0 [C.COUNT]);
+
+        if (i >= 0) {
+            let ?kv = leaf_node.3 [Int.abs(i)] else Debug.trap("1. get: accessed a null value");
+            return ?kv;
+        };
+
+        null;
+    };
+
     public func get_ceiling<K, V>(self : MaxBpTree<K, V>, cmp : CmpFn<K>, key : K) : ?(K, V) {
         let leaf_node = Methods.get_leaf_node<K, V>(self, cmp, key);
 
@@ -433,14 +446,14 @@ module Methods {
 
     public func min<K, V>(self : MaxBpTree<K, V>) : ?(K, V) {
         let leaf_node = Methods.get_min_leaf_node(self) else return null;
-        if (leaf_node.0[C.COUNT] == 0) return null;
+        if (leaf_node.0 [C.COUNT] == 0) return null;
         leaf_node.3 [0];
     };
 
     // Returns the maximum key-value pair in the tree.
     public func max<K, V>(self : MaxBpTree<K, V>) : ?(K, V) {
         let leaf_node = Methods.get_max_leaf_node(self) else return null;
-        if (leaf_node.0[C.COUNT] == 0) return null;
+        if (leaf_node.0 [C.COUNT] == 0) return null;
 
         leaf_node.3 [leaf_node.0 [C.COUNT] - 1];
     };
@@ -662,8 +675,8 @@ module Methods {
             Array.freeze<?Node<Nat, Nat>>(branch.3),
             func(node : ?Node<Nat, Nat>) : ?(Nat, Nat) {
                 switch (node) {
-                    case (? #branch(b)) b.4 [C.MAX];
-                    case (? #leaf(l)) l.4 [C.MAX];
+                    case (?#branch(b)) b.4 [C.MAX];
+                    case (?#leaf(l)) l.4 [C.MAX];
                     case (_) null;
                 };
             },
@@ -681,7 +694,7 @@ module Methods {
                 let ?node = nodes.popFront() else Debug.trap("toNodeKeys: accessed a null value");
 
                 switch (node) {
-                    case (? #branch(node)) {
+                    case (?#branch(node)) {
                         let node_buffer = Buffer.Buffer<?K>(node.2.size());
                         for (key in node.2.vals()) {
                             node_buffer.add(key);
@@ -755,8 +768,8 @@ module Methods {
                                 Array.freeze<?Node<Nat, Nat>>(branch.3),
                                 func(node : ?Node<Nat, Nat>) : ?(Nat, Nat) {
                                     switch (node) {
-                                        case (? #branch(b)) b.4 [C.MAX];
-                                        case (? #leaf(l)) l.4 [C.MAX];
+                                        case (?#branch(b)) b.4 [C.MAX];
+                                        case (?#leaf(l)) l.4 [C.MAX];
                                         case (_) null;
                                     };
                                 },
@@ -766,7 +779,7 @@ module Methods {
                         assert false;
                     };
 
-                    let ? #branch(node) or ? #leaf(node) : ?CommonNodeFields<Nat, Nat> = branch.3 [max_index] else Debug.trap("2. validate_max_path: node is null");
+                    let ?#branch(node) or ?#leaf(node) : ?CommonNodeFields<Nat, Nat> = branch.3 [max_index] else Debug.trap("2. validate_max_path: node is null");
                     let ?node_max = node.4 [C.MAX] else Debug.trap("3. validate_max_path: node_max is null");
 
                     let is_equal = cmp_val(max.1, node_max.1) == 0;

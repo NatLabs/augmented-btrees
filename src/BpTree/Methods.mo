@@ -391,6 +391,18 @@ module Methods {
         null;
     };
 
+    public func get_entry<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, key : K) : ?(K, V) {
+        let leaf_node = get_leaf_node<K, V>(self, cmp, key);
+
+        let i = ArrayMut.binary_search<K, (K, V)>(leaf_node.3, Utils.adapt_cmp(cmp), key, leaf_node.0 [C.COUNT]);
+
+        if (i >= 0) {
+            return leaf_node.3 [Int.abs(i)];
+        };
+
+        null;
+    };
+
     public func get_ceiling<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, key : K) : ?(K, V) {
         let leaf_node = get_leaf_node<K, V>(self, cmp, key);
 

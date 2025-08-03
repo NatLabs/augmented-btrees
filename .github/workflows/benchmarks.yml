@@ -43,7 +43,7 @@ jobs:
 
       - name: Install mops & mocv
         run: |
-          npm --yes -g i ic-mops@1.8.0
+          npm --yes -g i ic-mops
           mops i
           mops toolchain init
 

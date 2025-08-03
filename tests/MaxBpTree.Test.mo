@@ -612,6 +612,32 @@ func bptree_tests(order : Nat, random : Buffer.Buffer<(Nat, Nat)>, sorted_by_key
     let bptree = MaxBpTree.fromEntries(random.vals(), Cmp.Nat, Cmp.Nat, ?order);
 
     test(
+        "get",
+        func() {
+            for ((key, value) in sorted_by_key.vals()) {
+                let retrieved = MaxBpTree.get(bptree, Cmp.Nat, key);
+                if (?value != retrieved) {
+                    Debug.print("mismatch: " # debug_show (?value, retrieved, ?value == retrieved));
+                    assert false;
+                };
+            };
+        },
+    );
+
+    test(
+        "getEntry",
+        func() {
+            for ((key, value) in sorted_by_key.vals()) {
+                let retrieved = MaxBpTree.getEntry(bptree, Cmp.Nat, key);
+                if (?(key, value) != retrieved) {
+                    Debug.print("mismatch: " # debug_show (?(key, value), retrieved, ?(key, value) == retrieved));
+                    assert false;
+                };
+            };
+        },
+    );
+
+    test(
         "getIndex",
         func() {
             for (i in Itertools.range(0, sorted_by_key.size())) {
@@ -705,7 +731,7 @@ func bptree_tests(order : Nat, random : Buffer.Buffer<(Nat, Nat)>, sorted_by_key
     );
 };
 
-for (order in [4, 8].vals()) {
+for (order in [4, 32].vals()) {
     suite(
         "B+Tree tests",
         func() = bptree_tests(order, random, sorted),

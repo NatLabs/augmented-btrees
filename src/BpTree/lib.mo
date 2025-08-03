@@ -149,6 +149,10 @@ module BpTree {
         Methods.get(self, cmp, key);
     };
 
+    public func getEntry<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, key : K) : ?(K, V) {
+        Methods.get_entry(self, cmp, key);
+    };
+
     /// Checks if the given key exists in the tree.
     public func has<K, V>(self : BpTree<K, V>, cmp : CmpFn<K>, key : K) : Bool {
         Option.isSome(get(self, cmp, key));

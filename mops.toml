@@ -7,7 +7,7 @@ license = "MIT"
 keywords = [ "data-structure", "sorted", "map" ]
 
 [dependencies]
-base = "0.14.8"
+base = "0.14.13"
 buffer-deque = "0.1.0"
 itertools = "0.2.2"
 
@@ -19,4 +19,4 @@ stableheapbtreemap = "1.5.0"
 map = "9.0.1"
 
 [toolchain]
-moc = "0.14.8"
+moc = "0.14.13"

@@ -81,6 +81,20 @@ module MaxBpTree {
         Methods.get(self, cmp, key);
     };
 
+    /// Returns the stored key-value pair associated with the given key and the comparison function.
+    ///
+    /// #### Examples
+    /// ```motoko
+    ///     let arr = [('A', 1), ('B', 2), ('C', 3)];
+    ///     let max_bp_tree = MaxBpTree.fromArray<Char, Nat>(arr, Cmp.Char, Cmp.Nat, null);
+    ///
+    ///     assert MaxBpTree.getEntry(max_bp_tree, Cmp.Char, 'A') == ?('A', 1);
+    ///     assert MaxBpTree.getEntry(max_bp_tree, Cmp.Char, 'D') == null;
+    /// ```
+    public func getEntry<K, V>(self : MaxBpTree<K, V>, cmp : CmpFn<K>, key : K) : ?(K, V) {
+        Methods.get_entry(self, cmp, key);
+    };
+
     /// Checks if the given key exists in the tree.
     public func has<K, V>(self : MaxBpTree<K, V>, cmp : CmpFn<K>, key : K) : Bool {
         Option.isSome(get(self, cmp, key));
