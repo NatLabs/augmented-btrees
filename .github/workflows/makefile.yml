@@ -39,8 +39,6 @@ jobs:
           npm --yes -g i ic-mops
           mops i
           mops toolchain init
-          mops toolchain use moc latest
-          mops toolchain use wasmtime 14.0.4
 
           # set moc path for dfx to use
           echo "DFX_MOC_PATH=$(mops toolchain bin moc)" >> $GITHUB_ENV
@@ -49,4 +47,4 @@ jobs:
       #   run: make check
 
       - name: Run Tests
-        run: make test
+        run: mops test
