@@ -1,10 +1,10 @@
 [package]
 name = "augmented-btrees"
-version = "0.7.0"
+version = "0.7.1"
 description = "Contains implementations of BTree variants, most notable the B+Tree"
 repository = "https://github.com/NatLabs/augmented-btrees"
 license = "MIT"
-keywords = [ "data-structure", "sorted", "map" ]
+keywords = ["data-structure", "sorted", "map"]
 
 [dependencies]
 base = "0.14.13"
