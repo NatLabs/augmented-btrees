@@ -255,7 +255,12 @@ module Branch {
             };
         };
 
-       branch.0[C.MAX_INDEX] := Int.abs(branch.0[C.MAX_INDEX] + offset);
+       // Only update MAX_INDEX if the child it points to is within the shifted range.
+       // If MAX_INDEX points to a child outside [start, end), the shift doesn't affect it.
+       let max_idx = branch.0[C.MAX_INDEX];
+       if (max_idx >= start and max_idx < end) {
+           branch.0[C.MAX_INDEX] := Int.abs(max_idx + offset);
+       };
 
     };
 
@@ -302,8 +307,6 @@ module Branch {
         self : Branch<K, V>,
         index : Nat,
         count : Nat,
-        cmp_key: CmpFn<K>,
-        cmp_val : CmpFn<V>,
     ) : ?Node<K, V> {
         let removed = self.3[index];
         
@@ -319,19 +322,10 @@ module Branch {
                 };
             };
 
-            // update with the prev index as it will be updated after the loop
-            Common.update_branch_fields(self, cmp_key, cmp_val, i + 1, child);
-
             i += 1;
         };
 
-        // update the max field index
-        if (self.0[C.MAX_INDEX] > index and self.0[C.MAX_INDEX] > 0) {
-            self.0[C.MAX_INDEX] -= 1;
-        };
-
         self.3[count - 1] := null;
-        // self.0[C.COUNT] -=1;
 
         removed;
     };
@@ -503,14 +497,14 @@ module Branch {
 
         // update parent max
         if (is_adj_node_equal_to_parent_max) {
-            switch(parent.4[C.MAX], adj_node.4[C.MAX]) {
-                case (?parent_max, ?adj_max) {
-                    if (cmp_val(parent_max.1, adj_max.1) != 0) {
-                        parent.4[C.MAX] := ?(parent_max.0, parent_max.1);
-                        parent.0[C.MAX_INDEX] := branch_node.0[C.INDEX];
-                    };
-                };
-                case (_, _) {};
+            // The adjacent node's max may have changed after redistribution.
+            // Full rescan: check all parent's children to find the true MAX and set correct MAX_INDEX.
+            parent.4[C.MAX] := null;
+            var j = 0;
+            while (j < parent.0[C.COUNT]) {
+                let ?child = parent.3[j] else Debug.trap("Branch.redistribute_keys: parent child is null");
+                Common.update_branch_fields(parent, cmp_key, cmp_val, j, child);
+                j += 1;
             };
         };
     };
@@ -544,16 +538,20 @@ module Branch {
         left.0[C.COUNT] += right.0[C.COUNT];
         left.0[C.SUBTREE_SIZE] += right_subtree_size;
 
-        // update the parent fields with the updated left node
-        if (parent.0[C.MAX_INDEX] == right.0[C.INDEX]) {
-            parent.0[C.MAX_INDEX] := left.0[C.INDEX];
-        };
-
-
         // update parent keys
         ignore ArrayMut.remove(parent.2, right.0[C.INDEX] - 1 : Nat, parent.0[C.COUNT] - 1 : Nat);
-        ignore Branch.remove(parent, right.0[C.INDEX], parent.0[C.COUNT], cmp_key, cmp_val);
+        ignore Branch.remove(parent, right.0[C.INDEX], parent.0[C.COUNT]);
         parent.0[C.COUNT] -= 1;
+
+        // After Branch.remove shifts children, MAX_INDEX may point to the wrong child.
+        // Explicitly rescan all remaining parent children to find the true MAX and correct MAX_INDEX.
+        parent.4[C.MAX] := null;
+        var j = 0;
+        while (j < parent.0[C.COUNT]) {
+            let ?child = parent.3[j] else Debug.trap("Branch.merge: parent child is null during rescan");
+            Common.update_branch_fields(parent, cmp_key, cmp_val, j, child);
+            j += 1;
+        };
 
     };
 

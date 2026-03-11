@@ -204,14 +204,17 @@ module MaxBpTree {
 
             if (cmp_key(branch_max.0, prev.0) == 0 and cmp_val(val, branch_max.1) == -1) {
                 branch.4 [C.MAX] := ?child_max;
+                // Pre-seed MAX_INDEX to child_index before rescanning siblings.
+                // This prevents using the stale MAX_INDEX during the rescan loop.
+                // update_branch_fields may override this if a sibling has a larger max.
+                branch.0 [C.MAX_INDEX] := child_index;
 
                 var i = 0;
                 while (i < branch.0 [C.COUNT]) {
                     let ?child = branch.3 [i] else Debug.trap("replace(update_path_upstream): accessed a null value");
 
-                    if (i == max_index) {
-                        let #branch(node) or #leaf(node) : CommonNodeFields<K, V> = child;
-                        assert i == node.0 [C.INDEX];
+                    if (i == child_index) {
+                        // Skip child_index; we already set its max above.
                     } else {
                         Common.update_branch_fields(branch, cmp_key, cmp_val, i, child);
                     };
@@ -766,10 +769,8 @@ module MaxBpTree {
     };
 
     /// Replaces the value of the entry with the max value in the tree.
-    /// It returns the old value associated with the key.
+    /// It returns the old max entry (key, value).
     /// If the tree is empty, it returns null.
-    /// Note that if there are duplicates of the max value, the key of the entry is not
-    /// guaranteed to match the result from `maxValue`.
     public func replaceMaxValue<K, V>(self : MaxBpTree<K, V>, cmp_key : CmpFn<K>, cmp_val : CmpFn<V>, new_val : V) : ?(K, V) {
         if (self.size == 0) return null;
 

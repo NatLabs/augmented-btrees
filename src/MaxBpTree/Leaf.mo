@@ -183,8 +183,13 @@ module Leaf {
         offset : Int,
     ) {
         ArrayMut.shift_by(leaf.3, start, end, offset);
-        
-        leaf.0[C.MAX_INDEX] := Int.abs(leaf.0[C.MAX_INDEX] + offset);
+
+        // Only update MAX_INDEX if the entry it points to is within the shifted range.
+        // If MAX_INDEX points outside [start, end), the shift doesn't affect it.
+        let max_idx = leaf.0[C.MAX_INDEX];
+        if (max_idx >= start and max_idx < end) {
+            leaf.0[C.MAX_INDEX] := Int.abs(max_idx + offset);
+        };
     };
 
     public func put<K, V>(leaf : Leaf<K, V>, index : Nat, kv : (K, V)) {
@@ -377,14 +382,14 @@ module Leaf {
 
         // update parent max
         if (is_adj_node_equal_to_parent_max) {
-            switch(parent.4[C.MAX], adj_node.4[C.MAX]){
-                case (?parent_max, ?adj_max) {
-                    if (cmp_val(parent_max.1, adj_max.1) != 0) {
-                        parent.4[C.MAX] := ?(parent_max.0, parent_max.1);
-                        parent.0[C.MAX_INDEX] := leaf_node.0[C.INDEX];
-                    };
-                };
-                case (_, _) {};
+            // The adjacent node's max may have changed after redistribution.
+            // Full rescan: check all parent's children to find the true MAX and set correct MAX_INDEX.
+            parent.4[C.MAX] := null;
+            var j = 0;
+            while (j < parent.0[C.COUNT]) {
+                let ?child = parent.3[j] else Debug.trap("Leaf.redistribute_keys: parent child is null");
+                Common.update_branch_fields(parent, cmp_key, cmp_val, j, child);
+                j += 1;
             };
         };
 
@@ -422,13 +427,6 @@ module Leaf {
 
         let ?parent = left.1[C.PARENT] else Debug.trap("Leaf.merge: parent is null");
 
-        // if the max value was in the right node,
-        // after the merge fn it will be in the left node
-        // so we need to update the parent key with the new max value in the left node
-        if (parent.0[C.MAX_INDEX] == right.0[C.INDEX]) {
-            parent.0[C.MAX_INDEX] := left.0[C.INDEX];
-        };
-
         // update parent keys
         ignore ArrayMut.remove(parent.2, right.0[C.INDEX] - 1 : Nat, parent.0[C.COUNT] - 1 : Nat);
 
@@ -446,18 +444,21 @@ module Leaf {
                     };
                 };
 
-                // update max with prev index
-                Common.update_branch_fields(parent, cmp_key, cmp_val, i + 1, child);
-
                 i += 1;
             };
 
             parent.3[parent.0[C.COUNT] - 1] := null;
             parent.0[C.COUNT] -= 1;
 
-            // update the max field index
-            if (parent.0[C.MAX_INDEX] > right.0[C.INDEX]) {
-                parent.0[C.MAX_INDEX] -= 1;
+            // After removing right child and shifting remaining children left,
+            // we must rescan all children to find the true MAX and correct MAX_INDEX.
+            // The old MAX_INDEX is now stale (points to wrong child after shift).
+            parent.4[C.MAX] := null;
+            var j = 0;
+            while (j < parent.0[C.COUNT]) {
+                let ?child = parent.3[j] else Debug.trap("Leaf.merge: parent child is null");
+                Common.update_branch_fields(parent, cmp_key, cmp_val, j, child);
+                j += 1;
             };
         };
     };

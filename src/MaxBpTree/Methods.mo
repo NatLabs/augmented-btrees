@@ -352,8 +352,8 @@ module Methods {
     //         case (?parent) {
     //             ignore ArrayMut.remove(parent.2, right.0[C.INDEX] - 1 : Nat, parent.0[C.COUNT] - 1 : Nat);
     //             ignore Branch.remove(parent, right.0[C.INDEX] : Nat, parent.0[C.COUNT]);
-
     //             parent.0[C.COUNT] -= 1;
+    //             // Note: Would need explicit MAX/MAX_INDEX rescan here after remove
     //         };
     //     };
 
@@ -848,6 +848,128 @@ module Methods {
         };
 
         subtree_size(max_bptree.root) == max_bptree.size;
+    };
+
+    /// Validates that every branch's MAX is actually the maximum over ALL children's maxes
+    public func validate_max_values(max_bptree : MaxBpTree<Nat, Nat>, cmp_val : CmpFn<Nat>) : Bool {
+        if (max_bptree.size == 0) return true;
+
+        func validate(node : Node<Nat, Nat>, depth : Nat) : Bool {
+            switch (node) {
+                case (#branch(branch)) {
+                    let ?stored_max = branch.4 [C.MAX] else {
+                        Debug.print("validate_max_values: max is null at depth " # debug_show depth);
+                        return false;
+                    };
+                    let max_index = branch.0 [C.MAX_INDEX];
+
+                    // Find the TRUE maximum over all children
+                    var true_max : ?(Nat, Nat) = null;
+                    var true_max_index : Nat = 0;
+
+                    for (i in Iter.range(0, branch.0 [C.COUNT] - 1)) {
+                        let ?child = branch.3 [i] else Debug.trap("validate_max_values: child is null");
+                        let child_max = switch (child) {
+                            case (#branch(b)) b.4 [C.MAX];
+                            case (#leaf(l)) l.4 [C.MAX];
+                        };
+                        switch (child_max, true_max) {
+                            case (?cm, null) {
+                                true_max := ?cm;
+                                true_max_index := i;
+                            };
+                            case (?cm, ?tm) {
+                                if (cmp_val(cm.1, tm.1) == +1 or (cmp_val(cm.1, tm.1) == 0 and cm.0 < tm.0)) {
+                                    true_max := ?cm;
+                                    true_max_index := i;
+                                };
+                            };
+                            case (_, _) {};
+                        };
+                    };
+
+                    let ?tm = true_max else {
+                        Debug.print("validate_max_values: no children have max at depth " # debug_show depth);
+                        return false;
+                    };
+
+                    if (cmp_val(stored_max.1, tm.1) != 0) {
+                        Debug.print("VALIDATE_MAX_VALUES FAIL at depth " # debug_show depth);
+                        Debug.print("  stored_max=" # debug_show stored_max # " at MAX_INDEX=" # debug_show max_index);
+                        Debug.print("  true_max=" # debug_show tm # " at child " # debug_show true_max_index);
+                        Debug.print("  branch count=" # debug_show (branch.0 [C.COUNT]));
+                        return false;
+                    };
+
+                    // Check that MAX_INDEX points to a child that actually has this max
+                    let ?child_at_idx = branch.3 [max_index] else {
+                        Debug.print("VALIDATE_MAX_VALUES: MAX_INDEX=" # debug_show max_index # " has null child");
+                        return false;
+                    };
+                    let idx_max = switch (child_at_idx) {
+                        case (#branch(b)) b.4 [C.MAX];
+                        case (#leaf(l)) l.4 [C.MAX];
+                    };
+                    switch (idx_max) {
+                        case (?im) {
+                            if (cmp_val(im.1, stored_max.1) != 0) {
+                                Debug.print("VALIDATE_MAX_VALUES: MAX_INDEX mismatch at depth " # debug_show depth);
+                                Debug.print("  MAX_INDEX=" # debug_show max_index # " child max=" # debug_show im);
+                                Debug.print("  stored_max=" # debug_show stored_max);
+                                return false;
+                            };
+                        };
+                        case (null) {
+                            Debug.print("VALIDATE_MAX_VALUES: child at MAX_INDEX has null max");
+                            return false;
+                        };
+                    };
+
+                    // Recursively validate children
+                    var ok = true;
+                    for (i in Iter.range(0, branch.0 [C.COUNT] - 1)) {
+                        let ?child = branch.3 [i] else Debug.trap("validate_max_values: child null");
+                        if (not validate(child, depth + 1)) ok := false;
+                    };
+                    ok;
+                };
+                case (#leaf(leaf)) {
+                    let ?stored_max = leaf.4 [C.MAX] else {
+                        Debug.print("validate_max_values: leaf max is null");
+                        return false;
+                    };
+                    let max_index = leaf.0 [C.MAX_INDEX];
+
+                    // Verify max_index points to the correct entry
+                    let ?entry = leaf.3 [max_index] else {
+                        Debug.print("validate_max_values: leaf entry at MAX_INDEX is null");
+                        return false;
+                    };
+                    if (cmp_val(entry.1, stored_max.1) != 0) {
+                        Debug.print("validate_max_values: leaf MAX mismatch");
+                        Debug.print("  stored_max=" # debug_show stored_max);
+                        Debug.print("  entry at MAX_INDEX=" # debug_show entry);
+                        return false;
+                    };
+
+                    // Check all entries
+                    var i = 0;
+                    while (i < leaf.0 [C.COUNT]) {
+                        let ?kv = leaf.3 [i] else Debug.trap("validate_max_values: leaf entry null");
+                        if (cmp_val(kv.1, stored_max.1) == +1) {
+                            Debug.print("validate_max_values: leaf has entry larger than MAX");
+                            Debug.print("  entry[" # debug_show i # "]=" # debug_show kv);
+                            Debug.print("  stored_max=" # debug_show stored_max);
+                            return false;
+                        };
+                        i += 1;
+                    };
+                    true;
+                };
+            };
+        };
+
+        validate(max_bptree.root, 0);
     };
 
 };
