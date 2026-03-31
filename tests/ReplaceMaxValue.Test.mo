@@ -1,8 +1,8 @@
-import Debug "mo:base/Debug";
-import Nat "mo:base/Nat";
-import Iter "mo:base/Iter";
-import Buffer "mo:base/Buffer";
-import Int "mo:base/Int";
+import Debug "mo:base@0.14.13/Debug";
+import Nat "mo:base@0.14.13/Nat";
+import Iter "mo:base@0.14.13/Iter";
+import Buffer "mo:base@0.14.13/Buffer";
+import Int "mo:base@0.14.13/Int";
 
 import { test; suite } "mo:test";
 import Fuzz "mo:fuzz";

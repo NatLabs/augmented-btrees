@@ -1,15 +1,15 @@
-import Array "mo:base/Array";
-import Debug "mo:base/Debug";
-import Order "mo:base/Order";
-import Nat "mo:base/Nat";
-import Nat32 "mo:base/Nat32";
-import Iter "mo:base/Iter";
-import Buffer "mo:base/Buffer";
-import Option "mo:base/Option";
+import Array "mo:base@0.14.13/Array";
+import Debug "mo:base@0.14.13/Debug";
+import Order "mo:base@0.14.13/Order";
+import Nat "mo:base@0.14.13/Nat";
+import Nat32 "mo:base@0.14.13/Nat32";
+import Iter "mo:base@0.14.13/Iter";
+import Buffer "mo:base@0.14.13/Buffer";
+import Option "mo:base@0.14.13/Option";
 
 import { test; suite } "mo:test";
 import Fuzz "mo:fuzz";
-import Itertools "mo:itertools/Iter";
+import Itertools "mo:itertools@0.2.2/Iter";
 
 import { BpTree; Cmp } "../src";
 import Utils "../src/internal/Utils";

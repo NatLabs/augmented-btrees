@@ -1,9 +1,9 @@
-import Iter "mo:base/Iter";
-import Debug "mo:base/Debug";
-import Array "mo:base/Array";
-import Int "mo:base/Int";
-import Nat "mo:base/Nat";
-import Order "mo:base/Order";
+import Iter "mo:base@0.14.13/Iter";
+import Debug "mo:base@0.14.13/Debug";
+import Array "mo:base@0.14.13/Array";
+import Int "mo:base@0.14.13/Int";
+import Nat "mo:base@0.14.13/Nat";
+import Order "mo:base@0.14.13/Order";
 
 import T "Types";
 import InternalTypes "../internal/Types";

@@ -1,9 +1,9 @@
-import Array "mo:base/Array";
-import Debug "mo:base/Debug";
-import Nat "mo:base/Nat";
-import Iter "mo:base/Iter";
+import Array "mo:base@0.14.13/Array";
+import Debug "mo:base@0.14.13/Debug";
+import Nat "mo:base@0.14.13/Nat";
+import Iter "mo:base@0.14.13/Iter";
 import { test; suite } "mo:test";
-import Itertools "mo:itertools/Iter";
+import Itertools "mo:itertools@0.2.2/Iter";
 
 import { BpTree; Cmp } "../src";
 import ArrayMut "../src/internal/ArrayMut";

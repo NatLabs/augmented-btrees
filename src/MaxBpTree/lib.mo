@@ -1,13 +1,13 @@
-import Array "mo:base/Array";
-import Buffer "mo:base/Buffer";
-import Debug "mo:base/Debug";
-import Order "mo:base/Order";
-import Option "mo:base/Option";
-import Int "mo:base/Int";
-import Iter "mo:base/Iter";
-import Nat "mo:base/Nat";
+import Array "mo:base@0.14.13/Array";
+import Buffer "mo:base@0.14.13/Buffer";
+import Debug "mo:base@0.14.13/Debug";
+import Order "mo:base@0.14.13/Order";
+import Option "mo:base@0.14.13/Option";
+import Int "mo:base@0.14.13/Int";
+import Iter "mo:base@0.14.13/Iter";
+import Nat "mo:base@0.14.13/Nat";
 
-import BufferDeque "mo:buffer-deque/BufferDeque";
+import BufferDeque "mo:buffer-deque@0.1.0/BufferDeque";
 import T "Types";
 import InternalTypes "../internal/Types";
 import Methods "Methods";
@@ -16,7 +16,7 @@ import ArrayMut "../internal/ArrayMut";
 
 import Leaf "Leaf";
 import Branch "Branch";
-import RevIter "mo:itertools/RevIter";
+import RevIter "mo:itertools@0.2.2/RevIter";
 import Common "Common";
 import Utils "../internal/Utils";
 

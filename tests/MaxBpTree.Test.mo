@@ -1,20 +1,20 @@
-import Array "mo:base/Array";
-import Debug "mo:base/Debug";
-import Order "mo:base/Order";
-import Nat "mo:base/Nat";
-import Nat32 "mo:base/Nat32";
-import Iter "mo:base/Iter";
-import Buffer "mo:base/Buffer";
-import TrieSet "mo:base/TrieSet";
-import TrieMap "mo:base/TrieMap";
-import Heap "mo:base/Heap";
-import Nat64 "mo:base/Nat64";
-import Option "mo:base/Option";
+import Array "mo:base@0.14.13/Array";
+import Debug "mo:base@0.14.13/Debug";
+import Order "mo:base@0.14.13/Order";
+import Nat "mo:base@0.14.13/Nat";
+import Nat32 "mo:base@0.14.13/Nat32";
+import Iter "mo:base@0.14.13/Iter";
+import Buffer "mo:base@0.14.13/Buffer";
+import TrieSet "mo:base@0.14.13/TrieSet";
+import TrieMap "mo:base@0.14.13/TrieMap";
+import Heap "mo:base@0.14.13/Heap";
+import Nat64 "mo:base@0.14.13/Nat64";
+import Option "mo:base@0.14.13/Option";
 
 import { test; suite } "mo:test";
 import Fuzz "mo:fuzz";
-import Itertools "mo:itertools/Iter";
-import RevIter "mo:itertools/RevIter";
+import Itertools "mo:itertools@0.2.2/Iter";
+import RevIter "mo:itertools@0.2.2/RevIter";
 import BTree "mo:stableheapbtreemap/BTree";
 import Set "mo:map/Set";
 

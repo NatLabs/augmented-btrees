@@ -1,7 +1,7 @@
-import Array "mo:base/Array";
-import Debug "mo:base/Debug";
-import Int "mo:base/Int";
-import Buffer "mo:base/Buffer";
+import Array "mo:base@0.14.13/Array";
+import Debug "mo:base@0.14.13/Debug";
+import Int "mo:base@0.14.13/Int";
+import Buffer "mo:base@0.14.13/Buffer";
 
 import T "Types";
 

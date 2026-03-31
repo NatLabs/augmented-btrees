@@ -1,6 +1,6 @@
-import Array "mo:base/Array";
-import Debug "mo:base/Debug";
-import Order "mo:base/Order";
+import Array "mo:base@0.14.13/Array";
+import Debug "mo:base@0.14.13/Debug";
+import Order "mo:base@0.14.13/Order";
 import T "Types";
 
 module {

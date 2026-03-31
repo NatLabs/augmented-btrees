@@ -1,5 +1,5 @@
-import Order "mo:base/Order";
-import Result "mo:base/Result";
+import Order "mo:base@0.14.13/Order";
+import Result "mo:base@0.14.13/Result";
 
 module {
     type Order = Order.Order;

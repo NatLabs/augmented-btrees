@@ -4,14 +4,14 @@ import MaxHeap "../src/internal/MaxHeap";
 import Cmp "../src/Cmp";
 import Fuzz "mo:fuzz";
 
-import Iter "mo:base/Iter";
-import Nat "mo:base/Nat";
-import Array "mo:base/Array";
-import Debug "mo:base/Debug";
-import Int "mo:base/Int";
-import Buffer "mo:base/Buffer";
+import Iter "mo:base@0.14.13/Iter";
+import Nat "mo:base@0.14.13/Nat";
+import Array "mo:base@0.14.13/Array";
+import Debug "mo:base@0.14.13/Debug";
+import Int "mo:base@0.14.13/Int";
+import Buffer "mo:base@0.14.13/Buffer";
 
-import Itertools "mo:itertools/Iter";
+import Itertools "mo:itertools@0.2.2/Iter";
 
 let fuzz = Fuzz.fromSeed(0x7f3a3e7e);
 

@@ -1,15 +1,15 @@
 import Prim "mo:prim";
 
-import Option "mo:base/Option";
-import Array "mo:base/Array";
-import Debug "mo:base/Debug";
-import Order "mo:base/Order";
-import Int "mo:base/Int";
-import Iter "mo:base/Iter";
-import Nat "mo:base/Nat";
-import Result "mo:base/Result";
-import Buffer "mo:base/Buffer";
-import BufferDeque "mo:buffer-deque/BufferDeque";
+import Option "mo:base@0.14.13/Option";
+import Array "mo:base@0.14.13/Array";
+import Debug "mo:base@0.14.13/Debug";
+import Order "mo:base@0.14.13/Order";
+import Int "mo:base@0.14.13/Int";
+import Iter "mo:base@0.14.13/Iter";
+import Nat "mo:base@0.14.13/Nat";
+import Result "mo:base@0.14.13/Result";
+import Buffer "mo:base@0.14.13/Buffer";
+import BufferDeque "mo:buffer-deque@0.1.0/BufferDeque";
 
 import LeafModule "Leaf";
 import BranchModule "Branch";
@@ -19,7 +19,7 @@ import Utils "../internal/Utils";
 import T "Types";
 import Methods "Methods";
 import InternalTypes "../internal/Types";
-import RevIter "mo:itertools/RevIter";
+import RevIter "mo:itertools@0.2.2/RevIter";
 
 module BpTree {
     type Iter<A> = Iter.Iter<A>;

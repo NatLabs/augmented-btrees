@@ -1,6 +1,6 @@
-import Array "mo:base/Array";
-import Option "mo:base/Option";
-import Debug "mo:base/Debug";
+import Array "mo:base@0.14.13/Array";
+import Option "mo:base@0.14.13/Option";
+import Debug "mo:base@0.14.13/Debug";
 
 import BpTreeLeaf "../BpTree/Leaf";
 import T "Types";

@@ -1,5 +1,5 @@
-import Array "mo:base/Array";
-import Debug "mo:base/Debug";
+import Array "mo:base@0.14.13/Array";
+import Debug "mo:base@0.14.13/Debug";
 
 import InternalTypes "Types";
 import ArrayMut "ArrayMut";

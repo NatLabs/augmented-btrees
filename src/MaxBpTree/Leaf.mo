@@ -1,8 +1,8 @@
-import Array "mo:base/Array";
-import Debug "mo:base/Debug";
-import Iter "mo:base/Iter";
-import Option "mo:base/Option";
-import Int "mo:base/Int";
+import Array "mo:base@0.14.13/Array";
+import Debug "mo:base@0.14.13/Debug";
+import Iter "mo:base@0.14.13/Iter";
+import Option "mo:base@0.14.13/Option";
+import Int "mo:base@0.14.13/Int";
 
 import BpTreeLeaf "../BpTree/Leaf";
 import T "Types";

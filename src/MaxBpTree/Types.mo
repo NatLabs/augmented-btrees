@@ -1,4 +1,4 @@
-import Order "mo:base/Order";
+import Order "mo:base@0.14.13/Order";
 import InternalTypes "../internal/Types";
 import MaxHeap "../internal/MaxHeap";
 

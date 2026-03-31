@@ -1,10 +1,10 @@
-import Array "mo:base/Array";
-import Iter "mo:base/Iter";
-import Debug "mo:base/Debug";
-import Prelude "mo:base/Prelude";
-import RbTree "mo:base/RBTree";
-import Nat "mo:base/Nat";
-import Buffer "mo:base/Buffer";
+import Array "mo:base@0.14.13/Array";
+import Iter "mo:base@0.14.13/Iter";
+import Debug "mo:base@0.14.13/Debug";
+import Prelude "mo:base@0.14.13/Prelude";
+import RbTree "mo:base@0.14.13/RBTree";
+import Nat "mo:base@0.14.13/Nat";
+import Buffer "mo:base@0.14.13/Buffer";
 
 import Bench "mo:bench";
 import Fuzz "mo:fuzz";
