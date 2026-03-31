@@ -4,41 +4,41 @@
 
 <details>
 
-<summary>bench/BpTree.bench.mo $({\color{red}+4.93\%})$</summary>
+<summary>bench/BpTree.bench.mo $({\color{gray}0\%})$</summary>
 
 ### Comparing B+Tree and Max B+Tree
 
 _Benchmarking the performance with 10k entries_
 
 
-Instructions: ${\color{red}+1.28\\%}$
-Heap: ${\color{red}+3.65\\%}$
+Instructions: ${\color{gray}0\\%}$
+Heap: ${\color{gray}0\\%}$
 Stable Memory: ${\color{gray}0\\%}$
 Garbage Collection: ${\color{gray}0\\%}$
 
 
 **Instructions**
 
-|                |                             B+Tree |                            Max B+Tree |
-| :------------- | ---------------------------------: | ------------------------------------: |
-| getFromIndex() |  59_607_817 $({\color{gray}0\\%})$ |     64_364_142 $({\color{gray}0\\%})$ |
-| getIndex()     | 151_145_134 $({\color{gray}0\\%})$ |    151_510_359 $({\color{gray}0\\%})$ |
-| getFloor()     |  75_126_652 $({\color{gray}0\\%})$ |     75_127_828 $({\color{gray}0\\%})$ |
-| getCeiling()   |  75_127_177 $({\color{gray}0\\%})$ |     75_128_445 $({\color{gray}0\\%})$ |
-| removeMin()    | 132_390_029 $({\color{gray}0\\%})$ | 108_231_639 $({\color{red}+1.59\\%})$ |
-| removeMax()    | 104_330_921 $({\color{gray}0\\%})$ | 68_547_212 $({\color{red}+13.76\\%})$ |
+|                |                             B+Tree |                         Max B+Tree |
+| :------------- | ---------------------------------: | ---------------------------------: |
+| getFromIndex() |  59_607_817 $({\color{gray}0\\%})$ |  64_364_142 $({\color{gray}0\\%})$ |
+| getIndex()     | 151_145_134 $({\color{gray}0\\%})$ | 151_510_359 $({\color{gray}0\\%})$ |
+| getFloor()     |  75_126_652 $({\color{gray}0\\%})$ |  75_127_828 $({\color{gray}0\\%})$ |
+| getCeiling()   |  75_127_177 $({\color{gray}0\\%})$ |  75_128_445 $({\color{gray}0\\%})$ |
+| removeMin()    | 132_390_029 $({\color{gray}0\\%})$ | 108_231_639 $({\color{gray}0\\%})$ |
+| removeMax()    | 104_330_921 $({\color{gray}0\\%})$ |  68_547_212 $({\color{gray}0\\%})$ |
 
 
 **Heap**
 
-|                |                            B+Tree |                            Max B+Tree |
-| :------------- | --------------------------------: | ------------------------------------: |
-| getFromIndex() | 322.33 KiB $({\color{gray}0\\%})$ |     322.33 KiB $({\color{gray}0\\%})$ |
-| getIndex()     | 584.76 KiB $({\color{gray}0\\%})$ |     584.84 KiB $({\color{gray}0\\%})$ |
-| getFloor()     | 213.27 KiB $({\color{gray}0\\%})$ |     213.27 KiB $({\color{gray}0\\%})$ |
-| getCeiling()   | 213.27 KiB $({\color{gray}0\\%})$ |     213.27 KiB $({\color{gray}0\\%})$ |
-| removeMin()    | 212.86 KiB $({\color{gray}0\\%})$ |  504.11 KiB $({\color{red}+5.44\\%})$ |
-| removeMax()    | 206.89 KiB $({\color{gray}0\\%})$ | 728.81 KiB $({\color{red}+38.41\\%})$ |
+|                |                            B+Tree |                        Max B+Tree |
+| :------------- | --------------------------------: | --------------------------------: |
+| getFromIndex() | 322.33 KiB $({\color{gray}0\\%})$ | 322.33 KiB $({\color{gray}0\\%})$ |
+| getIndex()     | 584.76 KiB $({\color{gray}0\\%})$ | 584.84 KiB $({\color{gray}0\\%})$ |
+| getFloor()     | 213.27 KiB $({\color{gray}0\\%})$ | 213.27 KiB $({\color{gray}0\\%})$ |
+| getCeiling()   | 213.27 KiB $({\color{gray}0\\%})$ | 213.27 KiB $({\color{gray}0\\%})$ |
+| removeMin()    | 212.86 KiB $({\color{gray}0\\%})$ | 504.11 KiB $({\color{gray}0\\%})$ |
+| removeMax()    | 206.89 KiB $({\color{gray}0\\%})$ | 728.81 KiB $({\color{gray}0\\%})$ |
 
 
 **Garbage Collection**
@@ -58,56 +58,56 @@ Saving results to .bench/BpTree.bench.json
 
 <details>
 
-<summary>bench/SortedMap.bench.mo $({\color{red}+0.47\%})$</summary>
+<summary>bench/SortedMap.bench.mo $({\color{gray}0\%})$</summary>
 
 ### Comparing RBTree, BTree and B+Tree (BpTree)
 
 _Benchmarking the performance with 10k entries_
 
 
-Instructions: ${\color{red}+0.11\\%}$
-Heap: ${\color{red}+0.37\\%}$
+Instructions: ${\color{gray}0\\%}$
+Heap: ${\color{gray}0\\%}$
 Stable Memory: ${\color{gray}0\\%}$
-Garbage Collection: ${\color{green}-0.00\\%}$
+Garbage Collection: ${\color{gray}0\\%}$
 
 
 **Instructions**
 
-|                       |                             RBTree |                                  BTree |                                B+Tree |                            Max B+Tree |
-| :-------------------- | ---------------------------------: | -------------------------------------: | ------------------------------------: | ------------------------------------: |
-| insert()              | 123_966_513 $({\color{gray}0\\%})$ |     108_895_034 $({\color{gray}0\\%})$ |    106_596_885 $({\color{gray}0\\%})$ |    134_608_483 $({\color{gray}0\\%})$ |
-| replace() higher vals | 117_971_104 $({\color{gray}0\\%})$ |      81_599_825 $({\color{gray}0\\%})$ |     85_099_290 $({\color{gray}0\\%})$ |    115_920_822 $({\color{gray}0\\%})$ |
-| replace() lower vals  | 117_821_865 $({\color{gray}0\\%})$ |      81_600_623 $({\color{gray}0\\%})$ |     85_100_111 $({\color{gray}0\\%})$ | 167_929_405 $({\color{red}+0.00\\%})$ |
-| get()                 |  38_612_988 $({\color{gray}0\\%})$ |      73_722_692 $({\color{gray}0\\%})$ |     76_440_091 $({\color{gray}0\\%})$ |     76_441_684 $({\color{gray}0\\%})$ |
-| entries()             |  22_845_560 $({\color{gray}0\\%})$ |      11_986_538 $({\color{gray}0\\%})$ |      3_869_650 $({\color{gray}0\\%})$ |      3_871_335 $({\color{gray}0\\%})$ |
-| scan()                |       4_518 $({\color{gray}0\\%})$ | 24_148_286 $({\color{green}-0.00\\%})$ |      5_601_084 $({\color{gray}0\\%})$ |      5_585_611 $({\color{gray}0\\%})$ |
-| remove()              | 166_045_804 $({\color{gray}0\\%})$ |     125_125_677 $({\color{gray}0\\%})$ | 113_779_782 $({\color{red}+0.00\\%})$ | 164_544_433 $({\color{red}+2.96\\%})$ |
+|                       |                             RBTree |                              BTree |                             B+Tree |                         Max B+Tree |
+| :-------------------- | ---------------------------------: | ---------------------------------: | ---------------------------------: | ---------------------------------: |
+| insert()              | 123_966_513 $({\color{gray}0\\%})$ | 108_895_034 $({\color{gray}0\\%})$ | 106_596_885 $({\color{gray}0\\%})$ | 134_608_483 $({\color{gray}0\\%})$ |
+| replace() higher vals | 117_971_104 $({\color{gray}0\\%})$ |  81_599_825 $({\color{gray}0\\%})$ |  85_099_290 $({\color{gray}0\\%})$ | 115_920_822 $({\color{gray}0\\%})$ |
+| replace() lower vals  | 117_821_865 $({\color{gray}0\\%})$ |  81_600_623 $({\color{gray}0\\%})$ |  85_100_111 $({\color{gray}0\\%})$ | 167_929_405 $({\color{gray}0\\%})$ |
+| get()                 |  38_612_988 $({\color{gray}0\\%})$ |  73_722_692 $({\color{gray}0\\%})$ |  76_440_091 $({\color{gray}0\\%})$ |  76_441_684 $({\color{gray}0\\%})$ |
+| entries()             |  22_845_560 $({\color{gray}0\\%})$ |  11_986_538 $({\color{gray}0\\%})$ |   3_869_650 $({\color{gray}0\\%})$ |   3_871_335 $({\color{gray}0\\%})$ |
+| scan()                |       4_518 $({\color{gray}0\\%})$ |  24_148_286 $({\color{gray}0\\%})$ |   5_601_084 $({\color{gray}0\\%})$ |   5_585_611 $({\color{gray}0\\%})$ |
+| remove()              | 166_045_804 $({\color{gray}0\\%})$ | 125_125_677 $({\color{gray}0\\%})$ | 113_779_782 $({\color{gray}0\\%})$ | 164_544_433 $({\color{gray}0\\%})$ |
 
 
 **Heap**
 
-|                       |                                 RBTree |                             BTree |                            B+Tree |                             Max B+Tree |
-| :-------------------- | -------------------------------------: | --------------------------------: | --------------------------------: | -------------------------------------: |
-| insert()              |        8.65 MiB $({\color{gray}0\\%})$ |   1.17 MiB $({\color{gray}0\\%})$ | 723.52 KiB $({\color{gray}0\\%})$ | -25.56 MiB $({\color{green}-0.00\\%})$ |
-| replace() higher vals |        7.81 MiB $({\color{gray}0\\%})$ |   1.11 MiB $({\color{gray}0\\%})$ |  603.9 KiB $({\color{gray}0\\%})$ |      767.38 KiB $({\color{gray}0\\%})$ |
-| replace() lower vals  |        7.81 MiB $({\color{gray}0\\%})$ |   1.11 MiB $({\color{gray}0\\%})$ |  603.9 KiB $({\color{gray}0\\%})$ |        3.01 MiB $({\color{gray}0\\%})$ |
-| get()                 |       15.11 KiB $({\color{gray}0\\%})$ | 476.85 KiB $({\color{gray}0\\%})$ | 213.27 KiB $({\color{gray}0\\%})$ |      213.27 KiB $({\color{gray}0\\%})$ |
-| entries()             |         1.8 MiB $({\color{gray}0\\%})$ | 589.27 KiB $({\color{gray}0\\%})$ |   9.95 KiB $({\color{gray}0\\%})$ |        9.95 KiB $({\color{gray}0\\%})$ |
-| scan()                |        9.78 KiB $({\color{gray}0\\%})$ | 987.75 KiB $({\color{gray}0\\%})$ |  31.73 KiB $({\color{gray}0\\%})$ |       31.73 KiB $({\color{gray}0\\%})$ |
-| remove()              | -14.26 MiB $({\color{green}-0.00\\%})$ |   1.87 MiB $({\color{gray}0\\%})$ |  212.8 KiB $({\color{gray}0\\%})$ |    1.17 MiB $({\color{red}+10.26\\%})$ |
+|                       |                            RBTree |                             BTree |                            B+Tree |                        Max B+Tree |
+| :-------------------- | --------------------------------: | --------------------------------: | --------------------------------: | --------------------------------: |
+| insert()              |   8.65 MiB $({\color{gray}0\\%})$ |   1.17 MiB $({\color{gray}0\\%})$ | 723.52 KiB $({\color{gray}0\\%})$ | -25.56 MiB $({\color{gray}0\\%})$ |
+| replace() higher vals |   7.81 MiB $({\color{gray}0\\%})$ |   1.11 MiB $({\color{gray}0\\%})$ |  603.9 KiB $({\color{gray}0\\%})$ | 767.38 KiB $({\color{gray}0\\%})$ |
+| replace() lower vals  |   7.81 MiB $({\color{gray}0\\%})$ |   1.11 MiB $({\color{gray}0\\%})$ |  603.9 KiB $({\color{gray}0\\%})$ |   3.01 MiB $({\color{gray}0\\%})$ |
+| get()                 |  15.11 KiB $({\color{gray}0\\%})$ | 476.85 KiB $({\color{gray}0\\%})$ | 213.27 KiB $({\color{gray}0\\%})$ | 213.27 KiB $({\color{gray}0\\%})$ |
+| entries()             |    1.8 MiB $({\color{gray}0\\%})$ | 589.27 KiB $({\color{gray}0\\%})$ |   9.95 KiB $({\color{gray}0\\%})$ |   9.95 KiB $({\color{gray}0\\%})$ |
+| scan()                |   9.78 KiB $({\color{gray}0\\%})$ | 987.75 KiB $({\color{gray}0\\%})$ |  31.73 KiB $({\color{gray}0\\%})$ |  31.73 KiB $({\color{gray}0\\%})$ |
+| remove()              | -14.26 MiB $({\color{gray}0\\%})$ |   1.87 MiB $({\color{gray}0\\%})$ |  212.8 KiB $({\color{gray}0\\%})$ |   1.17 MiB $({\color{gray}0\\%})$ |
 
 
 **Garbage Collection**
 
-|                       |                                RBTree |                      BTree |                     B+Tree |                            Max B+Tree |
-| :-------------------- | ------------------------------------: | -------------------------: | -------------------------: | ------------------------------------: |
-| insert()              |            0 B $({\color{gray}0\\%})$ | 0 B $({\color{gray}0\\%})$ | 0 B $({\color{gray}0\\%})$ | 26.69 MiB $({\color{green}-0.00\\%})$ |
-| replace() higher vals |            0 B $({\color{gray}0\\%})$ | 0 B $({\color{gray}0\\%})$ | 0 B $({\color{gray}0\\%})$ |            0 B $({\color{gray}0\\%})$ |
-| replace() lower vals  |            0 B $({\color{gray}0\\%})$ | 0 B $({\color{gray}0\\%})$ | 0 B $({\color{gray}0\\%})$ |            0 B $({\color{gray}0\\%})$ |
-| get()                 |            0 B $({\color{gray}0\\%})$ | 0 B $({\color{gray}0\\%})$ | 0 B $({\color{gray}0\\%})$ |            0 B $({\color{gray}0\\%})$ |
-| entries()             |            0 B $({\color{gray}0\\%})$ | 0 B $({\color{gray}0\\%})$ | 0 B $({\color{gray}0\\%})$ |            0 B $({\color{gray}0\\%})$ |
-| scan()                |            0 B $({\color{gray}0\\%})$ | 0 B $({\color{gray}0\\%})$ | 0 B $({\color{gray}0\\%})$ |            0 B $({\color{gray}0\\%})$ |
-| remove()              | 28.62 MiB $({\color{green}-0.00\\%})$ | 0 B $({\color{gray}0\\%})$ | 0 B $({\color{gray}0\\%})$ |            0 B $({\color{gray}0\\%})$ |
+|                       |                           RBTree |                      BTree |                     B+Tree |                       Max B+Tree |
+| :-------------------- | -------------------------------: | -------------------------: | -------------------------: | -------------------------------: |
+| insert()              |       0 B $({\color{gray}0\\%})$ | 0 B $({\color{gray}0\\%})$ | 0 B $({\color{gray}0\\%})$ | 26.69 MiB $({\color{gray}0\\%})$ |
+| replace() higher vals |       0 B $({\color{gray}0\\%})$ | 0 B $({\color{gray}0\\%})$ | 0 B $({\color{gray}0\\%})$ |       0 B $({\color{gray}0\\%})$ |
+| replace() lower vals  |       0 B $({\color{gray}0\\%})$ | 0 B $({\color{gray}0\\%})$ | 0 B $({\color{gray}0\\%})$ |       0 B $({\color{gray}0\\%})$ |
+| get()                 |       0 B $({\color{gray}0\\%})$ | 0 B $({\color{gray}0\\%})$ | 0 B $({\color{gray}0\\%})$ |       0 B $({\color{gray}0\\%})$ |
+| entries()             |       0 B $({\color{gray}0\\%})$ | 0 B $({\color{gray}0\\%})$ | 0 B $({\color{gray}0\\%})$ |       0 B $({\color{gray}0\\%})$ |
+| scan()                |       0 B $({\color{gray}0\\%})$ | 0 B $({\color{gray}0\\%})$ | 0 B $({\color{gray}0\\%})$ |       0 B $({\color{gray}0\\%})$ |
+| remove()              | 28.62 MiB $({\color{gray}0\\%})$ | 0 B $({\color{gray}0\\%})$ | 0 B $({\color{gray}0\\%})$ |       0 B $({\color{gray}0\\%})$ |
 
 
 </details>
