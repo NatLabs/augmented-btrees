@@ -10,7 +10,6 @@ import Nat "mo:base@0.14.13/Nat";
 import Result "mo:base@0.14.13/Result";
 import Buffer "mo:base@0.14.13/Buffer";
 import BufferDeque "mo:buffer-deque@0.1.0/BufferDeque";
-import Set "mo:map/Set";
 
 import ArrayMut "../internal/ArrayMut";
 import Utils "../internal/Utils";
@@ -20,8 +19,6 @@ import RevIter "mo:itertools@0.2.2/RevIter";
 import Branch "Branch";
 
 module Methods {
-    type Set<A> = Set.Set<A>;
-    let { nhash } = Set;
     type Iter<A> = Iter.Iter<A>;
     type Order = Order.Order;
     type Result<A, B> = Result.Result<A, B>;
